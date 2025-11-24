@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "expert-breeder"
+    "default": "expert-breeder",
+    "production": "expert-breeder",
+    "development": "expert-breeder-dev"
   }
 }
