@@ -1,0 +1,171 @@
+/* src/index.css */
+@import 'tailwindcss';
+
+/* Expert Breeder color palette - matching logo */
+:root {
+  /* Light mode - matches expert-breeder-1.jpg */
+  --background: #ffffff;
+  --foreground: #1e3a5f; /* Navy blue from logo */
+
+  /* Cards use slightly off-white */
+  --card: #f8fafc;
+  --card-foreground: #1e3a5f;
+
+  --popover: #ffffff;
+  --popover-foreground: #1e3a5f;
+
+  /* Primary blue from logo */
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+
+  /* Secondary lighter blue */
+  --secondary: #60a5fa;
+  --secondary-foreground: #1e3a5f;
+
+  /* Muted grays */
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  /* Accent using logo blue */
+  --accent: #dbeafe;
+  --accent-foreground: #1e3a5f;
+
+  /* Destructive stays reddish for warnings */
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  /* Borders */
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+
+  /* Ring matches primary */
+  --ring: #3b82f6;
+  --radius: 0.5rem;
+}
+
+/* Dark mode overrides - matches unnamed.jpg (dark mode logo) */
+.dark {
+  /* Dark navy blue background from logo */
+  --background: #1e3a5f;
+  --foreground: #f8fafc;
+  --card: #2d4a6f;
+  --card-foreground: #f8fafc;
+  --popover: #2d4a6f;
+  --popover-foreground: #f8fafc;
+
+  /* Cyan/turquoise from dark logo */
+  --primary: #06b6d4;
+  --primary-foreground: #1e3a5f;
+
+  /* Lighter cyan for secondary */
+  --secondary: #22d3ee;
+  --secondary-foreground: #1e3a5f;
+
+  --muted: #334155;
+  --muted-foreground: #cbd5e1;
+
+  /* Softer cyan for accents */
+  --accent: #164e63;
+  --accent-foreground: #06b6d4;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #f8fafc;
+  --border: #475569;
+  --input: #475569;
+  --ring: #06b6d4;
+}
+
+/* Apply colors to elements directly */
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.bg-primary {
+  background-color: var(--primary) !important;
+}
+
+.text-primary {
+  color: var(--primary) !important;
+}
+
+.bg-secondary {
+  background-color: var(--secondary) !important;
+}
+
+.bg-card {
+  background-color: var(--card) !important;
+}
+
+.bg-muted {
+  background-color: var(--muted) !important;
+}
+
+.border {
+  border-color: var(--border) !important;
+}
+
+/* Fix shadcn Dialog – pure CSS, no @apply = no errors */
+[data-radix-dialog-overlay] {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 50;
+}
+
+[data-radix-dialog-content] {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--background);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 38px -10px rgba(22, 23, 24, 0.35),
+    0 10px 20px -15px rgba(22, 23, 24, 0.2);
+  padding: 1.5rem;
+  max-width: 32rem;
+  width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+/* Fix Select dropdown transparency */
+[data-radix-select-content],
+[data-radix-select-viewport] {
+  background-color: var(--popover) !important;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+[data-radix-select-item] {
+  background-color: var(--popover);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+[data-radix-select-item]:hover,
+[data-radix-select-item][data-highlighted] {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+  outline: none;
+}
+
+/* Dark mode for select */
+.dark [data-radix-select-content],
+.dark [data-radix-select-viewport] {
+  background-color: var(--popover) !important;
+}
+
+.dark [data-radix-select-item] {
+  background-color: var(--popover);
+}
+
+.dark [data-radix-select-item]:hover,
+.dark [data-radix-select-item][data-highlighted] {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
