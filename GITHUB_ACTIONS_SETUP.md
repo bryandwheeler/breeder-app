@@ -15,35 +15,28 @@ This guide walks you through setting up automatic deployment to Firebase via Git
 
 ## Quick Setup Steps
 
-### Step 1: Generate Firebase CI Token
+### Step 1: Download Firebase Service Account Key
 
-Open a **new Windows Terminal or Command Prompt** (separate window, not VS Code terminal):
+1. **Go to Firebase Console:**
+   https://console.firebase.google.com/project/expert-breeder/settings/serviceaccounts/adminsdk
 
-```bash
-firebase login:ci
-```
+2. **Generate Key:**
+   - Click **"Generate New Private Key"**
+   - Click **"Generate Key"** in the confirmation dialog
+   - A JSON file will download (e.g., `expert-breeder-firebase-adminsdk-xxxxx.json`)
 
-**What happens:**
-1. Browser opens automatically
-2. Log in with your Google account (linked to Firebase)
-3. Authorize Firebase CLI
-4. Browser shows "Success!"
-5. Terminal displays your token
-
-**Copy the token** - it looks like:
-```
-1//0xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
+3. **Open the JSON file** in a text editor and copy **ALL** the contents
 
 ### Step 2: Add Secrets to GitHub
 
 Go to: **https://github.com/bryandwheeler/breeder-app/settings/secrets/actions**
 
-Click **"New repository secret"** for each of these (**8 secrets total**):
+Click **"New repository secret"** for each of these (**7 secrets total**):
 
-#### Secret 1: Firebase Token
-- **Name:** `FIREBASE_TOKEN`
-- **Value:** The token from `firebase login:ci` command above
+#### Secret 1: Firebase Service Account
+- **Name:** `FIREBASE_SERVICE_ACCOUNT`
+- **Value:** Paste the **entire JSON content** from the service account key file you downloaded
+  (The whole thing, including all the curly braces and quotes)
 
 #### Secrets 2-7: Firebase Config (from your .env.production file)
 - **Name:** `VITE_FIREBASE_API_KEY`
@@ -113,9 +106,9 @@ Every time you push to `main` branch:
 **Cause:** Token doesn't have permissions
 **Fix:** Ensure you're logged in with the account that owns the Firebase project
 
-### "Cannot run login:ci in non-interactive mode"
-**Cause:** Trying to run in automated/VS Code terminal
-**Fix:** Open a **new Windows Terminal or Command Prompt** and run there
+### "Invalid service account"
+**Cause:** Service account JSON not formatted correctly in GitHub secret
+**Fix:** Make sure you copied the ENTIRE JSON file contents, including outer curly braces
 
 ---
 
@@ -141,7 +134,7 @@ Once secrets are configured:
 
 **Current Status:**
 Workflow file: ✅ Created
-Firebase token: ⚠️ **Needs to be added**
-Config secrets: ⚠️ **Need to be added**
+Service account: ⚠️ **Needs to be added**
+Config secrets: ⚠️ **Need to be added (6 Firebase config secrets)**
 
-**After adding all secrets, the workflow will run automatically!**
+**After adding all 7 secrets, the workflow will run automatically!**
