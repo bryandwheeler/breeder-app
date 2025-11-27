@@ -4,163 +4,144 @@ This guide walks you through setting up automatic deployment to Firebase via Git
 
 ## Status
 
- **Step 1: GitHub Actions Workflow File Created**
+✅ **Step 1: GitHub Actions Workflow File Created**
 - File created at: `.github/workflows/deploy.yml`
 - Triggers on: Push to `main` branch
 - Can also be manually triggered from GitHub Actions tab
 
-� **Step 2: Firebase Service Account Token - NEEDS COMPLETION**
+⚠️ **Step 2: Firebase Token & Secrets - NEEDS COMPLETION**
 
 ---
 
-## Step 2: Add Firebase Service Account to GitHub Secrets
+## Quick Setup Steps
 
-### Option A: Using Firebase CLI (Recommended - Simpler)
+### Step 1: Generate Firebase CI Token
 
-1. **Generate Firebase Token**
-   ```bash
-   firebase login:ci
-   ```
-   - This will open a browser window for authentication
-   - After logging in, a token will be displayed in your terminal
-   - Copy this token
+Open a **new Windows Terminal or Command Prompt** (separate window, not VS Code terminal):
 
-2. **Add Token to GitHub Secrets**
-   - Go to your GitHub repository: https://github.com/bryandwheeler/breeder-app
-   - Click **Settings** � **Secrets and variables** � **Actions**
-   - Click **New repository secret**
-   - Name: `FIREBASE_SERVICE_ACCOUNT_EXPERT_BREEDER`
-   - Value: Paste the token from step 1
-   - Click **Add secret**
+```bash
+firebase login:ci
+```
 
-### Option B: Using Service Account JSON (More Secure)
+**What happens:**
+1. Browser opens automatically
+2. Log in with your Google account (linked to Firebase)
+3. Authorize Firebase CLI
+4. Browser shows "Success!"
+5. Terminal displays your token
 
-1. **Download Service Account Key**
-   - Go to [Firebase Console - Production Project](https://console.firebase.google.com/project/expert-breeder/settings/serviceaccounts/adminsdk)
-   - Click **Generate New Private Key**
-   - Save the JSON file securely
-   - **IMPORTANT**: Never commit this file to Git!
+**Copy the token** - it looks like:
+```
+1//0xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
 
-2. **Convert JSON to Single Line**
-   - Open the downloaded JSON file
-   - Copy the entire contents
-   - Remove all line breaks to make it a single line, OR
-   - Keep as-is and paste the full JSON (GitHub will handle it)
+### Step 2: Add Secrets to GitHub
 
-3. **Add to GitHub Secrets**
-   - Go to your GitHub repository: https://github.com/bryandwheeler/breeder-app
-   - Click **Settings** � **Secrets and variables** � **Actions**
-   - Click **New repository secret**
-   - Name: `FIREBASE_SERVICE_ACCOUNT_EXPERT_BREEDER`
-   - Value: Paste the JSON content
-   - Click **Add secret**
+Go to: **https://github.com/bryandwheeler/breeder-app/settings/secrets/actions**
 
----
+Click **"New repository secret"** for each of these (**8 secrets total**):
 
-## Step 3: Add Firebase Environment Variables to GitHub Secrets
+#### Secret 1: Firebase Token
+- **Name:** `FIREBASE_TOKEN`
+- **Value:** The token from `firebase login:ci` command above
 
-Add each of these as separate secrets in GitHub:
+#### Secrets 2-7: Firebase Config (from your .env.production file)
+- **Name:** `VITE_FIREBASE_API_KEY`
+  **Value:** `AIzaSyD7UfHNvo9c47Z3h6vdGsB2VYPvGZ9gJis`
 
-1. Go to **Settings** � **Secrets and variables** � **Actions**
-2. Click **New repository secret** for each:
+- **Name:** `VITE_FIREBASE_AUTH_DOMAIN`
+  **Value:** `expert-breeder.firebaseapp.com`
 
-### Production Firebase Config Secrets:
+- **Name:** `VITE_FIREBASE_PROJECT_ID`
+  **Value:** `expert-breeder`
 
-| Secret Name | Value (from .env.production) |
-|-------------|------------------------------|
-| `VITE_FIREBASE_API_KEY` | `AIzaSyD7UfHNvo9c47Z3h6vdGsB2VYPvGZ9gJis` |
-| `VITE_FIREBASE_AUTH_DOMAIN` | `expert-breeder.firebaseapp.com` |
-| `VITE_FIREBASE_PROJECT_ID` | `expert-breeder` |
-| `VITE_FIREBASE_STORAGE_BUCKET` | `expert-breeder.firebasestorage.app` |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | `214191898374` |
-| `VITE_FIREBASE_APP_ID` | `1:214191898374:web:5e0d39fc4bc39bb61f2887` |
+- **Name:** `VITE_FIREBASE_STORAGE_BUCKET`
+  **Value:** `expert-breeder.firebasestorage.app`
+
+- **Name:** `VITE_FIREBASE_MESSAGING_SENDER_ID`
+  **Value:** `214191898374`
+
+- **Name:** `VITE_FIREBASE_APP_ID`
+  **Value:** `1:214191898374:web:5e0d39fc4bc39bb61f2887`
 
 ---
 
-## Step 4: Test the Workflow
+## Step 3: Test the Workflow
 
-### Push to Main Branch:
+### Option A: Push to Main
 ```bash
 git add .
-git commit -m "Add GitHub Actions deployment workflow"
+git commit -m "Update GitHub Actions workflow"
 git push origin main
 ```
 
-### Or Manually Trigger:
-1. Go to your repository on GitHub
-2. Click **Actions** tab
-3. Select **Deploy to Firebase** workflow
-4. Click **Run workflow** � **Run workflow**
+### Option B: Manual Trigger
+1. Go to: https://github.com/bryandwheeler/breeder-app/actions
+2. Click **"Deploy to Firebase"** workflow
+3. Click **"Run workflow"** → **"Run workflow"** button
 
-### Monitor Deployment:
-- Watch the workflow run in the **Actions** tab
-- Check for any errors in the logs
-- Once complete, verify the deployment at: https://expert-breeder.web.app
+### Monitor Progress
+- Watch in the **Actions** tab
+- Check logs for any errors
+- Verify deployment at: **https://expert-breeder.web.app**
 
 ---
 
-## Workflow Details
+## What the Workflow Does
 
-The workflow will:
-1.  Checkout your code
-2.  Setup Node.js 20
-3.  Install dependencies
-4.  Build production bundle using `.env.production` values
-5.  Deploy to Firebase Hosting
+Every time you push to `main` branch:
 
-### Workflow Features:
-- **Automatic Deployment**: Deploys when you push to `main`
-- **Manual Deployment**: Can be triggered from GitHub Actions tab
-- **Environment Variables**: Uses GitHub Secrets for Firebase config
-- **Production Only**: Only deploys production environment
+1. ✅ Checks out your code
+2. ✅ Sets up Node.js 20
+3. ✅ Installs dependencies (`npm ci`)
+4. ✅ Builds production bundle with Firebase config
+5. ✅ Deploys to Firebase Hosting using your token
 
 ---
 
 ## Troubleshooting
 
-### Workflow Fails with "Unauthorized"
-- Check that `FIREBASE_SERVICE_ACCOUNT_EXPERT_BREEDER` secret is set correctly
-- Verify the service account has permissions in Firebase Console
+### "Process failed with exit code 1"
+**Cause:** Missing or incorrect secrets
+**Fix:** Verify all 8 secrets are added correctly in GitHub
 
-### Build Fails
-- Check that all Firebase environment variable secrets are set
-- Verify the values match your `.env.production` file
+### "Unauthorized" or "Permission denied"
+**Cause:** Firebase token is invalid or expired
+**Fix:** Run `firebase login:ci` again and update the `FIREBASE_TOKEN` secret
 
-### Deployment Succeeds but Site Doesn't Update
-- Clear your browser cache
-- Check Firebase Hosting console for deployment status
-- Verify the correct Firebase project is selected
+### Build succeeds but deployment fails
+**Cause:** Token doesn't have permissions
+**Fix:** Ensure you're logged in with the account that owns the Firebase project
+
+### "Cannot run login:ci in non-interactive mode"
+**Cause:** Trying to run in automated/VS Code terminal
+**Fix:** Open a **new Windows Terminal or Command Prompt** and run there
 
 ---
 
 ## Security Notes
 
--  Service account keys are stored as GitHub Secrets (encrypted)
--  `.env` files are in `.gitignore` and not committed
--  Environment variables are injected at build time
-- � Never commit service account JSON files to Git
-- � Never expose Firebase config secrets publicly
+✅ All secrets are encrypted by GitHub
+✅ `.env` files are gitignored
+✅ Environment variables injected at build time
+⚠️ Never commit Firebase tokens or credentials
 
 ---
 
-## Next Steps
+## What's Next
 
-Once setup is complete:
+Once secrets are configured:
 
-1.  Push changes to `main` branch to trigger automatic deployment
-2.  Monitor deployments in GitHub Actions tab
-3.  Continue developing locally with `npm run dev`
-4.  All pushes to `main` will automatically deploy to production
-
-## Alternative: Deploy Development Environment
-
-To add development environment deployment, you can:
-
-1. Create `.github/workflows/deploy-dev.yml` for development
-2. Configure it to trigger on pushes to `develop` branch
-3. Add `FIREBASE_SERVICE_ACCOUNT_EXPERT_BREEDER_DEV` secret
-4. Use development Firebase config secrets
+✅ Every push to `main` auto-deploys to production
+✅ Manual deploys from Actions tab anytime
+✅ Continue local development with `npm run dev`
+✅ No more manual `firebase deploy` commands!
 
 ---
 
-**Current Status**: Workflow file created  | Service account secret pending �
+**Current Status:**
+Workflow file: ✅ Created
+Firebase token: ⚠️ **Needs to be added**
+Config secrets: ⚠️ **Need to be added**
+
+**After adding all secrets, the workflow will run automatically!**
