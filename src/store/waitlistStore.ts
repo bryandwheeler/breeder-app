@@ -131,9 +131,17 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
     // The userId will be set by the breeder who owns the application form
     const waitlistRef = collection(db, 'waitlist');
 
+    // Get current count to set position
+    const snapshot = await getDocs(query(
+      waitlistRef,
+      where('userId', '==', entry.userId)
+    ));
+    const position = snapshot.docs.length + 1;
+
     const newEntry = {
       ...entry,
       status: 'pending' as const,
+      position,
       applicationDate: new Date().toISOString().split('T')[0],
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -144,8 +152,12 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
 
   subscribeToWaitlist: () => {
     const user = auth.currentUser;
-    if (!user) return () => {};
+    if (!user) {
+      console.log('No user logged in');
+      return () => {};
+    }
 
+    console.log('Subscribing to waitlist for user:', user.uid);
     set({ loading: true });
 
     const waitlistQuery = query(
@@ -154,13 +166,22 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
       orderBy('position', 'asc')
     );
 
-    const unsubscribe = onSnapshot(waitlistQuery, (snapshot) => {
-      const waitlist: WaitlistEntry[] = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      } as WaitlistEntry));
-      set({ waitlist, loading: false });
-    });
+    const unsubscribe = onSnapshot(
+      waitlistQuery,
+      (snapshot) => {
+        console.log('Waitlist snapshot received:', snapshot.docs.length, 'documents');
+        const waitlist: WaitlistEntry[] = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        } as WaitlistEntry));
+        console.log('Waitlist entries:', waitlist);
+        set({ waitlist, loading: false });
+      },
+      (error) => {
+        console.error('Error subscribing to waitlist:', error);
+        set({ loading: false });
+      }
+    );
 
     return unsubscribe;
   },

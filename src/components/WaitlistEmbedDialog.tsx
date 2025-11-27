@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,7 +13,16 @@ interface WaitlistEmbedDialogProps {
 
 export function WaitlistEmbedDialog({ open, setOpen }: WaitlistEmbedDialogProps) {
   const [copied, setCopied] = useState(false);
-  const userId = auth.currentUser?.uid || 'YOUR_USER_ID';
+  const [userId, setUserId] = useState(auth.currentUser?.uid || '');
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setUserId(user.uid);
+      }
+    });
+    return unsubscribe;
+  }, []);
   const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
