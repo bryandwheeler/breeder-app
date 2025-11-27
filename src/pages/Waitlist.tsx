@@ -1,5 +1,5 @@
 // Waitlist management dashboard
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWaitlistStore } from '@/store/waitlistStore';
 import { WaitlistEntry } from '@/types/dog';
 import { Card } from '@/components/ui/card';
@@ -164,7 +164,7 @@ function SortableWaitlistItem({ entry, onView, onDelete }: {
 }
 
 export function Waitlist() {
-  const { waitlist, deleteWaitlistEntry, reorderWaitlist } = useWaitlistStore();
+  const { waitlist, deleteWaitlistEntry, reorderWaitlist, subscribeToWaitlist } = useWaitlistStore();
   const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [embedOpen, setEmbedOpen] = useState(false);
@@ -176,6 +176,12 @@ export function Waitlist() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Subscribe to waitlist changes
+  useEffect(() => {
+    const unsubscribe = subscribeToWaitlist();
+    return () => unsubscribe();
+  }, [subscribeToWaitlist]);
 
   // Filter waitlist
   const filteredWaitlist = waitlist.filter((entry) => {
