@@ -25,6 +25,7 @@ tsconfig.tsbuildinfo
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+serviceAccountKey*.json
 
 # Editor directories and files
 .vscode/*

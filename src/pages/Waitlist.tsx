@@ -29,8 +29,9 @@ import {
 } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Eye, Trash2, Mail, Phone, DollarSign, CheckCircle, XCircle } from 'lucide-react';
+import { GripVertical, Eye, Trash2, Mail, Phone, DollarSign, CheckCircle, XCircle, Code } from 'lucide-react';
 import { WaitlistDetailsDialog } from '@/components/WaitlistDetailsDialog';
+import { WaitlistEmbedDialog } from '@/components/WaitlistEmbedDialog';
 
 function SortableWaitlistItem({ entry, onView, onDelete }: {
   entry: WaitlistEntry;
@@ -166,6 +167,7 @@ export function Waitlist() {
   const { waitlist, deleteWaitlistEntry, reorderWaitlist } = useWaitlistStore();
   const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [embedOpen, setEmbedOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('active');
 
   const sensors = useSensors(
@@ -214,9 +216,15 @@ export function Waitlist() {
           <h1 className="text-3xl font-bold">Master Waitlist</h1>
           <p className="text-muted-foreground">Manage your puppy waitlist across all litters</p>
         </div>
-        <Button onClick={() => window.open('/waitlist-apply/YOUR_USER_ID', '_blank')}>
-          View Application Form
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setEmbedOpen(true)}>
+            <Code className="h-4 w-4 mr-2" />
+            Get Embed Code
+          </Button>
+          <Button onClick={() => window.open('/waitlist-apply/YOUR_USER_ID', '_blank')}>
+            View Application Form
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -296,6 +304,9 @@ export function Waitlist() {
           entry={selectedEntry}
         />
       )}
+
+      {/* Embed Code Dialog */}
+      <WaitlistEmbedDialog open={embedOpen} setOpen={setEmbedOpen} />
     </div>
   );
 }

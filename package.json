@@ -11,6 +11,7 @@
     "build:dev": "vite build --mode development",
     "deploy:prod": "npm run build:prod && firebase deploy --only hosting -P production",
     "deploy:dev": "npm run build:dev && firebase deploy --only hosting -P development",
+    "migrate": "node scripts/migrate-data.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -37,7 +38,9 @@
     "cmdk": "^1.1.1",
     "d3": "^7.9.0",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
     "firebase": "^12.6.0",
+    "firebase-admin": "^13.6.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.4",
     "lucide-react": "^0.554.0",

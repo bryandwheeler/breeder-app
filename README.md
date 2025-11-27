@@ -134,6 +134,39 @@ firebase use production
 firebase deploy --only hosting
 ```
 
+## Data Migration
+
+To migrate data from production to development database:
+
+### 1. Download Service Account Keys
+
+For **Production**:
+1. Go to [Firebase Console - Production](https://console.firebase.google.com/project/expert-breeder/settings/serviceaccounts/adminsdk)
+2. Click **Generate New Private Key**
+3. Save as `scripts/serviceAccountKey-prod.json`
+
+For **Development**:
+1. Go to [Firebase Console - Development](https://console.firebase.google.com/project/expert-breeder-dev/settings/serviceaccounts/adminsdk)
+2. Click **Generate New Private Key**
+3. Save as `scripts/serviceAccountKey-dev.json`
+
+### 2. Run Migration
+
+```bash
+npm run migrate
+```
+
+This will copy all data from the following collections:
+- dogs
+- litters
+- breederProfiles
+- customers
+- inquiries
+- waitlist
+- careTemplates
+
+**Note**: Service account keys are automatically excluded from Git via `.gitignore`.
+
 ## Project Structure
 
 ```
