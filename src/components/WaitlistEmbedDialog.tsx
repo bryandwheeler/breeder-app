@@ -16,9 +16,20 @@ export function WaitlistEmbedDialog({ open, setOpen }: WaitlistEmbedDialogProps)
   const [userId, setUserId] = useState(auth.currentUser?.uid || '');
 
   useEffect(() => {
+    // Immediately set userId if already authenticated
+    if (auth.currentUser) {
+      console.log('WaitlistEmbedDialog: User already authenticated:', auth.currentUser.uid);
+      setUserId(auth.currentUser.uid);
+    }
+
+    // Listen for auth state changes
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
+        console.log('WaitlistEmbedDialog: Auth state changed, user:', user.uid);
         setUserId(user.uid);
+      } else {
+        console.log('WaitlistEmbedDialog: Auth state changed, no user');
+        setUserId('');
       }
     });
     return unsubscribe;
