@@ -18,22 +18,21 @@ export function WaitlistEmbedDialog({ open, setOpen }: WaitlistEmbedDialogProps)
   useEffect(() => {
     // Immediately set userId if already authenticated
     if (auth.currentUser) {
-      console.log('WaitlistEmbedDialog: User already authenticated:', auth.currentUser.uid);
       setUserId(auth.currentUser.uid);
     }
 
     // Listen for auth state changes
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
-        console.log('WaitlistEmbedDialog: Auth state changed, user:', user.uid);
         setUserId(user.uid);
       } else {
-        console.log('WaitlistEmbedDialog: Auth state changed, no user');
         setUserId('');
       }
     });
     return unsubscribe;
   }, []);
+
+  // Compute these values based on current userId state
   const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -42,6 +41,9 @@ export function WaitlistEmbedDialog({ open, setOpen }: WaitlistEmbedDialogProps)
     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
     appId: import.meta.env.VITE_FIREBASE_APP_ID,
   };
+
+  // Use current userId or placeholder
+  const effectiveUserId = userId || 'YOUR_USER_ID';
 
   const embedCode = `<!-- Waitlist Application Form - Embed Code -->
 <div id="waitlist-form-container"></div>
@@ -59,7 +61,7 @@ export function WaitlistEmbedDialog({ open, setOpen }: WaitlistEmbedDialogProps)
   const db = getFirestore(app);
 
   // User ID for this breeder
-  const BREEDER_USER_ID = '${userId}';
+  const BREEDER_USER_ID = '${effectiveUserId}';
 
   // Create form HTML
   const formHTML = \`
@@ -384,7 +386,7 @@ export function WaitlistEmbedDialog({ open, setOpen }: WaitlistEmbedDialogProps)
 
   const iframeCode = `<!-- Waitlist Application Form - iframe Embed -->
 <iframe
-  src="${window.location.origin}/waitlist-apply/${userId}"
+  src="${window.location.origin}/waitlist-apply/${effectiveUserId}"
   width="100%"
   height="1200"
   frameborder="0"
@@ -518,7 +520,7 @@ service cloud.firestore {
               <div className="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg">
                 <p className="text-xs">
                   <strong>Note:</strong> The iframe method loads the form from your deployed application
-                  at: <code className="bg-background px-1 py-0.5 rounded">{window.location.origin}/waitlist-apply/{userId}</code>
+                  at: <code className="bg-background px-1 py-0.5 rounded">{window.location.origin}/waitlist-apply/{effectiveUserId}</code>
                 </p>
               </div>
             </TabsContent>
@@ -528,7 +530,7 @@ service cloud.firestore {
             <Button variant="outline" onClick={() => setOpen(false)}>
               Close
             </Button>
-            <Button onClick={() => window.open(`/waitlist-apply/${userId}`, '_blank')}>
+            <Button onClick={() => window.open(`/waitlist-apply/${effectiveUserId}`, '_blank')}>
               Preview Form
             </Button>
           </div>

@@ -152,29 +152,24 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
 
   subscribeToWaitlist: () => {
     const user = auth.currentUser;
-    if (!user) {
-      console.log('No user logged in');
-      return () => {};
-    }
+    if (!user) return () => {};
 
-    console.log('Subscribing to waitlist for user:', user.uid);
     set({ loading: true });
 
     const waitlistQuery = query(
       collection(db, 'waitlist'),
-      where('userId', '==', user.uid),
-      orderBy('position', 'asc')
+      where('userId', '==', user.uid)
     );
 
     const unsubscribe = onSnapshot(
       waitlistQuery,
       (snapshot) => {
-        console.log('Waitlist snapshot received:', snapshot.docs.length, 'documents');
-        const waitlist: WaitlistEntry[] = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        } as WaitlistEntry));
-        console.log('Waitlist entries:', waitlist);
+        const waitlist: WaitlistEntry[] = snapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          } as WaitlistEntry))
+          .sort((a, b) => (a.position || 0) - (b.position || 0)); // Sort in memory instead
         set({ waitlist, loading: false });
       },
       (error) => {

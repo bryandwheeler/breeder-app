@@ -176,15 +176,22 @@ export const useBreederStore = create<Store>()((set, get) => ({
       where('userId', '==', user.uid)
     );
 
-    const unsubscribeProfile = onSnapshot(profileQuery, (snapshot) => {
-      if (!snapshot.empty) {
-        const doc = snapshot.docs[0];
-        const profile = { id: doc.id, ...doc.data() } as BreederProfile;
-        set({ profile, loading: false });
-      } else {
-        set({ profile: null, loading: false });
+    const unsubscribeProfile = onSnapshot(
+      profileQuery,
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const doc = snapshot.docs[0];
+          const profile = { id: doc.id, ...doc.data() } as BreederProfile;
+          set({ profile, loading: false });
+        } else {
+          set({ profile: null, loading: false });
+        }
+      },
+      (error) => {
+        console.error('Error loading profile:', error);
+        set({ loading: false });
       }
-    });
+    );
 
     // Subscribe to testimonials
     const testimonialsQuery = query(

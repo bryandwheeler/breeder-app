@@ -5,6 +5,7 @@ import { WaitlistEntry } from '@/types/dog';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { auth } from '@/lib/firebase';
 import {
   Select,
   SelectContent,
@@ -227,7 +228,7 @@ export function Waitlist() {
             <Code className="h-4 w-4 mr-2" />
             Get Embed Code
           </Button>
-          <Button onClick={() => window.open('/waitlist-apply/YOUR_USER_ID', '_blank')}>
+          <Button onClick={() => window.open(`/waitlist-apply/${auth.currentUser?.uid || ''}`, '_blank')}>
             View Application Form
           </Button>
         </div>
