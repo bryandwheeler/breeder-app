@@ -1,6 +1,6 @@
 // Firebase configuration and initialization
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, FacebookAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, FacebookAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -18,14 +18,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase services
+// Auth persistence is LOCAL by default in Firebase v9+
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-
-// Set auth persistence to local (survives browser restarts)
-setPersistence(auth, browserLocalPersistence).catch((error) => {
-  console.error('Error setting auth persistence:', error);
-});
 
 // Auth providers
 export const googleProvider = new GoogleAuthProvider();
