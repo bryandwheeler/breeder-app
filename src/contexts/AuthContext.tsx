@@ -13,8 +13,10 @@ import {
   onAuthStateChanged,
   signInWithPopup,
   signInWithRedirect,
+  getRedirectResult,
   sendPasswordResetEmail,
   updateProfile,
+  getAdditionalUserInfo,
 } from 'firebase/auth';
 import { auth, googleProvider, facebookProvider, db } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -48,24 +50,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Decide whether to use redirect instead of popup (mobile, Safari, COOP, iframed)
+  function shouldUseRedirect(): boolean {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      return false;
+    }
+    const ua = navigator.userAgent;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
+    const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+    const coopBlocked = (window as any).crossOriginIsolated === true;
+    const inIframe = window.self !== window.top;
+    return isMobile || isSafari || coopBlocked || inIframe;
+  }
+
   // Helper: create or update user profile in Firestore without read-before-write
-  async function ensureUserProfile(user: User) {
+  async function ensureUserProfile(user: User, isNewUser: boolean = false) {
     try {
       const userRef = doc(db, 'users', user.uid);
-      await setDoc(
-        userRef,
-        {
-          email: user.email,
-          displayName: user.displayName || 'Unknown User',
-          photoURL: user.photoURL || null,
-          lastLogin: new Date().toISOString(),
-          // These fields will only be set on first write; they won't overwrite existing values due to merge
-          createdAt: new Date().toISOString(),
-          role: 'user',
-          isActive: true,
-        },
-        { merge: true }
-      );
+      const base = {
+        email: user.email,
+        displayName: user.displayName || 'Unknown User',
+        photoURL: user.photoURL || null,
+        lastLogin: new Date().toISOString(),
+        isActive: true,
+      } as Record<string, any>;
+
+      // Only set defaults when this is the very first creation
+      if (isNewUser) {
+        base.createdAt = new Date().toISOString();
+        base.role = 'user';
+      }
+
+      await setDoc(userRef, base, { merge: true });
     } catch (error: any) {
       console.error('[AuthContext] Error ensuring user profile:', error);
       // Don't throw - allow auth to proceed even if profile creation fails
@@ -79,12 +95,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password
     );
     await updateProfile(user, { displayName });
-    await ensureUserProfile(user);
+    await ensureUserProfile(user, true);
   }
 
   async function login(email: string, password: string) {
     const { user } = await signInWithEmailAndPassword(auth, email, password);
-    await ensureUserProfile(user);
+    await ensureUserProfile(user, false);
   }
 
   async function logout() {
@@ -93,8 +109,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function loginWithGoogle() {
     try {
-      const { user } = await signInWithPopup(auth, googleProvider);
-      await ensureUserProfile(user);
+      if (shouldUseRedirect()) {
+        await signInWithRedirect(auth, googleProvider);
+        return;
+      }
+      const credential = await signInWithPopup(auth, googleProvider);
+      const isNew = !!getAdditionalUserInfo(credential)?.isNewUser;
+      await ensureUserProfile(credential.user, isNew);
     } catch (err: any) {
       // Fallback to redirect for COOP/popup-blocked environments
       console.warn(
@@ -107,8 +128,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function loginWithFacebook() {
     try {
-      const { user } = await signInWithPopup(auth, facebookProvider);
-      await ensureUserProfile(user);
+      if (shouldUseRedirect()) {
+        await signInWithRedirect(auth, facebookProvider);
+        return;
+      }
+      const credential = await signInWithPopup(auth, facebookProvider);
+      const isNew = !!getAdditionalUserInfo(credential)?.isNewUser;
+      await ensureUserProfile(credential.user, isNew);
     } catch (err: any) {
       console.warn(
         '[AuthContext] Facebook popup failed, falling back to redirect:',
@@ -123,10 +149,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
+    // Complete redirect-based sign-in if one occurred
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result?.user) {
+          const isNew = !!getAdditionalUserInfo(result)?.isNewUser;
+          await ensureUserProfile(result.user, isNew);
+        }
+      })
+      .catch((error) => {
+        // Non-fatal: log for diagnostics only
+        if (error) {
+          console.warn('[AuthContext] Redirect sign-in failed:', error);
+        }
+      });
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         // Ensure user profile exists in Firestore
-        await ensureUserProfile(user);
+        await ensureUserProfile(user, false);
       }
       setCurrentUser(user);
       setLoading(false);

@@ -41,6 +41,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ImageCropDialog } from '@/components/ImageCropDialog';
+import { MultiRegistrationManager } from '@/components/MultiRegistrationManager';
 import { searchDogs, type DogSearchResult } from '@/lib/kennelSearch';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -51,6 +52,7 @@ import { db } from '@/lib/firebase';
 import emailjs from '@emailjs/browser';
 import { Badge } from '@/components/ui/badge';
 import { Link2 } from 'lucide-react';
+import { useAdminStore } from '@/store/adminStore';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -89,6 +91,7 @@ function DogFormContent({
   const females = dogs.filter((d) => d.sex === 'female');
   const profile = useBreederStore((state) => state.profile);
   const { createConnectionRequest, addNotification } = useConnectionStore();
+  const impersonatedUserId = useAdminStore((s) => s.impersonatedUserId);
 
   const [photos, setPhotos] = useState<string[]>(dog?.photos || []);
   const [shotRecords, setShotRecords] = useState<ShotRecord[]>(
@@ -107,12 +110,8 @@ function DogFormContent({
     dog?.guardianHome
   );
   const [guardianDialogOpen, setGuardianDialogOpen] = useState(false);
-  const [registration, setRegistration] = useState<Registration | undefined>(
-    dog?.registration || {
-      registry: 'AKC',
-      registrationType: 'none',
-      status: 'not_started',
-    }
+  const [registrations, setRegistrations] = useState<Registration[]>(
+    dog?.registrations || []
   );
 
   // Sire search state
@@ -122,7 +121,13 @@ function DogFormContent({
   const [sireSearchResults, setSireSearchResults] = useState<DogSearchResult[]>(
     []
   );
-  const [externalSire, setExternalSire] = useState<DogSearchResult | null>(
+  type ExternalMatch = DogSearchResult & {
+    connectionRequestId?: string;
+    connectionStatus?: 'pending' | 'approved' | 'declined' | 'cancelled';
+    connectedDogId?: string;
+  };
+
+  const [externalSire, setExternalSire] = useState<ExternalMatch | null>(
     dog?.externalSire
       ? ({
           dogId: dog.externalSire.dogId || '',
@@ -136,7 +141,7 @@ function DogFormContent({
           connectionRequestId: dog.externalSire.connectionRequestId,
           connectionStatus: dog.externalSire.connectionStatus,
           connectedDogId: dog.externalSire.connectedDogId,
-        } as any)
+        } as ExternalMatch)
       : null
   );
 
@@ -147,7 +152,7 @@ function DogFormContent({
   const [damSearchResults, setDamSearchResults] = useState<DogSearchResult[]>(
     []
   );
-  const [externalDam, setExternalDam] = useState<DogSearchResult | null>(
+  const [externalDam, setExternalDam] = useState<ExternalMatch | null>(
     dog?.externalDam
       ? ({
           dogId: dog.externalDam.dogId || '',
@@ -161,7 +166,7 @@ function DogFormContent({
           connectionRequestId: dog.externalDam.connectionRequestId,
           connectionStatus: dog.externalDam.connectionStatus,
           connectedDogId: dog.externalDam.connectedDogId,
-        } as any)
+        } as ExternalMatch)
       : null
   );
 
@@ -203,7 +208,7 @@ function DogFormContent({
       dewormings: dog?.dewormings || [],
       vetVisits: dog?.vetVisits || [],
       programStatus,
-      registration,
+      registrations,
     };
 
     // Handle external sire
@@ -216,11 +221,11 @@ function DogFormContent({
         kennelName: externalSire.ownerKennel,
         breederName: externalSire.ownerBreederName,
         // Connection tracking
-        connectionRequestId: (externalSire as any).connectionRequestId,
-        connectionStatus: (externalSire as any).connectionStatus,
+        connectionRequestId: externalSire.connectionRequestId,
+        connectionStatus: externalSire.connectionStatus,
         ownerId: externalSire.ownerId,
         dogId: externalSire.dogId,
-        connectedDogId: (externalSire as any).connectedDogId,
+        connectedDogId: externalSire.connectedDogId,
       };
     } else if (dogData.externalSire) {
       // Clear external sire if switching back to internal
@@ -237,11 +242,11 @@ function DogFormContent({
         kennelName: externalDam.ownerKennel,
         breederName: externalDam.ownerBreederName,
         // Connection tracking
-        connectionRequestId: (externalDam as any).connectionRequestId,
-        connectionStatus: (externalDam as any).connectionStatus,
+        connectionRequestId: externalDam.connectionRequestId,
+        connectionStatus: externalDam.connectionStatus,
         ownerId: externalDam.ownerId,
         dogId: externalDam.dogId,
-        connectedDogId: (externalDam as any).connectedDogId,
+        connectedDogId: externalDam.connectedDogId,
       };
     } else if (dogData.externalDam) {
       // Clear external dam if switching back to internal
@@ -261,14 +266,15 @@ function DogFormContent({
     console.log('Saving dog with data:', {
       programStatus,
       guardianHome,
-      registration,
+      registrations,
       dogData,
     });
 
     if (dog) {
       updateDog(dog.id, dogData);
     } else {
-      addDog(dogData as Omit<Dog, 'id'>);
+      // If admin is impersonating, create under impersonated account
+      addDog(dogData as Omit<Dog, 'id'>, impersonatedUserId || undefined);
     }
     setOpen(false);
   };
@@ -330,7 +336,10 @@ function DogFormContent({
     if (!externalSire || !currentUser || !profile) return;
 
     try {
-      const requestData: any = {
+      const requestData: Omit<
+        import('@/types/dog').DogConnectionRequest,
+        'id' | 'createdAt' | 'updatedAt'
+      > = {
         requesterId: currentUser.uid,
         requesterKennelName:
           profile.kennelName || profile.breederName || 'Unknown',
@@ -340,6 +349,7 @@ function DogFormContent({
         dogName: externalSire.dogName,
         purpose: 'sire' as const,
         requestDate: new Date().toISOString(),
+        status: 'pending',
       };
 
       if (externalSire.registrationNumber) {
@@ -477,7 +487,10 @@ function DogFormContent({
     if (!externalDam || !currentUser || !profile) return;
 
     try {
-      const requestData: any = {
+      const requestData: Omit<
+        import('@/types/dog').DogConnectionRequest,
+        'id' | 'createdAt' | 'updatedAt'
+      > = {
         requesterId: currentUser.uid,
         requesterKennelName:
           profile.kennelName || profile.breederName || 'Unknown',
@@ -487,6 +500,7 @@ function DogFormContent({
         dogName: externalDam.dogName,
         purpose: 'dam' as const,
         requestDate: new Date().toISOString(),
+        status: 'pending',
       };
 
       if (externalDam.registrationNumber) {
@@ -711,7 +725,7 @@ function DogFormContent({
               )}
             />
 
-            <div className='grid grid-cols-2 gap-4'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
               <FormField
                 control={form.control}
                 name='sex'
@@ -1268,7 +1282,7 @@ function DogFormContent({
         {/* Photos */}
         <div>
           <Label>Photos ({photos.length})</Label>
-          <div className='grid grid-cols-4 gap-4 mt-2'>
+          <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2'>
             {photos.map((p, i) => (
               <div key={i} className='relative group'>
                 <img
@@ -1456,174 +1470,10 @@ function DogFormContent({
 
         {/* Registration Tracking */}
         <div className='space-y-4 border-t pt-4'>
-          <h3 className='font-semibold text-lg'>Registration Information</h3>
-
-          <div className='grid grid-cols-2 gap-4'>
-            <div>
-              <Label htmlFor='registry'>Registry</Label>
-              <Select
-                value={registration?.registry || 'AKC'}
-                onValueChange={(value) =>
-                  setRegistration({
-                    ...registration,
-                    registry: value as Registration['registry'],
-                    registrationType: registration?.registrationType || 'none',
-                    status: registration?.status || 'not_started',
-                  } as Registration)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='AKC'>
-                    AKC (American Kennel Club)
-                  </SelectItem>
-                  <SelectItem value='CKC'>
-                    CKC (Canadian Kennel Club)
-                  </SelectItem>
-                  <SelectItem value='UKC'>UKC (United Kennel Club)</SelectItem>
-                  <SelectItem value='FCI'>
-                    FCI (Fédération Cynologique)
-                  </SelectItem>
-                  <SelectItem value='Other'>Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor='registrationType'>Registration Type</Label>
-              <Select
-                value={registration?.registrationType || 'none'}
-                onValueChange={(value) =>
-                  setRegistration({
-                    ...registration,
-                    registry: registration?.registry || 'AKC',
-                    registrationType: value as Registration['registrationType'],
-                    status: registration?.status || 'not_started',
-                  } as Registration)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='none'>No Registration</SelectItem>
-                  <SelectItem value='limited'>Limited Registration</SelectItem>
-                  <SelectItem value='full'>Full Registration</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {registration?.registrationType !== 'none' && (
-            <>
-              <div className='grid grid-cols-2 gap-4'>
-                <div>
-                  <Label htmlFor='status'>Status</Label>
-                  <Select
-                    value={registration?.status || 'not_started'}
-                    onValueChange={(value) =>
-                      setRegistration({
-                        ...registration!,
-                        status: value as Registration['status'],
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value='not_started'>Not Started</SelectItem>
-                      <SelectItem value='pending'>Pending</SelectItem>
-                      <SelectItem value='submitted'>Submitted</SelectItem>
-                      <SelectItem value='approved'>Approved</SelectItem>
-                      <SelectItem value='issued'>Issued</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor='registrationNumber'>
-                    Registration Number
-                  </Label>
-                  <Input
-                    id='registrationNumber'
-                    value={registration?.registrationNumber || ''}
-                    onChange={(e) =>
-                      setRegistration({
-                        ...registration!,
-                        registrationNumber: e.target.value,
-                      })
-                    }
-                    placeholder='e.g., WS12345678'
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor='registeredName'>Registered Name</Label>
-                <Input
-                  id='registeredName'
-                  value={registration?.registeredName || ''}
-                  onChange={(e) =>
-                    setRegistration({
-                      ...registration!,
-                      registeredName: e.target.value,
-                    })
-                  }
-                  placeholder='Official registered name'
-                />
-              </div>
-
-              <div className='grid grid-cols-3 gap-4'>
-                <div>
-                  <Label htmlFor='applicationDate'>Application Date</Label>
-                  <Input
-                    id='applicationDate'
-                    type='date'
-                    value={registration?.applicationDate || ''}
-                    onChange={(e) =>
-                      setRegistration({
-                        ...registration!,
-                        applicationDate: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor='submissionDate'>Submission Date</Label>
-                  <Input
-                    id='submissionDate'
-                    type='date'
-                    value={registration?.submissionDate || ''}
-                    onChange={(e) =>
-                      setRegistration({
-                        ...registration!,
-                        submissionDate: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor='approvalDate'>Approval Date</Label>
-                  <Input
-                    id='approvalDate'
-                    type='date'
-                    value={registration?.approvalDate || ''}
-                    onChange={(e) =>
-                      setRegistration({
-                        ...registration!,
-                        approvalDate: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-            </>
-          )}
+          <MultiRegistrationManager
+            registrations={registrations}
+            onChange={setRegistrations}
+          />
         </div>
 
         <div className='flex justify-end gap-3'>
@@ -1658,7 +1508,7 @@ function DogFormContent({
 export function DogFormDialog({ open, setOpen, dog }: DogFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className='max-w-5xl max-h-[90vh] overflow-y-auto'>
+      <DialogContent className='w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6'>
         <DialogHeader>
           <DialogTitle>{dog ? `Edit ${dog.name}` : 'Add New Dog'}</DialogTitle>
         </DialogHeader>

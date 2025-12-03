@@ -454,8 +454,8 @@ export function Dashboard() {
   };
 
   return (
-    <div className='space-y-6'>
-      <h1 className='text-3xl font-bold'>Dashboard</h1>
+    <div className='space-y-4 sm:space-y-6'>
+      <h1 className='text-2xl sm:text-3xl font-bold'>Dashboard</h1>
 
       {/* Statistics Cards */}
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
@@ -605,47 +605,51 @@ export function Dashboard() {
                 No upcoming heats predicted
               </p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Dam</TableHead>
-                    <TableHead>Date Of</TableHead>
-                    <TableHead>Future</TableHead>
-                    <TableHead>From Now</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {upcomingHeats.map(
-                    ({ dog, lastHeat, nextExpected, daysUntil }) => (
-                      <TableRow key={dog.id}>
-                        <TableCell>
-                          <Link
-                            to={`/dogs/${dog.id}`}
-                            className='hover:text-primary font-medium'
-                          >
-                            {dog.name}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          {format(lastHeat, 'MMM dd, yyyy')}
-                        </TableCell>
-                        <TableCell>
-                          {format(nextExpected, 'MMM dd, yyyy')}
-                        </TableCell>
-                        <TableCell>
-                          {daysUntil > 0 ? (
-                            <Badge variant='secondary'>{daysUntil} Days</Badge>
-                          ) : (
-                            <Badge variant='destructive'>
-                              Overdue by {Math.abs(daysUntil)} Days
-                            </Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  )}
-                </TableBody>
-              </Table>
+              <div className='overflow-x-auto'>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Dam</TableHead>
+                      <TableHead>Date Of</TableHead>
+                      <TableHead>Future</TableHead>
+                      <TableHead>From Now</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {upcomingHeats.map(
+                      ({ dog, lastHeat, nextExpected, daysUntil }) => (
+                        <TableRow key={dog.id}>
+                          <TableCell>
+                            <Link
+                              to={`/dogs/${dog.id}`}
+                              className='hover:text-primary font-medium'
+                            >
+                              {dog.name}
+                            </Link>
+                          </TableCell>
+                          <TableCell>
+                            {format(lastHeat, 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell>
+                            {format(nextExpected, 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell>
+                            {daysUntil > 0 ? (
+                              <Badge variant='secondary'>
+                                {daysUntil} Days
+                              </Badge>
+                            ) : (
+                              <Badge variant='destructive'>
+                                Overdue by {Math.abs(daysUntil)} Days
+                              </Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -89,7 +89,7 @@ export function Header({
               <TooltipContent>Open sidebar menu</TooltipContent>
             </Tooltip>
             {profile?.kennelName && (
-              <div className='hidden md:flex flex-col'>
+              <div className='hidden lg:flex flex-col'>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className='font-bold text-lg cursor-pointer'>
@@ -109,25 +109,19 @@ export function Header({
         </div>
 
         {/* Right section */}
-        <div className='flex items-center gap-2'>
-          {/* Add Dog Button */}
-          <Button onClick={onAddDog} size='sm' className='hidden sm:flex'>
-            <Plus className='h-4 w-4 sm:mr-2' />
-            <span className='hidden sm:inline'>Add Dog</span>
-          </Button>
-          <Button onClick={onAddDog} size='icon' className='sm:hidden'>
-            <Plus className='h-4 w-4' />
-          </Button>
+        <div className='flex items-center gap-1 sm:gap-2'>
+          {/* Add Dog Button removed per UX: shown in Dogs page instead */}
 
           {/* Notifications */}
           <NotificationsDropdown />
 
-          {/* Email Settings */}
+          {/* Email Settings - hidden on small mobile */}
           <Button
             variant='ghost'
             size='icon'
             onClick={onEmailSettings}
             title='Email Settings'
+            className='hidden xs:flex'
           >
             <Mail className='h-4 w-4' />
           </Button>
@@ -139,34 +133,41 @@ export function Header({
                 <Download className='h-4 w-4' />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align='end' className='bg-background'>
+            <DropdownMenuContent align='end' className='bg-background w-56'>
               <DropdownMenuItem onClick={() => exportToJSON(dogs, litters)}>
+                <Download className='mr-2 h-4 w-4' />
                 Full Backup (JSON)
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => exportDogsToCSV(dogs)}>
+                <Download className='mr-2 h-4 w-4' />
                 Dogs (CSV)
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => exportLittersToCSV(litters, dogs)}
               >
+                <Download className='mr-2 h-4 w-4' />
                 Litters (CSV)
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => exportPuppiesToCSV(litters, dogs)}
               >
+                <Download className='mr-2 h-4 w-4' />
                 Puppies (CSV)
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => exportExpensesToCSV(litters, dogs)}
               >
+                <Download className='mr-2 h-4 w-4' />
                 Expenses (CSV)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
           {/* Theme Toggle */}
-          <ThemeToggle />
+          <div className='hidden sm:block'>
+            <ThemeToggle />
+          </div>
 
           {/* User Menu */}
           <DropdownMenu>

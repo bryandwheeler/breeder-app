@@ -9,21 +9,22 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import {
   Select,
-  SelectContent,
-  SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectContent,
+  SelectItem,
 } from '@/components/ui/select';
 import { DeleteDogDialog } from '@/components/DeleteDogDialog';
-
 export function DogList({
   openEditDialog,
 }: {
-  openEditDialog: (dog: Dog) => void;
+  openEditDialog: (dog: Dog | null) => void;
 }) {
-  const { dogs, deleteDog, updateDog } = useDogStore();
   const navigate = useNavigate();
-  const [programFilter, setProgramFilter] = useState<string>('all');
+  const { dogs, deleteDog, updateDog } = useDogStore();
+  const [programFilter, setProgramFilter] = useState<
+    'all' | 'owned' | 'guardian' | 'external_stud' | 'co-owned'
+  >('all');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dogToDelete, setDogToDelete] = useState<Dog | null>(null);
 
@@ -99,7 +100,8 @@ export function DogList({
             </span>
             {isGuardian && row.original.guardianHome && (
               <span className='text-xs text-muted-foreground'>
-                ({row.original.guardianHome.littersCompleted}/{row.original.guardianHome.littersAllowed})
+                ({row.original.guardianHome.littersCompleted}/
+                {row.original.guardianHome.littersAllowed})
               </span>
             )}
           </div>
@@ -137,11 +139,20 @@ export function DogList({
 
   return (
     <div className='space-y-4'>
-      <div className='flex items-center gap-4'>
-        <div className='flex items-center gap-2'>
-          <label className='text-sm font-medium'>Filter by Program:</label>
-          <Select value={programFilter} onValueChange={setProgramFilter}>
-            <SelectTrigger className='w-[200px]'>
+      <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4'>
+        <div className='flex flex-col xs:flex-row items-start xs:items-center gap-2 w-full sm:w-auto'>
+          <label className='text-sm font-medium whitespace-nowrap'>
+            Filter by Program:
+          </label>
+          <Select
+            value={programFilter}
+            onValueChange={(v) =>
+              setProgramFilter(
+                v as 'all' | 'owned' | 'guardian' | 'external_stud' | 'co-owned'
+              )
+            }
+          >
+            <SelectTrigger className='w-full xs:w-[200px]'>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -153,6 +164,15 @@ export function DogList({
             </SelectContent>
           </Select>
         </div>
+
+        <Button
+          onClick={() => openEditDialog(null)}
+          size='sm'
+          className='w-full sm:w-auto'
+        >
+          <Edit className='h-4 w-4 mr-2' />
+          Add Dog
+        </Button>
       </div>
 
       <DataTable

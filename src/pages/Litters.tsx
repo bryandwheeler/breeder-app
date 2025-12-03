@@ -55,23 +55,29 @@ export function Litters() {
   };
 
   return (
-    <div className='space-y-8'>
-      <div className='flex justify-between items-center'>
-        <h1 className='text-4xl font-bold'>Litters</h1>
-        <Button size='lg' onClick={handleAddNew}>
-          <Plus className='mr-2 h-5 w-5' /> Plan New Litter
+    <div className='space-y-4 sm:space-y-6 md:space-y-8'>
+      <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3'>
+        <h1 className='text-2xl sm:text-3xl md:text-4xl font-bold'>Litters</h1>
+        <Button
+          size='default'
+          onClick={handleAddNew}
+          className='w-full sm:w-auto'
+        >
+          <Plus className='mr-2 h-4 w-4 sm:h-5 sm:w-5' />
+          <span className='hidden xs:inline'>Plan New Litter</span>
+          <span className='xs:hidden'>New Litter</span>
         </Button>
       </div>
 
       {litters.length === 0 ? (
-        <Card className='p-12 text-center'>
-          <Calendar className='h-16 w-16 mx-auto text-muted-foreground mb-4' />
-          <p className='text-xl text-muted-foreground'>
+        <Card className='p-8 sm:p-12 text-center'>
+          <Calendar className='h-12 w-12 sm:h-16 sm:w-16 mx-auto text-muted-foreground mb-4' />
+          <p className='text-lg sm:text-xl text-muted-foreground'>
             No litters planned yet
           </p>
         </Card>
       ) : (
-        <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
+        <div className='grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3'>
           {litters.map((litter) => {
             // Skip litters without required fields (old data structure)
             if (!litter.dateOfBirth) {

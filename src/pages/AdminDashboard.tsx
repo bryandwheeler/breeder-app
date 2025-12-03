@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminStore } from '@/store/adminStore';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +24,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { UserProfile } from '@/types/admin';
+import { RegistryManagement } from '@/components/RegistryManagement';
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -90,7 +97,10 @@ export function AdminDashboard() {
     navigate('/');
   };
 
-  const handleToggleRole = async (uid: string, currentRole: 'user' | 'admin') => {
+  const handleToggleRole = async (
+    uid: string,
+    currentRole: 'user' | 'admin'
+  ) => {
     try {
       const newRole = currentRole === 'admin' ? 'user' : 'admin';
       await updateUserRole(uid, newRole);
@@ -128,7 +138,9 @@ export function AdminDashboard() {
             <Shield className='h-8 w-8' />
             Admin Dashboard
           </h1>
-          <p className='text-muted-foreground'>Manage users and application settings</p>
+          <p className='text-muted-foreground'>
+            Manage users and application settings
+          </p>
         </div>
         <Button onClick={() => navigate('/admin/settings')} variant='outline'>
           <Settings className='mr-2 h-4 w-4' />
@@ -195,11 +207,16 @@ export function AdminDashboard() {
         </Card>
       </div>
 
+      {/* Global Registry Management */}
+      <RegistryManagement />
+
       {/* User Management */}
       <Card>
         <CardHeader>
           <CardTitle>User Management</CardTitle>
-          <CardDescription>View and manage all registered users</CardDescription>
+          <CardDescription>
+            View and manage all registered users
+          </CardDescription>
           <div className='mt-4'>
             <div className='relative'>
               <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground' />
@@ -215,7 +232,9 @@ export function AdminDashboard() {
         <CardContent>
           <div className='space-y-2'>
             {filteredUsers.length === 0 ? (
-              <p className='text-center text-muted-foreground py-8'>No users found</p>
+              <p className='text-center text-muted-foreground py-8'>
+                No users found
+              </p>
             ) : (
               filteredUsers.map((user) => (
                 <div
@@ -225,7 +244,9 @@ export function AdminDashboard() {
                   <div className='flex items-start justify-between gap-4'>
                     <div className='flex-1 min-w-0'>
                       <div className='flex items-center gap-2 mb-1'>
-                        <h3 className='font-semibold truncate'>{user.displayName}</h3>
+                        <h3 className='font-semibold truncate'>
+                          {user.displayName}
+                        </h3>
                         {user.role === 'admin' && (
                           <Badge className='bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'>
                             <Shield className='h-3 w-3 mr-1' />
@@ -239,7 +260,9 @@ export function AdminDashboard() {
                           </Badge>
                         )}
                       </div>
-                      <p className='text-sm text-muted-foreground truncate'>{user.email}</p>
+                      <p className='text-sm text-muted-foreground truncate'>
+                        {user.email}
+                      </p>
                       {user.kennelName && (
                         <p className='text-sm text-muted-foreground'>
                           Kennel: {user.kennelName}
@@ -272,7 +295,9 @@ export function AdminDashboard() {
                       <Button
                         size='sm'
                         variant={user.isActive ? 'destructive' : 'default'}
-                        onClick={() => handleToggleActive(user.uid, user.isActive)}
+                        onClick={() =>
+                          handleToggleActive(user.uid, user.isActive)
+                        }
                       >
                         {user.isActive ? 'Deactivate' : 'Activate'}
                       </Button>

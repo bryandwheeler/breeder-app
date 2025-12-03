@@ -20,6 +20,9 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAdminStore } from '@/store/adminStore';
 import {
   Tooltip,
   TooltipTrigger,
@@ -37,7 +40,7 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const navigation: NavGroup[] = [
+const breederNavigation: NavGroup[] = [
   {
     title: 'Management',
     items: [
@@ -70,6 +73,16 @@ const navigation: NavGroup[] = [
   },
 ];
 
+const adminNavigation: NavGroup[] = [
+  {
+    title: 'Administration',
+    items: [
+      { name: 'Admin Dashboard', path: '/admin', icon: LayoutDashboard },
+      { name: 'Admin Settings', path: '/admin/settings', icon: Settings },
+    ],
+  },
+];
+
 interface SidebarProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
@@ -84,13 +97,41 @@ export function Sidebar({
   setIsPinned,
 }: SidebarProps) {
   const location = useLocation();
+  const { currentUser } = useAuth();
+  const { checkIsAdmin, impersonatedUserId } = useAdminStore();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const run = async () => {
+      if (!currentUser) {
+        if (mounted) setIsAdmin(false);
+        return;
+      }
+      try {
+        const result = await checkIsAdmin(currentUser.uid);
+        if (mounted) setIsAdmin(!!result);
+      } catch {
+        if (mounted) setIsAdmin(false);
+      }
+    };
+    run();
+    return () => {
+      mounted = false;
+    };
+  }, [currentUser, checkIsAdmin]);
+
+  const isImpersonating = !!impersonatedUserId;
+  const navToRender =
+    isAdmin && !isImpersonating ? adminNavigation : breederNavigation;
+  const topClass = isImpersonating ? 'top-28' : 'top-16';
 
   return (
     <>
       {/* Overlay for mobile - only show when not pinned */}
       {isOpen && !isPinned && (
         <div
-          className='fixed inset-0 bg-black/50 z-20 lg:hidden'
+          className='fixed inset-0 bg-black/50 z-30 lg:hidden'
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -98,7 +139,8 @@ export function Sidebar({
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed top-16 left-0 bottom-0 z-30 bg-card border-r transition-all duration-300 flex flex-col',
+          'fixed left-0 bottom-0 z-40 bg-card border-r transition-all duration-300 flex flex-col',
+          topClass,
           isOpen
             ? 'w-64 translate-x-0'
             : 'w-64 -translate-x-full lg:translate-x-0 lg:w-20'
@@ -148,7 +190,7 @@ export function Sidebar({
 
         {/* Navigation */}
         <nav className='flex-1 overflow-y-auto py-6 px-3 space-y-8'>
-          {navigation.map((group) => (
+          {navToRender.map((group) => (
             <div key={group.title}>
               {isOpen && (
                 <h3 className='px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider'>

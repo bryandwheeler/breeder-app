@@ -21,14 +21,21 @@ type Store = {
   loading: boolean;
 
   // Heat Cycle methods
-  addHeatCycle: (cycle: Omit<HeatCycle, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  addHeatCycle: (
+    cycle: Omit<HeatCycle, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+  ) => Promise<void>;
   updateHeatCycle: (id: string, updates: Partial<HeatCycle>) => Promise<void>;
   deleteHeatCycle: (id: string) => Promise<void>;
   getHeatCyclesForDog: (dogId: string) => HeatCycle[];
 
   // Breeding Record methods
-  addBreedingRecord: (record: Omit<BreedingRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-  updateBreedingRecord: (id: string, updates: Partial<BreedingRecord>) => Promise<void>;
+  addBreedingRecord: (
+    record: Omit<BreedingRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+  ) => Promise<void>;
+  updateBreedingRecord: (
+    id: string,
+    updates: Partial<BreedingRecord>
+  ) => Promise<void>;
   deleteBreedingRecord: (id: string) => Promise<void>;
   getBreedingRecordsForCycle: (heatCycleId: string) => BreedingRecord[];
   getBreedingRecordsForDog: (dogId: string) => BreedingRecord[];
@@ -87,7 +94,10 @@ export const useHeatCycleStore = create<Store>()((set, get) => ({
   getHeatCyclesForDog: (dogId) => {
     return get()
       .heatCycles.filter((cycle) => cycle.dogId === dogId)
-      .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+      .sort(
+        (a, b) =>
+          new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+      );
   },
 
   addBreedingRecord: async (record) => {
@@ -128,13 +138,21 @@ export const useHeatCycleStore = create<Store>()((set, get) => ({
   getBreedingRecordsForCycle: (heatCycleId) => {
     return get()
       .breedingRecords.filter((record) => record.heatCycleId === heatCycleId)
-      .sort((a, b) => new Date(b.breedingDate).getTime() - new Date(a.breedingDate).getTime());
+      .sort(
+        (a, b) =>
+          new Date(b.breedingDate).getTime() -
+          new Date(a.breedingDate).getTime()
+      );
   },
 
   getBreedingRecordsForDog: (dogId) => {
     return get()
       .breedingRecords.filter((record) => record.dogId === dogId)
-      .sort((a, b) => new Date(b.breedingDate).getTime() - new Date(a.breedingDate).getTime());
+      .sort(
+        (a, b) =>
+          new Date(b.breedingDate).getTime() -
+          new Date(a.breedingDate).getTime()
+      );
   },
 
   subscribeToHeatCycles: () => {
@@ -152,10 +170,13 @@ export const useHeatCycleStore = create<Store>()((set, get) => ({
     const unsubscribeHeatCycles = onSnapshot(
       heatCyclesQuery,
       (snapshot) => {
-        const heatCycles: HeatCycle[] = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        } as HeatCycle));
+        const heatCycles: HeatCycle[] = snapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              ...doc.data(),
+            } as HeatCycle)
+        );
         set({ heatCycles, loading: false });
       },
       (error) => {
@@ -173,10 +194,13 @@ export const useHeatCycleStore = create<Store>()((set, get) => ({
     const unsubscribeBreedingRecords = onSnapshot(
       breedingRecordsQuery,
       (snapshot) => {
-        const breedingRecords: BreedingRecord[] = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        } as BreedingRecord));
+        const breedingRecords: BreedingRecord[] = snapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              ...doc.data(),
+            } as BreedingRecord)
+        );
         set({ breedingRecords });
       },
       (error) => {

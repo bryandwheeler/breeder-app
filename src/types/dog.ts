@@ -218,7 +218,7 @@ export const DEFAULT_PUPPY_MILESTONES: Omit<
 
 // Registration Information
 export interface Registration {
-  registry: 'AKC' | 'CKC' | 'UKC' | 'FCI' | 'Other';
+  registry: string; // e.g., 'AKC', 'CKC', 'UKC', 'FCI', or custom registry name
   registrationNumber?: string;
   registeredName?: string;
   registrationType: 'none' | 'limited' | 'full';
@@ -270,8 +270,8 @@ export interface Puppy {
   breedingRights?: BreedingRights;
   coOwnership?: CoOwnership;
 
-  // Registration tracking
-  registration?: Registration;
+  // Registration tracking (multiple registries supported)
+  registrations?: Registration[];
 
   healthTests: HealthTest[];
   shotRecords: ShotRecord[];
@@ -340,7 +340,7 @@ export interface Expense {
 
 // Litter Registration (for bulk litter registration)
 export interface LitterRegistration {
-  registry: 'AKC' | 'CKC' | 'UKC' | 'FCI' | 'Other';
+  registry: string; // e.g., 'AKC', 'CKC', 'UKC', 'FCI', or custom registry name
   litterNumber?: string; // Litter registration number from registry
   applicationDate?: string;
   submissionDate?: string;
@@ -435,8 +435,8 @@ export interface Dog {
   vetVisits: VetVisit[];
   dnaProfile?: DnaProfile;
 
-  // Registration tracking
-  registration?: Registration;
+  // Registration tracking (multiple registries supported)
+  registrations?: Registration[];
 
   // Breeder Program Status
   programStatus?:
@@ -790,6 +790,7 @@ export interface BreederProfile {
   akc?: string; // AKC Breeder of Merit, etc.
   otherOrganizations?: string[];
   certifications?: string[];
+  customRegistries?: string[]; // Custom dog registries added by the breeder
 
   // Health Testing Commitment
   healthTestingDescription?: string;

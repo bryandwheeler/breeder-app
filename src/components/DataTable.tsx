@@ -51,10 +51,10 @@ export function DataTable<TData>({
         placeholder={searchPlaceholder}
         value={globalFilter ?? ''}
         onChange={(e) => setGlobalFilter(e.target.value)}
-        className='max-w-sm'
+        className='w-full max-w-sm'
       />
 
-      <div className='rounded-md border'>
+      <div className='rounded-md border overflow-x-auto'>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

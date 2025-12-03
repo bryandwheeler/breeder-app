@@ -14,7 +14,13 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import { Customer, Interaction, Purchase, Referral, CustomerSegment } from '@/types/dog';
+import {
+  Customer,
+  Interaction,
+  Purchase,
+  Referral,
+  CustomerSegment,
+} from '@/types/dog';
 
 interface Store {
   customers: Customer[];
@@ -23,19 +29,38 @@ interface Store {
   loading: boolean;
 
   // Customer CRUD
-  addCustomer: (customer: Omit<Customer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  addCustomer: (
+    customer: Omit<Customer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+  ) => Promise<void>;
   updateCustomer: (id: string, updates: Partial<Customer>) => Promise<void>;
   deleteCustomer: (id: string) => Promise<void>;
   getCustomer: (id: string) => Customer | undefined;
 
   // Interaction Management
-  addInteraction: (customerId: string, interaction: Omit<Interaction, 'id'>) => Promise<void>;
-  updateInteraction: (customerId: string, interactionId: string, updates: Partial<Interaction>) => Promise<void>;
-  deleteInteraction: (customerId: string, interactionId: string) => Promise<void>;
+  addInteraction: (
+    customerId: string,
+    interaction: Omit<Interaction, 'id'>
+  ) => Promise<void>;
+  updateInteraction: (
+    customerId: string,
+    interactionId: string,
+    updates: Partial<Interaction>
+  ) => Promise<void>;
+  deleteInteraction: (
+    customerId: string,
+    interactionId: string
+  ) => Promise<void>;
 
   // Purchase Management
-  addPurchase: (customerId: string, purchase: Omit<Purchase, 'id'>) => Promise<void>;
-  updatePurchase: (customerId: string, purchaseId: string, updates: Partial<Purchase>) => Promise<void>;
+  addPurchase: (
+    customerId: string,
+    purchase: Omit<Purchase, 'id'>
+  ) => Promise<void>;
+  updatePurchase: (
+    customerId: string,
+    purchaseId: string,
+    updates: Partial<Purchase>
+  ) => Promise<void>;
 
   // Customer Analytics
   calculateLifetimeValue: (customerId: string) => Promise<void>;
@@ -45,23 +70,37 @@ interface Store {
   addTag: (customerId: string, tag: string) => Promise<void>;
   removeTag: (customerId: string, tag: string) => Promise<void>;
   createSegment: (segment: Omit<CustomerSegment, 'id'>) => Promise<void>;
-  updateSegment: (id: string, updates: Partial<CustomerSegment>) => Promise<void>;
+  updateSegment: (
+    id: string,
+    updates: Partial<CustomerSegment>
+  ) => Promise<void>;
   deleteSegment: (id: string) => Promise<void>;
   getCustomersBySegment: (segmentId: string) => Customer[];
 
   // Referral Management
-  addReferral: (referral: Omit<Referral, 'id' | 'userId' | 'referralDate'>) => Promise<void>;
+  addReferral: (
+    referral: Omit<Referral, 'id' | 'userId' | 'referralDate'>
+  ) => Promise<void>;
   updateReferral: (id: string, updates: Partial<Referral>) => Promise<void>;
   convertReferral: (id: string) => Promise<void>;
 
   // Link existing records
   linkInquiry: (customerId: string, inquiryId: string) => Promise<void>;
-  linkWaitlistEntry: (customerId: string, waitlistEntryId: string) => Promise<void>;
+  linkWaitlistEntry: (
+    customerId: string,
+    waitlistEntryId: string
+  ) => Promise<void>;
   linkLitter: (customerId: string, litterId: string) => Promise<void>;
 
   // Conversion helpers
-  convertInquiryToCustomer: (inquiryId: string, additionalData?: Partial<Customer>) => Promise<string>;
-  convertWaitlistToCustomer: (waitlistEntryId: string, additionalData?: Partial<Customer>) => Promise<string>;
+  convertInquiryToCustomer: (
+    inquiryId: string,
+    additionalData?: Partial<Customer>
+  ) => Promise<string>;
+  convertWaitlistToCustomer: (
+    waitlistEntryId: string,
+    additionalData?: Partial<Customer>
+  ) => Promise<string>;
 
   // Subscriptions
   subscribeToCustomers: () => () => void;
@@ -91,12 +130,14 @@ export const useCrmStore = create<Store>()((set, get) => ({
       status: customer.status || 'active',
       source: customer.source || 'website',
       preferredContact: customer.preferredContact || 'email',
-      emailOptIn: customer.emailOptIn !== undefined ? customer.emailOptIn : true,
+      emailOptIn:
+        customer.emailOptIn !== undefined ? customer.emailOptIn : true,
       smsOptIn: customer.smsOptIn !== undefined ? customer.smsOptIn : false,
       // Backward-compat: write both fields; rules use breederId
       userId: user.uid,
       breederId: user.uid,
-      firstContactDate: customer.firstContactDate || new Date().toISOString().split('T')[0],
+      firstContactDate:
+        customer.firstContactDate || new Date().toISOString().split('T')[0],
       lastContactDate: new Date().toISOString().split('T')[0],
       totalPurchases: 0,
       totalRevenue: 0,
@@ -151,9 +192,10 @@ export const useCrmStore = create<Store>()((set, get) => ({
     const customer = get().getCustomer(customerId);
     if (!customer) throw new Error('Customer not found');
 
-    const interactions = customer.interactions?.map((i) =>
-      i.id === interactionId ? { ...i, ...updates } : i
-    ) || [];
+    const interactions =
+      customer.interactions?.map((i) =>
+        i.id === interactionId ? { ...i, ...updates } : i
+      ) || [];
 
     await updateDoc(doc(db, 'customers', customerId), {
       interactions,
@@ -165,7 +207,8 @@ export const useCrmStore = create<Store>()((set, get) => ({
     const customer = get().getCustomer(customerId);
     if (!customer) throw new Error('Customer not found');
 
-    const interactions = customer.interactions?.filter((i) => i.id !== interactionId) || [];
+    const interactions =
+      customer.interactions?.filter((i) => i.id !== interactionId) || [];
 
     await updateDoc(doc(db, 'customers', customerId), {
       interactions,
@@ -199,9 +242,10 @@ export const useCrmStore = create<Store>()((set, get) => ({
     const customer = get().getCustomer(customerId);
     if (!customer) throw new Error('Customer not found');
 
-    const purchases = customer.purchases?.map((p) =>
-      p.id === purchaseId ? { ...p, ...updates } : p
-    ) || [];
+    const purchases =
+      customer.purchases?.map((p) =>
+        p.id === purchaseId ? { ...p, ...updates } : p
+      ) || [];
 
     await updateDoc(doc(db, 'customers', customerId), {
       purchases,
@@ -217,14 +261,16 @@ export const useCrmStore = create<Store>()((set, get) => ({
     const customer = get().getCustomer(customerId);
     if (!customer) return;
 
-    const totalRevenue = customer.purchases?.reduce((sum, p) => sum + p.amount, 0) || 0;
+    const totalRevenue =
+      customer.purchases?.reduce((sum, p) => sum + p.amount, 0) || 0;
     const averagePurchaseValue = customer.purchases?.length
       ? totalRevenue / customer.purchases.length
       : 0;
 
     // Simple LTV calculation: total revenue + potential future value
     // Assume repeat customers may purchase again
-    const repeatMultiplier = customer.purchases && customer.purchases.length > 1 ? 1.5 : 1;
+    const repeatMultiplier =
+      customer.purchases && customer.purchases.length > 1 ? 1.5 : 1;
     const lifetimeValue = totalRevenue * repeatMultiplier;
 
     await updateDoc(doc(db, 'customers', customerId), {
@@ -238,7 +284,8 @@ export const useCrmStore = create<Store>()((set, get) => ({
     if (!customer) return;
 
     const totalPurchases = customer.purchases?.length || 0;
-    const totalRevenue = customer.purchases?.reduce((sum, p) => sum + p.amount, 0) || 0;
+    const totalRevenue =
+      customer.purchases?.reduce((sum, p) => sum + p.amount, 0) || 0;
 
     await updateDoc(doc(db, 'customers', customerId), {
       totalPurchases,
@@ -319,19 +366,26 @@ export const useCrmStore = create<Store>()((set, get) => ({
       }
 
       // Min purchases
-      if (filters.minPurchases && (customer.totalPurchases || 0) < filters.minPurchases) {
+      if (
+        filters.minPurchases &&
+        (customer.totalPurchases || 0) < filters.minPurchases
+      ) {
         return false;
       }
 
       // Min lifetime value
-      if (filters.minLifetimeValue && (customer.lifetimeValue || 0) < filters.minLifetimeValue) {
+      if (
+        filters.minLifetimeValue &&
+        (customer.lifetimeValue || 0) < filters.minLifetimeValue
+      ) {
         return false;
       }
 
       // Last contact days ago
       if (filters.lastContactDaysAgo && customer.lastContactDate) {
         const daysSinceContact = Math.floor(
-          (Date.now() - new Date(customer.lastContactDate).getTime()) / (1000 * 60 * 60 * 24)
+          (Date.now() - new Date(customer.lastContactDate).getTime()) /
+            (1000 * 60 * 60 * 24)
         );
         if (daysSinceContact < filters.lastContactDaysAgo) return false;
       }
@@ -421,7 +475,10 @@ export const useCrmStore = create<Store>()((set, get) => ({
     if (!inquiry) throw new Error('Inquiry not found');
 
     // Create customer from inquiry data
-    const customerData: Omit<Customer, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
+    const customerData: Omit<
+      Customer,
+      'id' | 'userId' | 'createdAt' | 'updatedAt'
+    > = {
       name: inquiry.name,
       email: inquiry.email,
       phone: inquiry.phone,
@@ -429,15 +486,18 @@ export const useCrmStore = create<Store>()((set, get) => ({
       status: 'active',
       source: inquiry.source || 'website',
       inquiryIds: [inquiryId],
-      firstContactDate: inquiry.createdAt || new Date().toISOString().split('T')[0],
+      firstContactDate:
+        inquiry.createdAt || new Date().toISOString().split('T')[0],
       lastContactDate: new Date().toISOString().split('T')[0],
-      interactions: [{
-        id: crypto.randomUUID(),
-        date: inquiry.createdAt || new Date().toISOString().split('T')[0],
-        type: 'other',
-        subject: 'Initial inquiry submitted',
-        notes: inquiry.message,
-      }],
+      interactions: [
+        {
+          id: crypto.randomUUID(),
+          date: inquiry.createdAt || new Date().toISOString().split('T')[0],
+          type: 'other',
+          subject: 'Initial inquiry submitted',
+          notes: inquiry.message,
+        },
+      ],
       ...additionalData,
     };
 
@@ -465,12 +525,17 @@ export const useCrmStore = create<Store>()((set, get) => ({
       where('breederId', '==', user.uid)
     );
     const snapshot = await getDocs(waitlistQuery);
-    const waitlistEntry = snapshot.docs.find((doc) => doc.id === waitlistEntryId)?.data();
+    const waitlistEntry = snapshot.docs
+      .find((doc) => doc.id === waitlistEntryId)
+      ?.data();
 
     if (!waitlistEntry) throw new Error('Waitlist entry not found');
 
     // Create customer from waitlist data
-    const customerData: Omit<Customer, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
+    const customerData: Omit<
+      Customer,
+      'id' | 'userId' | 'createdAt' | 'updatedAt'
+    > = {
       name: waitlistEntry.name,
       email: waitlistEntry.email,
       phone: waitlistEntry.phone,
@@ -481,15 +546,20 @@ export const useCrmStore = create<Store>()((set, get) => ({
       status: 'active',
       source: 'website',
       waitlistEntryId,
-      firstContactDate: waitlistEntry.applicationDate || new Date().toISOString().split('T')[0],
+      firstContactDate:
+        waitlistEntry.applicationDate || new Date().toISOString().split('T')[0],
       lastContactDate: new Date().toISOString().split('T')[0],
-      interactions: [{
-        id: crypto.randomUUID(),
-        date: waitlistEntry.applicationDate || new Date().toISOString().split('T')[0],
-        type: 'other',
-        subject: 'Waitlist application submitted',
-        notes: `Application details:\n- Preferred sex: ${waitlistEntry.preferredSex}\n- Timeline: ${waitlistEntry.timeline}\n- Experience: ${waitlistEntry.experience}`,
-      }],
+      interactions: [
+        {
+          id: crypto.randomUUID(),
+          date:
+            waitlistEntry.applicationDate ||
+            new Date().toISOString().split('T')[0],
+          type: 'other',
+          subject: 'Waitlist application submitted',
+          notes: `Application details:\n- Preferred sex: ${waitlistEntry.preferredSex}\n- Timeline: ${waitlistEntry.timeline}\n- Experience: ${waitlistEntry.experience}`,
+        },
+      ],
       ...additionalData,
     };
 
@@ -522,17 +592,21 @@ export const useCrmStore = create<Store>()((set, get) => ({
     const unsubscribe = onSnapshot(
       customersQuery,
       (snapshot) => {
-      const customers = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Customer[];
+        const customers = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Customer[];
 
-      // Sort by lastContactDate in memory
-      customers.sort((a, b) => {
-        const dateA = a.lastContactDate ? new Date(a.lastContactDate).getTime() : 0;
-        const dateB = b.lastContactDate ? new Date(b.lastContactDate).getTime() : 0;
-        return dateB - dateA;
-      });
+        // Sort by lastContactDate in memory
+        customers.sort((a, b) => {
+          const dateA = a.lastContactDate
+            ? new Date(a.lastContactDate).getTime()
+            : 0;
+          const dateB = b.lastContactDate
+            ? new Date(b.lastContactDate).getTime()
+            : 0;
+          return dateB - dateA;
+        });
 
         set({ customers, loading: false });
       },
@@ -557,10 +631,10 @@ export const useCrmStore = create<Store>()((set, get) => ({
     const unsubscribe = onSnapshot(
       segmentsQuery,
       (snapshot) => {
-      const segments = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as CustomerSegment[];
+        const segments = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as CustomerSegment[];
 
         set({ segments });
       },
@@ -584,17 +658,17 @@ export const useCrmStore = create<Store>()((set, get) => ({
     const unsubscribe = onSnapshot(
       referralsQuery,
       (snapshot) => {
-      const referrals = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Referral[];
+        const referrals = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Referral[];
 
-      // Sort by referralDate in memory
-      referrals.sort((a, b) => {
-        const dateA = a.referralDate ? new Date(a.referralDate).getTime() : 0;
-        const dateB = b.referralDate ? new Date(b.referralDate).getTime() : 0;
-        return dateB - dateA;
-      });
+        // Sort by referralDate in memory
+        referrals.sort((a, b) => {
+          const dateA = a.referralDate ? new Date(a.referralDate).getTime() : 0;
+          const dateB = b.referralDate ? new Date(b.referralDate).getTime() : 0;
+          return dateB - dateA;
+        });
 
         set({ referrals });
       },

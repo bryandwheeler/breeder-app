@@ -166,23 +166,26 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
     const unsubscribeIncoming = onSnapshot(
       incomingQuery,
       (snapshot) => {
-      const requests: DogConnectionRequest[] = snapshot.docs.map(
-        (doc) =>
-          ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt:
-              doc.data().createdAt?.toDate?.()?.toISOString() ||
-              doc.data().createdAt,
-            updatedAt:
-              doc.data().updatedAt?.toDate?.()?.toISOString() ||
-              doc.data().updatedAt,
-          } as DogConnectionRequest)
-      );
-      set({ incomingRequests: requests });
+        const requests: DogConnectionRequest[] = snapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              ...doc.data(),
+              createdAt:
+                doc.data().createdAt?.toDate?.()?.toISOString() ||
+                doc.data().createdAt,
+              updatedAt:
+                doc.data().updatedAt?.toDate?.()?.toISOString() ||
+                doc.data().updatedAt,
+            } as DogConnectionRequest)
+        );
+        set({ incomingRequests: requests });
       },
       (error) => {
-        console.error('[connectionStore] Incoming requests snapshot error:', error);
+        console.error(
+          '[connectionStore] Incoming requests snapshot error:',
+          error
+        );
       }
     );
 
@@ -195,23 +198,26 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
     const unsubscribeOutgoing = onSnapshot(
       outgoingQuery,
       (snapshot) => {
-      const requests: DogConnectionRequest[] = snapshot.docs.map(
-        (doc) =>
-          ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt:
-              doc.data().createdAt?.toDate?.()?.toISOString() ||
-              doc.data().createdAt,
-            updatedAt:
-              doc.data().updatedAt?.toDate?.()?.toISOString() ||
-              doc.data().updatedAt,
-          } as DogConnectionRequest)
-      );
-      set({ outgoingRequests: requests });
+        const requests: DogConnectionRequest[] = snapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              ...doc.data(),
+              createdAt:
+                doc.data().createdAt?.toDate?.()?.toISOString() ||
+                doc.data().createdAt,
+              updatedAt:
+                doc.data().updatedAt?.toDate?.()?.toISOString() ||
+                doc.data().updatedAt,
+            } as DogConnectionRequest)
+        );
+        set({ outgoingRequests: requests });
       },
       (error) => {
-        console.error('[connectionStore] Outgoing requests snapshot error:', error);
+        console.error(
+          '[connectionStore] Outgoing requests snapshot error:',
+          error
+        );
       }
     );
 
@@ -230,28 +236,29 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
     return onSnapshot(
       q,
       (snapshot) => {
-      const notifications: Notification[] = snapshot.docs.map(
-        (doc) =>
-          ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt:
-              doc.data().createdAt?.toDate?.()?.toISOString() ||
-              doc.data().createdAt,
-            readAt:
-              doc.data().readAt?.toDate?.()?.toISOString() || doc.data().readAt,
-          } as Notification)
-      );
+        const notifications: Notification[] = snapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              ...doc.data(),
+              createdAt:
+                doc.data().createdAt?.toDate?.()?.toISOString() ||
+                doc.data().createdAt,
+              readAt:
+                doc.data().readAt?.toDate?.()?.toISOString() ||
+                doc.data().readAt,
+            } as Notification)
+        );
 
-      const unreadCount = notifications.filter((n) => !n.read).length;
+        const unreadCount = notifications.filter((n) => !n.read).length;
 
-      set({
-        notifications: notifications.sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        ),
-        unreadCount,
-      });
+        set({
+          notifications: notifications.sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          ),
+          unreadCount,
+        });
       },
       (error) => {
         console.error('[connectionStore] Notifications snapshot error:', error);

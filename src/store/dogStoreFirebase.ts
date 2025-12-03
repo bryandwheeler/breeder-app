@@ -54,13 +54,13 @@ type Store = {
   dogs: Dog[];
   litters: Litter[];
   loading: boolean;
-  addDog: (dog: NewDog) => Promise<string>; // Returns the new dog's ID
+  addDog: (dog: NewDog, targetUid?: string) => Promise<string>; // Returns the new dog's ID
   updateDog: (id: string, updates: Partial<Dog>) => Promise<void>;
   deleteDog: (id: string) => Promise<void>;
-  addLitter: (litter: Omit<Litter, 'id'>) => Promise<void>;
+  addLitter: (litter: Omit<Litter, 'id'>, targetUid?: string) => Promise<void>;
   updateLitter: (id: string, updates: Partial<Litter>) => Promise<void>;
   deleteLitter: (id: string) => Promise<void>;
-  subscribeToUserData: () => () => void;
+  subscribeToUserData: (targetUid?: string) => () => void;
 };
 
 export const useDogStore = create<Store>()((set, get) => ({
@@ -68,14 +68,14 @@ export const useDogStore = create<Store>()((set, get) => ({
   litters: [],
   loading: false,
 
-  addDog: async (dog) => {
+  addDog: async (dog, targetUid) => {
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to add dogs');
 
     const dogsRef = collection(db, 'dogs');
     const newDog = {
       ...dog,
-      userId: user.uid,
+      userId: targetUid || user.uid,
       photos: dog.photos || [],
       healthTests: dog.healthTests || [],
       shotRecords: dog.shotRecords || [],
@@ -111,14 +111,14 @@ export const useDogStore = create<Store>()((set, get) => ({
     await deleteDoc(dogRef);
   },
 
-  addLitter: async (litter) => {
+  addLitter: async (litter, targetUid) => {
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to add litters');
 
     const littersRef = collection(db, 'litters');
     const newLitter = {
       ...litter,
-      userId: user.uid,
+      userId: targetUid || user.uid,
       puppies: litter.puppies || [],
       buyers: litter.buyers || [],
       status: litter.status || 'planned',
@@ -148,17 +148,15 @@ export const useDogStore = create<Store>()((set, get) => ({
     await deleteDoc(litterRef);
   },
 
-  subscribeToUserData: () => {
+  subscribeToUserData: (targetUid?: string) => {
     const user = auth.currentUser;
-    if (!user) return () => {};
+    const uid = targetUid || user?.uid;
+    if (!uid) return () => {};
 
     set({ loading: true });
 
     // Subscribe to user's dogs
-    const dogsQuery = query(
-      collection(db, 'dogs'),
-      where('userId', '==', user.uid)
-    );
+    const dogsQuery = query(collection(db, 'dogs'), where('userId', '==', uid));
 
     const unsubscribeDogs = onSnapshot(
       dogsQuery,
@@ -182,7 +180,7 @@ export const useDogStore = create<Store>()((set, get) => ({
     // Subscribe to user's litters
     const littersQuery = query(
       collection(db, 'litters'),
-      where('userId', '==', user.uid)
+      where('userId', '==', uid)
     );
 
     const unsubscribeLitters = onSnapshot(

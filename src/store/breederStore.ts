@@ -23,18 +23,27 @@ type Store = {
   loading: boolean;
 
   // Profile methods
-  createProfile: (profile: Omit<BreederProfile, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  createProfile: (
+    profile: Omit<BreederProfile, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+  ) => Promise<void>;
   updateProfile: (updates: Partial<BreederProfile>) => Promise<void>;
   getPublicProfile: (userId: string) => Promise<BreederProfile | null>;
 
   // Testimonial methods
-  addTestimonial: (testimonial: Omit<Testimonial, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
-  updateTestimonial: (id: string, updates: Partial<Testimonial>) => Promise<void>;
+  addTestimonial: (
+    testimonial: Omit<Testimonial, 'id' | 'userId' | 'createdAt'>
+  ) => Promise<void>;
+  updateTestimonial: (
+    id: string,
+    updates: Partial<Testimonial>
+  ) => Promise<void>;
   deleteTestimonial: (id: string) => Promise<void>;
   getPublicTestimonials: (userId: string) => Promise<Testimonial[]>;
 
   // Inquiry methods
-  addInquiry: (inquiry: Omit<Inquiry, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  addInquiry: (
+    inquiry: Omit<Inquiry, 'id' | 'createdAt' | 'updatedAt'>
+  ) => Promise<void>;
   updateInquiry: (id: string, updates: Partial<Inquiry>) => Promise<void>;
   deleteInquiry: (id: string) => Promise<void>;
 
@@ -202,10 +211,13 @@ export const useBreederStore = create<Store>()((set, get) => ({
     const unsubscribeTestimonials = onSnapshot(
       testimonialsQuery,
       (snapshot) => {
-        const testimonials: Testimonial[] = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        } as Testimonial));
+        const testimonials: Testimonial[] = snapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              ...doc.data(),
+            } as Testimonial)
+        );
         set({ testimonials });
       },
       (error) => {
@@ -227,10 +239,16 @@ export const useBreederStore = create<Store>()((set, get) => ({
           return {
             id: doc.id,
             ...data,
-            createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
-            updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
-            lastContactDate: data.lastContactDate?.toDate?.()?.toISOString() || data.lastContactDate,
-            nextFollowUpDate: data.nextFollowUpDate?.toDate?.()?.toISOString() || data.nextFollowUpDate,
+            createdAt:
+              data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+            updatedAt:
+              data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+            lastContactDate:
+              data.lastContactDate?.toDate?.()?.toISOString() ||
+              data.lastContactDate,
+            nextFollowUpDate:
+              data.nextFollowUpDate?.toDate?.()?.toISOString() ||
+              data.nextFollowUpDate,
           } as Inquiry;
         });
         set({ inquiries });

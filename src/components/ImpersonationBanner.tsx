@@ -27,7 +27,7 @@ export function ImpersonationBanner() {
   };
 
   return (
-    <Alert className='fixed top-16 left-0 right-0 z-50 rounded-none border-l-4 border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950'>
+    <Alert className='sticky top-16 z-40 rounded-none border-l-4 border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950'>
       <Shield className='h-4 w-4 text-yellow-600 dark:text-yellow-400' />
       <AlertDescription className='flex items-center justify-between gap-4'>
         <span className='text-yellow-800 dark:text-yellow-200'>

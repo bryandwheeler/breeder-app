@@ -69,16 +69,18 @@ function AppContent() {
   const subscribeToNotifications = useConnectionStore(
     (state) => state.subscribeToNotifications
   );
+  const impersonatedUserId = useAdminStore((s) => s.impersonatedUserId);
   const dogs = useDogStore((state) => state.dogs);
   const litters = useDogStore((state) => state.litters);
 
   // Subscribe to Firestore data when user logs in
   useEffect(() => {
     if (currentUser) {
-      const unsubscribe = subscribeToUserData();
+      const targetUid = impersonatedUserId || currentUser.uid;
+      const unsubscribe = subscribeToUserData(targetUid);
       return unsubscribe;
     }
-  }, [currentUser, subscribeToUserData]);
+  }, [currentUser, subscribeToUserData, impersonatedUserId]);
 
   // Subscribe to breeder profile data when user logs in
   useEffect(() => {
@@ -126,7 +128,7 @@ function AppContent() {
     setDialogOpen(true);
   };
 
-  const openEditDialog = (dog: Dog) => {
+  const openEditDialog = (dog: Dog | null) => {
     setEditingDog(dog);
     setDialogOpen(true);
   };
@@ -161,7 +163,7 @@ function AppContent() {
             currentUser && sidebarPinned && !sidebarOpen && 'lg:ml-20'
           )}
         >
-          <div className='container mx-auto px-4 py-8'>
+          <div className='container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 max-w-7xl'>
             <Routes>
               <Route path='/login' element={<Login />} />
               <Route path='/signup' element={<Signup />} />

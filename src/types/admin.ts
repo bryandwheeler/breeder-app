@@ -27,6 +27,7 @@ export interface AppSettings {
     publicPages: boolean;
     emailNotifications: boolean;
   };
+  globalRegistries?: string[]; // Admin-managed list of available registries
 }
 
 export interface AdminStats {

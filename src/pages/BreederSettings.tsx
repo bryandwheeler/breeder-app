@@ -42,6 +42,7 @@ export function BreederSettings() {
         otherBreeds: [],
         akc: '',
         otherOrganizations: [],
+        customRegistries: [],
         healthTestingDescription: '',
         healthGuarantee: '',
         guardianProgramAvailable: false,
@@ -444,6 +445,27 @@ export function BreederSettings() {
                   })
                 }
                 placeholder='Golden Retriever Club of America&#10;Good Dog Member&#10;OFA Health Certified'
+              />
+            </div>
+
+            <div>
+              <Label>Custom Dog Registries</Label>
+              <p className='text-sm text-muted-foreground mb-2'>
+                Add custom or regional registries not in the global list (one
+                per line). These will be available when registering your dogs.
+              </p>
+              <Textarea
+                rows={4}
+                value={formData.customRegistries?.join('\n') || ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    customRegistries: e.target.value
+                      .split('\n')
+                      .filter((s) => s.trim()),
+                  })
+                }
+                placeholder='Continental Kennel Club&#10;International All Breed Canine Association&#10;State-specific Registry'
               />
             </div>
           </Card>

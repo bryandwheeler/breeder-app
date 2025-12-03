@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConnectionStore } from '@/store/connectionStore';
 import { useDogStore } from '@/store/dogStoreFirebase';
+import { useAdminStore } from '@/store/adminStore';
 import { useBreederStore } from '@/store/breederStore';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,7 @@ export function Connections() {
   } = useConnectionStore();
   const { addDog, dogs, deleteDog, updateDog, subscribeToUserData } =
     useDogStore();
+  const impersonatedUserId = useAdminStore((s) => s.impersonatedUserId);
   const profile = useBreederStore((state) => state.profile);
   const { toast } = useToast();
 
@@ -90,9 +92,11 @@ export function Connections() {
   }, [currentUser, subscribeToConnectionRequests]);
 
   useEffect(() => {
-    const unsubscribe = subscribeToUserData();
+    const targetUid = impersonatedUserId || currentUser?.uid;
+    if (!targetUid) return;
+    const unsubscribe = subscribeToUserData(targetUid);
     return () => unsubscribe();
-  }, [subscribeToUserData]);
+  }, [subscribeToUserData, impersonatedUserId, currentUser?.uid]);
 
   const sendEmailNotification = async (
     recipientUserId: string,
@@ -274,8 +278,11 @@ export function Connections() {
         linkedDog.breedingRights = originalDog.breedingRights;
       }
 
-      // Add the linked dog to requester's account
-      const newDogId = await addDog(linkedDog as Dog);
+      // Add the linked dog to requester's account (not the current viewer)
+      const newDogId = await addDog(
+        linkedDog as Dog,
+        selectedRequest.requesterId
+      );
 
       // Update the connection request with approval
       await approveConnectionRequest(
