@@ -1,11 +1,13 @@
 // src/App.tsx – With Firebase Authentication
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Dashboard } from '@/pages/Dashboard';
 import { DogList } from '@/pages/DogList';
 import { DogProfile } from '@/pages/DogProfile';
 import { Litters } from '@/pages/Litters';
 import { LitterDetails } from '@/pages/LitterDetails';
 import { Calendar } from '@/pages/Calendar';
 import { Reminders } from '@/pages/Reminders';
+import { Pedigrees } from '@/pages/Pedigrees';
 import { PublicLitter } from '@/pages/PublicLitter';
 import { PublicHome } from '@/pages/PublicHome';
 import { ContactForm } from '@/pages/ContactForm';
@@ -14,21 +16,31 @@ import { Inquiries } from '@/pages/Inquiries';
 import { Waitlist } from '@/pages/Waitlist';
 import { WaitlistApplication } from '@/pages/WaitlistApplication';
 import { Customers } from '@/pages/Customers';
+import { Connections } from '@/pages/Connections';
 import { BuyerPortal } from '@/pages/BuyerPortal';
+import { HealthRecords } from '@/pages/HealthRecords';
+import { Help } from '@/pages/Help';
 import { Login } from '@/pages/Login';
 import { Signup } from '@/pages/Signup';
+import { AdminDashboard } from '@/pages/AdminDashboard';
+import { AdminSettings } from '@/pages/AdminSettings';
 import { DogFormDialog } from '@/components/DogFormDialog';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { EmailSettingsDialog } from '@/components/EmailSettingsDialog';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
+import { Toaster } from '@/components/ui/toaster';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { useState, useEffect } from 'react';
 import { Dog } from '@/types/dog';
 import { useDogStore } from '@/store/dogStoreFirebase';
 import { useBreederStore } from '@/store/breederStore';
 import { useWaitlistStore } from '@/store/waitlistStore';
 import { useCrmStore } from '@/store/crmStore';
+import { useConnectionStore } from '@/store/connectionStore';
+import { useAdminStore } from '@/store/adminStore';
+import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { cn } from '@/lib/utils';
 
 function AppContent() {
@@ -45,9 +57,18 @@ function AppContent() {
   });
   const { currentUser } = useAuth();
   const subscribeToUserData = useDogStore((state) => state.subscribeToUserData);
-  const subscribeToBreederData = useBreederStore((state) => state.subscribeToBreederData);
-  const subscribeToWaitlist = useWaitlistStore((state) => state.subscribeToWaitlist);
-  const subscribeToCustomers = useCrmStore((state) => state.subscribeToCustomers);
+  const subscribeToBreederData = useBreederStore(
+    (state) => state.subscribeToBreederData
+  );
+  const subscribeToWaitlist = useWaitlistStore(
+    (state) => state.subscribeToWaitlist
+  );
+  const subscribeToCustomers = useCrmStore(
+    (state) => state.subscribeToCustomers
+  );
+  const subscribeToNotifications = useConnectionStore(
+    (state) => state.subscribeToNotifications
+  );
   const dogs = useDogStore((state) => state.dogs);
   const litters = useDogStore((state) => state.litters);
 
@@ -83,6 +104,14 @@ function AppContent() {
     }
   }, [currentUser, subscribeToCustomers]);
 
+  // Subscribe to notifications when user logs in
+  useEffect(() => {
+    if (currentUser) {
+      const unsubscribe = subscribeToNotifications(currentUser.uid);
+      return unsubscribe;
+    }
+  }, [currentUser, subscribeToNotifications]);
+
   // Persist sidebar state to localStorage
   useEffect(() => {
     localStorage.setItem('sidebarOpen', JSON.stringify(sidebarOpen));
@@ -103,145 +132,218 @@ function AppContent() {
   };
 
   return (
-    <div className='min-h-screen bg-background'>
-      {currentUser && (
-        <>
-          <Header
-            onAddDog={openAddDialog}
-            onEmailSettings={() => setEmailSettingsOpen(true)}
-            dogs={dogs}
-            litters={litters}
-            onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-          />
-          <Sidebar
-            isOpen={sidebarOpen}
-            setIsOpen={setSidebarOpen}
-            isPinned={sidebarPinned}
-            setIsPinned={setSidebarPinned}
-          />
-        </>
-      )}
-
-      <main
-        className={cn(
-          'min-h-screen transition-all duration-300',
-          currentUser && 'pt-16',
-          currentUser && sidebarPinned && sidebarOpen && 'lg:ml-64',
-          currentUser && sidebarPinned && !sidebarOpen && 'lg:ml-20'
+    <TooltipProvider>
+      <div className='min-h-screen bg-background'>
+        {currentUser && (
+          <>
+            <Header
+              onAddDog={openAddDialog}
+              onEmailSettings={() => setEmailSettingsOpen(true)}
+              dogs={dogs}
+              litters={litters}
+              onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+            />
+            <ImpersonationBanner />
+            <Sidebar
+              isOpen={sidebarOpen}
+              setIsOpen={setSidebarOpen}
+              isPinned={sidebarPinned}
+              setIsPinned={setSidebarPinned}
+            />
+          </>
         )}
-      >
-        <div className='container mx-auto px-4 py-8'>
-        <Routes>
-          <Route path='/login' element={<Login />} />
-          <Route path='/signup' element={<Signup />} />
 
-          {/* Public routes */}
-          <Route path='/home/:userId' element={<PublicHome />} />
-          <Route path='/contact/:userId' element={<ContactForm />} />
-          <Route path='/waitlist-apply/:userId' element={<WaitlistApplication />} />
-          <Route path='/public/:userId/:litterId' element={<PublicLitter />} />
-          <Route path='/buyer-portal' element={<BuyerPortal />} />
+        <main
+          className={cn(
+            'min-h-screen transition-all duration-300',
+            currentUser && 'pt-16',
+            currentUser && sidebarPinned && sidebarOpen && 'lg:ml-64',
+            currentUser && sidebarPinned && !sidebarOpen && 'lg:ml-20'
+          )}
+        >
+          <div className='container mx-auto px-4 py-8'>
+            <Routes>
+              <Route path='/login' element={<Login />} />
+              <Route path='/signup' element={<Signup />} />
 
-          {/* Protected routes */}
-          <Route
-            path='/'
-            element={
-              <ProtectedRoute>
-                <DogList openEditDialog={openEditDialog} />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path='/breeder-settings'
-            element={
-              <ProtectedRoute>
-                <BreederSettings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path='/settings'
-            element={
-              <ProtectedRoute>
-                <BreederSettings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path='/dogs/:id'
-            element={
-              <ProtectedRoute>
-                <DogProfile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path='/litters'
-            element={
-              <ProtectedRoute>
-                <Litters />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path='/litters/:id'
-            element={
-              <ProtectedRoute>
-                <LitterDetails />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path='/calendar'
-            element={
-              <ProtectedRoute>
-                <Calendar />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path='/reminders'
-            element={
-              <ProtectedRoute>
-                <Reminders />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path='/inquiries'
-            element={
-              <ProtectedRoute>
-                <Inquiries />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path='/waitlist'
-            element={
-              <ProtectedRoute>
-                <Waitlist />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path='/customers'
-            element={
-              <ProtectedRoute>
-                <Customers />
-              </ProtectedRoute>
-            }
-          />
-          <Route path='*' element={<Navigate to='/' replace />} />
-        </Routes>
-        </div>
-      </main>
+              {/* Public routes */}
+              <Route path='/home/:userId' element={<PublicHome />} />
+              <Route path='/contact/:userId' element={<ContactForm />} />
+              <Route
+                path='/waitlist-apply/:userId'
+                element={<WaitlistApplication />}
+              />
+              <Route
+                path='/public/:userId/:litterId'
+                element={<PublicLitter />}
+              />
+              <Route path='/buyer-portal' element={<BuyerPortal />} />
 
-      {currentUser && (
-        <DogFormDialog open={dialogOpen} setOpen={setDialogOpen} dog={editingDog} />
-      )}
+              {/* Protected routes */}
+              <Route
+                path='/'
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/dogs'
+                element={
+                  <ProtectedRoute>
+                    <DogList openEditDialog={openEditDialog} />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/breeder-settings'
+                element={
+                  <ProtectedRoute>
+                    <BreederSettings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/settings'
+                element={
+                  <ProtectedRoute>
+                    <BreederSettings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/dogs/:id'
+                element={
+                  <ProtectedRoute>
+                    <DogProfile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/litters'
+                element={
+                  <ProtectedRoute>
+                    <Litters />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/litters/:id'
+                element={
+                  <ProtectedRoute>
+                    <LitterDetails />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/calendar'
+                element={
+                  <ProtectedRoute>
+                    <Calendar />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/reminders'
+                element={
+                  <ProtectedRoute>
+                    <Reminders />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/pedigrees'
+                element={
+                  <ProtectedRoute>
+                    <Pedigrees />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/inquiries'
+                element={
+                  <ProtectedRoute>
+                    <Inquiries />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/waitlist'
+                element={
+                  <ProtectedRoute>
+                    <Waitlist />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/connections'
+                element={
+                  <ProtectedRoute>
+                    <Connections />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/customers'
+                element={
+                  <ProtectedRoute>
+                    <Customers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/health'
+                element={
+                  <ProtectedRoute>
+                    <HealthRecords />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/help'
+                element={
+                  <ProtectedRoute>
+                    <Help />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/admin'
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/admin/settings'
+                element={
+                  <ProtectedRoute>
+                    <AdminSettings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path='*' element={<Navigate to='/' replace />} />
+            </Routes>
+          </div>
+        </main>
 
-      <EmailSettingsDialog open={emailSettingsOpen} setOpen={setEmailSettingsOpen} />
-    </div>
+        {currentUser && (
+          <DogFormDialog
+            open={dialogOpen}
+            setOpen={setDialogOpen}
+            dog={editingDog}
+          />
+        )}
+
+        <EmailSettingsDialog
+          open={emailSettingsOpen}
+          setOpen={setEmailSettingsOpen}
+        />
+        <Toaster />
+      </div>
+    </TooltipProvider>
   );
 }
 

@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from 'react';
 import {
   User,
   createUserWithEmailAndPassword,
@@ -6,15 +12,21 @@ import {
   signOut,
   onAuthStateChanged,
   signInWithPopup,
+  signInWithRedirect,
   sendPasswordResetEmail,
   updateProfile,
 } from 'firebase/auth';
-import { auth, googleProvider, facebookProvider } from '@/lib/firebase';
+import { auth, googleProvider, facebookProvider, db } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
-  signup: (email: string, password: string, displayName: string) => Promise<void>;
+  signup: (
+    email: string,
+    password: string,
+    displayName: string
+  ) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
@@ -36,13 +48,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper: create or update user profile in Firestore without read-before-write
+  async function ensureUserProfile(user: User) {
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await setDoc(
+        userRef,
+        {
+          email: user.email,
+          displayName: user.displayName || 'Unknown User',
+          photoURL: user.photoURL || null,
+          lastLogin: new Date().toISOString(),
+          // These fields will only be set on first write; they won't overwrite existing values due to merge
+          createdAt: new Date().toISOString(),
+          role: 'user',
+          isActive: true,
+        },
+        { merge: true }
+      );
+    } catch (error: any) {
+      console.error('[AuthContext] Error ensuring user profile:', error);
+      // Don't throw - allow auth to proceed even if profile creation fails
+    }
+  }
+
   async function signup(email: string, password: string, displayName: string) {
-    const { user } = await createUserWithEmailAndPassword(auth, email, password);
+    const { user } = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
     await updateProfile(user, { displayName });
+    await ensureUserProfile(user);
   }
 
   async function login(email: string, password: string) {
-    await signInWithEmailAndPassword(auth, email, password);
+    const { user } = await signInWithEmailAndPassword(auth, email, password);
+    await ensureUserProfile(user);
   }
 
   async function logout() {
@@ -50,11 +92,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function loginWithGoogle() {
-    await signInWithPopup(auth, googleProvider);
+    try {
+      const { user } = await signInWithPopup(auth, googleProvider);
+      await ensureUserProfile(user);
+    } catch (err: any) {
+      // Fallback to redirect for COOP/popup-blocked environments
+      console.warn(
+        '[AuthContext] Google popup failed, falling back to redirect:',
+        err?.message
+      );
+      await signInWithRedirect(auth, googleProvider);
+    }
   }
 
   async function loginWithFacebook() {
-    await signInWithPopup(auth, facebookProvider);
+    try {
+      const { user } = await signInWithPopup(auth, facebookProvider);
+      await ensureUserProfile(user);
+    } catch (err: any) {
+      console.warn(
+        '[AuthContext] Facebook popup failed, falling back to redirect:',
+        err?.message
+      );
+      await signInWithRedirect(auth, facebookProvider);
+    }
   }
 
   async function resetPassword(email: string) {
@@ -62,7 +123,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Ensure user profile exists in Firestore
+        await ensureUserProfile(user);
+      }
       setCurrentUser(user);
       setLoading(false);
     });

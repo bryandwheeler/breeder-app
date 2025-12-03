@@ -7,9 +7,17 @@ import { format, differenceInWeeks } from 'date-fns';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Litter, Dog, Puppy } from '@/types/dog';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/ui/tooltip';
 
 export function PublicLitter() {
-  const { userId, litterId } = useParams<{ userId: string; litterId: string }>();
+  const { userId, litterId } = useParams<{
+    userId: string;
+    litterId: string;
+  }>();
   const [litter, setLitter] = useState<Litter | null>(null);
   const [dam, setDam] = useState<Dog | null>(null);
   const [sire, setSire] = useState<Dog | null>(null);
@@ -26,7 +34,9 @@ export function PublicLitter() {
 
       try {
         // Fetch litter
-        const litterDoc = await getDoc(doc(db, 'users', userId, 'litters', litterId));
+        const litterDoc = await getDoc(
+          doc(db, 'users', userId, 'litters', litterId)
+        );
         if (!litterDoc.exists()) {
           setError('Litter not found');
           setLoading(false);
@@ -74,7 +84,9 @@ export function PublicLitter() {
       <div className='min-h-screen bg-background flex items-center justify-center'>
         <Card className='max-w-md'>
           <CardContent className='pt-6 text-center'>
-            <p className='text-lg text-muted-foreground'>{error || 'Litter not found'}</p>
+            <p className='text-lg text-muted-foreground'>
+              {error || 'Litter not found'}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -82,16 +94,20 @@ export function PublicLitter() {
   }
 
   const puppies = litter.puppies || [];
-  const availablePuppies = puppies.filter(p => p.status === 'available');
-  const reservedPuppies = puppies.filter(p => p.status === 'reserved');
+  const availablePuppies = puppies.filter((p) => p.status === 'available');
+  const reservedPuppies = puppies.filter((p) => p.status === 'reserved');
   const weeksOld = differenceInWeeks(new Date(), new Date(litter.dateOfBirth));
 
   const getStatusColor = (status: Puppy['status']) => {
     switch (status) {
-      case 'available': return 'default';
-      case 'reserved': return 'secondary';
-      case 'sold': return 'outline';
-      default: return 'outline';
+      case 'available':
+        return 'default';
+      case 'reserved':
+        return 'secondary';
+      case 'sold':
+        return 'outline';
+      default:
+        return 'outline';
     }
   };
 
@@ -101,7 +117,9 @@ export function PublicLitter() {
       <header className='border-b bg-card'>
         <div className='container mx-auto px-4 py-6'>
           <div className='text-center'>
-            <h1 className='text-3xl font-bold'>{litter.litterName || 'Available Puppies'}</h1>
+            <h1 className='text-3xl font-bold'>
+              {litter.litterName || 'Available Puppies'}
+            </h1>
             {dam?.kennelName && (
               <p className='text-muted-foreground mt-1'>{dam.kennelName}</p>
             )}
@@ -119,10 +137,18 @@ export function PublicLitter() {
               </CardTitle>
             </CardHeader>
             <CardContent className='space-y-2'>
-              <div><strong>Born:</strong> {format(new Date(litter.dateOfBirth), 'MMMM d, yyyy')}</div>
-              <div><strong>Age:</strong> {weeksOld} weeks old</div>
+              <div>
+                <strong>Born:</strong>{' '}
+                {format(new Date(litter.dateOfBirth), 'MMMM d, yyyy')}
+              </div>
+              <div>
+                <strong>Age:</strong> {weeksOld} weeks old
+              </div>
               {litter.pickupReadyDate && (
-                <div><strong>Ready for Pickup:</strong> {format(new Date(litter.pickupReadyDate), 'MMMM d, yyyy')}</div>
+                <div>
+                  <strong>Ready for Pickup:</strong>{' '}
+                  {format(new Date(litter.pickupReadyDate), 'MMMM d, yyyy')}
+                </div>
               )}
             </CardContent>
           </Card>
@@ -139,7 +165,11 @@ export function PublicLitter() {
                   <p className='text-sm text-muted-foreground'>Dam (Mother)</p>
                   <p className='font-medium'>{dam.name}</p>
                   {dam.photos?.[0] && (
-                    <img src={dam.photos[0]} alt={dam.name} className='w-20 h-20 object-cover rounded-lg mt-2' />
+                    <img
+                      src={dam.photos[0]}
+                      alt={dam.name}
+                      className='w-20 h-20 object-cover rounded-lg mt-2'
+                    />
                   )}
                 </div>
               )}
@@ -148,7 +178,11 @@ export function PublicLitter() {
                   <p className='text-sm text-muted-foreground'>Sire (Father)</p>
                   <p className='font-medium'>{sire.name}</p>
                   {sire.photos?.[0] && (
-                    <img src={sire.photos[0]} alt={sire.name} className='w-20 h-20 object-cover rounded-lg mt-2' />
+                    <img
+                      src={sire.photos[0]}
+                      alt={sire.name}
+                      className='w-20 h-20 object-cover rounded-lg mt-2'
+                    />
                   )}
                 </div>
               )}
@@ -170,7 +204,8 @@ export function PublicLitter() {
               </div>
               {litter.pricing?.petPrice && (
                 <div className='pt-4 border-t'>
-                  <strong>Starting at:</strong> ${litter.pricing.petPrice.toLocaleString()}
+                  <strong>Starting at:</strong> $
+                  {litter.pricing.petPrice.toLocaleString()}
                 </div>
               )}
             </CardContent>
@@ -180,17 +215,20 @@ export function PublicLitter() {
         {/* Puppies Grid */}
         <div>
           <h2 className='text-2xl font-bold mb-6'>Our Puppies</h2>
-          {puppies.filter(p => p.status !== 'sold' && p.status !== 'kept').length === 0 ? (
+          {puppies.filter((p) => p.status !== 'sold' && p.status !== 'kept')
+            .length === 0 ? (
             <Card>
               <CardContent className='py-12 text-center'>
-                <p className='text-muted-foreground'>All puppies from this litter have found their forever homes!</p>
+                <p className='text-muted-foreground'>
+                  All puppies from this litter have found their forever homes!
+                </p>
               </CardContent>
             </Card>
           ) : (
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
               {puppies
-                .filter(p => p.status !== 'sold' && p.status !== 'kept')
-                .map(puppy => (
+                .filter((p) => p.status !== 'sold' && p.status !== 'kept')
+                .map((puppy) => (
                   <Card key={puppy.id} className='overflow-hidden'>
                     {puppy.photos?.[0] && (
                       <img
@@ -205,7 +243,9 @@ export function PublicLitter() {
                           {puppy.name || puppy.tempName || 'Unnamed'}
                         </CardTitle>
                         <Badge variant={getStatusColor(puppy.status)}>
-                          {puppy.status === 'available' ? 'Available' : 'Reserved'}
+                          {puppy.status === 'available'
+                            ? 'Available'
+                            : 'Reserved'}
                         </Badge>
                       </div>
                     </CardHeader>
@@ -241,7 +281,8 @@ export function PublicLitter() {
             </CardHeader>
             <CardContent>
               <p className='text-muted-foreground'>
-                Contact {dam.breederName} at {dam.kennelName || 'our kennel'} to inquire about available puppies.
+                Contact {dam.breederName} at {dam.kennelName || 'our kennel'} to
+                inquire about available puppies.
               </p>
             </CardContent>
           </Card>

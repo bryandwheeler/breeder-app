@@ -11,10 +11,11 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Plus, Pill, Bug, Stethoscope, Trash2 } from 'lucide-react';
-import { Medication, Deworming, VetVisit } from '@/types/dog';
+import { Plus, Pill, Bug, Stethoscope, Trash2, Upload, FileText, Image, Mail, File, X, Paperclip } from 'lucide-react';
+import { Medication, Deworming, VetVisit, VetVisitAttachment } from '@/types/dog';
 import { useDogStore } from '@/store/dogStoreFirebase';
 import { format } from 'date-fns';
+import { uploadVetVisitAttachment, deleteVetVisitAttachment, formatFileSize } from '@/lib/uploadAttachment';
 
 interface HealthTrackingProps {
   dogId: string;
@@ -386,7 +387,43 @@ function VetVisitTracker({ dogId, vetVisits }: { dogId: string; vetVisits: VetVi
   const [followUpDate, setFollowUpDate] = useState('');
   const [cost, setCost] = useState('');
   const [notes, setNotes] = useState('');
+  const [attachments, setAttachments] = useState<VetVisitAttachment[]>([]);
+  const [uploading, setUploading] = useState(false);
   const { updateDog, dogs } = useDogStore();
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    try {
+      const tempVisitId = crypto.randomUUID();
+      const uploadPromises = Array.from(files).map((file) =>
+        uploadVetVisitAttachment(file, dogId, tempVisitId)
+      );
+      const uploadedAttachments = await Promise.all(uploadPromises);
+      setAttachments([...attachments, ...uploadedAttachments]);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      alert(error instanceof Error ? error.message : 'Failed to upload files');
+    } finally {
+      setUploading(false);
+      // Reset the input
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveAttachment = async (attachmentId: string) => {
+    const attachment = attachments.find((a) => a.id === attachmentId);
+    if (!attachment) return;
+
+    try {
+      await deleteVetVisitAttachment(attachment.url);
+      setAttachments(attachments.filter((a) => a.id !== attachmentId));
+    } catch (error) {
+      console.error('Error removing attachment:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -405,6 +442,7 @@ function VetVisitTracker({ dogId, vetVisits }: { dogId: string; vetVisits: VetVi
       followUpDate: followUpDate || undefined,
       cost: cost ? parseFloat(cost) : undefined,
       notes: notes.trim() || undefined,
+      attachments: attachments.length > 0 ? attachments : undefined,
     };
 
     await updateDog(dogId, {
@@ -421,6 +459,7 @@ function VetVisitTracker({ dogId, vetVisits }: { dogId: string; vetVisits: VetVi
     setFollowUpDate('');
     setCost('');
     setNotes('');
+    setAttachments([]);
     setOpen(false);
   };
 
@@ -431,6 +470,21 @@ function VetVisitTracker({ dogId, vetVisits }: { dogId: string; vetVisits: VetVi
     await updateDog(dogId, {
       vetVisits: dog.vetVisits.filter((v) => v.id !== visitId),
     });
+  };
+
+  const getAttachmentIcon = (type: VetVisitAttachment['type']) => {
+    switch (type) {
+      case 'pdf':
+        return <FileText className='h-4 w-4' />;
+      case 'image':
+        return <Image className='h-4 w-4' />;
+      case 'email':
+        return <Mail className='h-4 w-4' />;
+      case 'document':
+        return <FileText className='h-4 w-4' />;
+      default:
+        return <File className='h-4 w-4' />;
+    }
   };
 
   return (
@@ -538,6 +592,69 @@ function VetVisitTracker({ dogId, vetVisits }: { dogId: string; vetVisits: VetVi
                     onChange={(e) => setNotes(e.target.value)}
                   />
                 </div>
+
+                {/* File Attachments */}
+                <div>
+                  <Label>Attachments (optional)</Label>
+                  <div className='mt-2 space-y-3'>
+                    <div className='flex items-center gap-2'>
+                      <Input
+                        id='file-upload'
+                        type='file'
+                        multiple
+                        accept='image/*,.pdf,.doc,.docx,.txt,.eml,.msg'
+                        capture='environment'
+                        onChange={handleFileSelect}
+                        disabled={uploading}
+                        className='hidden'
+                      />
+                      <Button
+                        type='button'
+                        variant='outline'
+                        size='sm'
+                        onClick={() => document.getElementById('file-upload')?.click()}
+                        disabled={uploading}
+                      >
+                        <Upload className='mr-2 h-4 w-4' />
+                        {uploading ? 'Uploading...' : 'Upload Files'}
+                      </Button>
+                      <span className='text-xs text-muted-foreground'>
+                        PDF, images, documents, emails (max 10MB each)
+                      </span>
+                    </div>
+
+                    {attachments.length > 0 && (
+                      <div className='space-y-2'>
+                        {attachments.map((attachment) => (
+                          <div
+                            key={attachment.id}
+                            className='flex items-center justify-between gap-2 p-2 border rounded-lg bg-muted/30'
+                          >
+                            <div className='flex items-center gap-2 flex-1 min-w-0'>
+                              {getAttachmentIcon(attachment.type)}
+                              <div className='flex-1 min-w-0'>
+                                <p className='text-sm font-medium truncate'>{attachment.name}</p>
+                                <p className='text-xs text-muted-foreground'>
+                                  {formatFileSize(attachment.size)}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              type='button'
+                              variant='ghost'
+                              size='sm'
+                              onClick={() => handleRemoveAttachment(attachment.id)}
+                              disabled={uploading}
+                            >
+                              <X className='h-4 w-4' />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div className='flex justify-end gap-3'>
                   <Button type='button' variant='outline' onClick={() => setOpen(false)}>
                     Cancel
@@ -587,6 +704,37 @@ function VetVisitTracker({ dogId, vetVisits }: { dogId: string; vetVisits: VetVi
                       </p>
                     )}
                     {visit.notes && <p className='text-sm mt-1'>{visit.notes}</p>}
+
+                    {/* Display Attachments */}
+                    {visit.attachments && visit.attachments.length > 0 && (
+                      <div className='mt-3 pt-3 border-t'>
+                        <div className='flex items-center gap-2 mb-2'>
+                          <Paperclip className='h-3.5 w-3.5 text-muted-foreground' />
+                          <span className='text-xs font-medium text-muted-foreground'>
+                            {visit.attachments.length} attachment{visit.attachments.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div className='space-y-1.5'>
+                          {visit.attachments.map((attachment) => (
+                            <a
+                              key={attachment.id}
+                              href={attachment.url}
+                              target='_blank'
+                              rel='noopener noreferrer'
+                              className='flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 text-sm group'
+                            >
+                              {getAttachmentIcon(attachment.type)}
+                              <span className='flex-1 truncate group-hover:text-primary'>
+                                {attachment.name}
+                              </span>
+                              <span className='text-xs text-muted-foreground'>
+                                {formatFileSize(attachment.size)}
+                              </span>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <Button
                     size='sm'

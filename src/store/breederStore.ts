@@ -199,13 +199,19 @@ export const useBreederStore = create<Store>()((set, get) => ({
       where('userId', '==', user.uid)
     );
 
-    const unsubscribeTestimonials = onSnapshot(testimonialsQuery, (snapshot) => {
-      const testimonials: Testimonial[] = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      } as Testimonial));
-      set({ testimonials });
-    });
+    const unsubscribeTestimonials = onSnapshot(
+      testimonialsQuery,
+      (snapshot) => {
+        const testimonials: Testimonial[] = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        } as Testimonial));
+        set({ testimonials });
+      },
+      (error) => {
+        console.error('Error loading testimonials:', error);
+      }
+    );
 
     // Subscribe to inquiries
     const inquiriesQuery = query(
@@ -213,13 +219,26 @@ export const useBreederStore = create<Store>()((set, get) => ({
       where('userId', '==', user.uid)
     );
 
-    const unsubscribeInquiries = onSnapshot(inquiriesQuery, (snapshot) => {
-      const inquiries: Inquiry[] = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      } as Inquiry));
-      set({ inquiries });
-    });
+    const unsubscribeInquiries = onSnapshot(
+      inquiriesQuery,
+      (snapshot) => {
+        const inquiries: Inquiry[] = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+            updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+            lastContactDate: data.lastContactDate?.toDate?.()?.toISOString() || data.lastContactDate,
+            nextFollowUpDate: data.nextFollowUpDate?.toDate?.()?.toISOString() || data.nextFollowUpDate,
+          } as Inquiry;
+        });
+        set({ inquiries });
+      },
+      (error) => {
+        console.error('Error loading inquiries:', error);
+      }
+    );
 
     // Return cleanup function
     return () => {

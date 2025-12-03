@@ -1,0 +1,26 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules for Breeder App
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // User's private folder - only they can read/write
+    match /users/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Specific validation for vet visit attachments
+    match /users/{userId}/vet-visits/{dogId}/{visitId}/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null
+                   && request.auth.uid == userId
+                   && request.resource.size < 10 * 1024 * 1024  // 10MB max
+                   && request.resource.contentType.matches('image/.*|application/pdf|application/msword|application/vnd.openxmlformats-officedocument.wordprocessingml.document|text/plain|message/rfc822|application/vnd.ms-outlook');
+    }
+
+    // Deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

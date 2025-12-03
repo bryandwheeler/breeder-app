@@ -1,6 +1,7 @@
 // Inquiry/Lead management page
 import { useState } from 'react';
 import { useBreederStore } from '@/store/breederStore';
+import { useAuth } from '@/contexts/AuthContext';
 import { Inquiry } from '@/types/dog';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,13 +15,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Trash2, Mail, Phone, Eye } from 'lucide-react';
+import { Trash2, Mail, Phone, Eye, Send } from 'lucide-react';
 import { InquiryDetailsDialog } from '@/components/InquiryDetailsDialog';
+import { SendWaitlistDialog } from '@/components/SendWaitlistDialog';
 
 export function Inquiries() {
   const { inquiries, deleteInquiry, updateInquiry } = useBreederStore();
+  const { currentUser } = useAuth();
   const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [sendWaitlistOpen, setSendWaitlistOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const getStatusColor = (status: Inquiry['status']) => {
@@ -55,6 +59,11 @@ export function Inquiries() {
       default:
         return '';
     }
+  };
+
+  const handleSendWaitlistClick = (inquiry: Inquiry) => {
+    setSelectedInquiry(inquiry);
+    setSendWaitlistOpen(true);
   };
 
   const columns: ColumnDef<Inquiry>[] = [
@@ -156,19 +165,28 @@ export function Inquiries() {
               setSelectedInquiry(row.original);
               setDetailsOpen(true);
             }}
+            title="View Details"
           >
             <Eye className="h-4 w-4" />
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleSendWaitlistClick(row.original)}
+            title="Send Waitlist Link"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
           {row.original.email && (
             <a href={`mailto:${row.original.email}`}>
-              <Button size="sm" variant="outline">
+              <Button size="sm" variant="outline" title="Email">
                 <Mail className="h-4 w-4" />
               </Button>
             </a>
           )}
           {row.original.phone && (
             <a href={`tel:${row.original.phone}`}>
-              <Button size="sm" variant="outline">
+              <Button size="sm" variant="outline" title="Call">
                 <Phone className="h-4 w-4" />
               </Button>
             </a>
@@ -181,6 +199,7 @@ export function Inquiries() {
                 await deleteInquiry(row.original.id);
               }
             }}
+            title="Delete"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -268,6 +287,14 @@ export function Inquiries() {
           onUpdate={(updates) => updateInquiry(selectedInquiry.id, updates)}
         />
       )}
+
+      {/* Send Waitlist Dialog */}
+      <SendWaitlistDialog
+        open={sendWaitlistOpen}
+        setOpen={setSendWaitlistOpen}
+        inquiry={selectedInquiry}
+        userId={currentUser?.uid || ''}
+      />
     </div>
   );
 }

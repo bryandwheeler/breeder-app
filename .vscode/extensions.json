@@ -1,3 +1,7 @@
 {
-  "recommendations": ["continue.continue"]
+  "recommendations": [
+    "continue.continue",
+    "github.copilot-chat",
+    "github.copilot"
+  ]
 }

@@ -1,7 +1,8 @@
 // Public waitlist application form
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useWaitlistStore } from '@/store/waitlistStore';
+import { useBreederStore } from '@/store/breederStore';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,13 +17,36 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { CheckCircle } from 'lucide-react';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import emailjs from '@emailjs/browser';
+import { EMAILJS_CONFIG } from '@/lib/emailjs';
 
 export function WaitlistApplication() {
   const { userId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const submitWaitlistApplication = useWaitlistStore((state) => state.submitWaitlistApplication);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const inquiryId = searchParams.get('inquiryId');
+  const [breederProfile, setBreederProfile] = useState<any>(null);
+
+  // Load breeder profile for notification settings
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!userId) return;
+      try {
+        const profileDoc = await getDoc(doc(db, 'breederProfiles', userId));
+        if (profileDoc.exists()) {
+          setBreederProfile(profileDoc.data());
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+    };
+    loadProfile();
+  }, [userId]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -49,18 +73,100 @@ export function WaitlistApplication() {
     depositRequired: true,
   });
 
+  // Load inquiry data if inquiryId is present
+  useEffect(() => {
+    const loadInquiry = async () => {
+      if (!inquiryId) return;
+
+      try {
+        const inquiriesRef = collection(db, 'inquiries');
+        const q = query(inquiriesRef, where('__name__', '==', inquiryId));
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+          const inquiry = snapshot.docs[0].data();
+          setFormData((prev) => ({
+            ...prev,
+            name: inquiry.name || '',
+            email: inquiry.email || '',
+            phone: inquiry.phone || '',
+            preferredSex: inquiry.preferredSex || 'either',
+            preferredColor: inquiry.preferredColor || '',
+            timeline: inquiry.timeline || '',
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading inquiry:', error);
+      }
+    };
+
+    loadInquiry();
+  }, [inquiryId]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId) return;
 
     setLoading(true);
     try {
+      const now = new Date().toISOString();
       await submitWaitlistApplication({
         ...formData,
         userId,
-        applicationDate: new Date().toISOString().split('T')[0],
+        applicationDate: now.split('T')[0],
+        submittedAt: now,
         status: 'pending',
+        inquiryId: inquiryId || undefined,
+        activityLog: [
+          {
+            timestamp: now,
+            action: 'Application submitted',
+            details: 'Customer submitted waitlist application',
+            performedBy: 'customer',
+          },
+        ],
       });
+
+      // Send notification email to breeder if enabled
+      if (breederProfile?.enableWaitlistNotifications !== false) {
+        try {
+          const publicKey = breederProfile?.emailjsPublicKey || EMAILJS_CONFIG.PUBLIC_KEY;
+          const serviceId = breederProfile?.emailjsServiceId || EMAILJS_CONFIG.SERVICE_ID;
+          const templateId = breederProfile?.emailjsWaitlistNotificationTemplateId;
+
+          if (publicKey && serviceId && templateId) {
+            const notificationEmail = breederProfile?.notificationEmail || breederProfile?.email;
+
+            await emailjs.send(
+              serviceId,
+              templateId,
+              {
+                to_email: notificationEmail,
+                to_name: breederProfile?.breederName || 'Breeder',
+                customer_name: formData.name,
+                customer_email: formData.email,
+                customer_phone: formData.phone || 'Not provided',
+                customer_address: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`,
+                preferred_sex: formData.preferredSex === 'either' ? 'No preference' : formData.preferredSex,
+                preferred_color: formData.preferredColor || 'Not specified',
+                timeline: formData.timeline || 'Not specified',
+                household_type: formData.householdType || 'Not specified',
+                has_children: formData.hasChildren ? 'Yes' : 'No',
+                children_ages: formData.childrenAges || 'N/A',
+                experience: formData.experience || 'Not provided',
+                lifestyle: formData.lifestyle || 'Not provided',
+                reason: formData.reason || 'Not provided',
+                submitted_date: new Date().toLocaleString(),
+              },
+              publicKey
+            );
+          }
+        } catch (emailError) {
+          // Don't fail the whole submission if notification fails
+          console.error('Failed to send notification email:', emailError);
+        }
+      }
+
       setSubmitted(true);
     } catch (error) {
       console.error('Error submitting application:', error);

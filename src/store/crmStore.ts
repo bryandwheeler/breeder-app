@@ -93,7 +93,9 @@ export const useCrmStore = create<Store>()((set, get) => ({
       preferredContact: customer.preferredContact || 'email',
       emailOptIn: customer.emailOptIn !== undefined ? customer.emailOptIn : true,
       smsOptIn: customer.smsOptIn !== undefined ? customer.smsOptIn : false,
+      // Backward-compat: write both fields; rules use breederId
       userId: user.uid,
+      breederId: user.uid,
       firstContactDate: customer.firstContactDate || new Date().toISOString().split('T')[0],
       lastContactDate: new Date().toISOString().split('T')[0],
       totalPurchases: 0,
@@ -281,6 +283,7 @@ export const useCrmStore = create<Store>()((set, get) => ({
     await addDoc(collection(db, 'customer_segments'), {
       ...segment,
       userId: user.uid,
+      breederId: user.uid,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -345,6 +348,7 @@ export const useCrmStore = create<Store>()((set, get) => ({
     await addDoc(collection(db, 'referrals'), {
       ...referral,
       userId: user.uid,
+      breederId: user.uid,
       referralDate: new Date().toISOString().split('T')[0],
       status: 'pending',
       createdAt: serverTimestamp(),
@@ -440,6 +444,7 @@ export const useCrmStore = create<Store>()((set, get) => ({
     const docRef = await addDoc(collection(db, 'customers'), {
       ...customerData,
       userId: user.uid,
+      breederId: user.uid,
       totalPurchases: 0,
       totalRevenue: 0,
       lifetimeValue: 0,
@@ -457,7 +462,7 @@ export const useCrmStore = create<Store>()((set, get) => ({
     // Fetch the waitlist entry
     const waitlistQuery = query(
       collection(db, 'waitlist'),
-      where('userId', '==', user.uid)
+      where('breederId', '==', user.uid)
     );
     const snapshot = await getDocs(waitlistQuery);
     const waitlistEntry = snapshot.docs.find((doc) => doc.id === waitlistEntryId)?.data();
@@ -491,6 +496,7 @@ export const useCrmStore = create<Store>()((set, get) => ({
     const docRef = await addDoc(collection(db, 'customers'), {
       ...customerData,
       userId: user.uid,
+      breederId: user.uid,
       totalPurchases: 0,
       totalRevenue: 0,
       lifetimeValue: 0,
@@ -510,10 +516,12 @@ export const useCrmStore = create<Store>()((set, get) => ({
 
     const customersQuery = query(
       collection(db, 'customers'),
-      where('userId', '==', user.uid)
+      where('breederId', '==', user.uid)
     );
 
-    const unsubscribe = onSnapshot(customersQuery, (snapshot) => {
+    const unsubscribe = onSnapshot(
+      customersQuery,
+      (snapshot) => {
       const customers = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -526,8 +534,13 @@ export const useCrmStore = create<Store>()((set, get) => ({
         return dateB - dateA;
       });
 
-      set({ customers, loading: false });
-    });
+        set({ customers, loading: false });
+      },
+      (error) => {
+        console.error('[crmStore] Customers snapshot error:', error);
+        set({ loading: false });
+      }
+    );
 
     return unsubscribe;
   },
@@ -538,17 +551,23 @@ export const useCrmStore = create<Store>()((set, get) => ({
 
     const segmentsQuery = query(
       collection(db, 'customer_segments'),
-      where('userId', '==', user.uid)
+      where('breederId', '==', user.uid)
     );
 
-    const unsubscribe = onSnapshot(segmentsQuery, (snapshot) => {
+    const unsubscribe = onSnapshot(
+      segmentsQuery,
+      (snapshot) => {
       const segments = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       })) as CustomerSegment[];
 
-      set({ segments });
-    });
+        set({ segments });
+      },
+      (error) => {
+        console.error('[crmStore] Segments snapshot error:', error);
+      }
+    );
 
     return unsubscribe;
   },
@@ -559,10 +578,12 @@ export const useCrmStore = create<Store>()((set, get) => ({
 
     const referralsQuery = query(
       collection(db, 'referrals'),
-      where('userId', '==', user.uid)
+      where('breederId', '==', user.uid)
     );
 
-    const unsubscribe = onSnapshot(referralsQuery, (snapshot) => {
+    const unsubscribe = onSnapshot(
+      referralsQuery,
+      (snapshot) => {
       const referrals = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -575,8 +596,12 @@ export const useCrmStore = create<Store>()((set, get) => ({
         return dateB - dateA;
       });
 
-      set({ referrals });
-    });
+        set({ referrals });
+      },
+      (error) => {
+        console.error('[crmStore] Referrals snapshot error:', error);
+      }
+    );
 
     return unsubscribe;
   },

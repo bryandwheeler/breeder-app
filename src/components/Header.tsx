@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Plus, LogOut, Download, Mail, Menu, User } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { NotificationsDropdown } from '@/components/NotificationsDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBreederStore } from '@/store/breederStore';
 import { Dog, Litter } from '@/types/dog';
@@ -20,6 +21,12 @@ import {
   exportExpensesToCSV,
 } from '@/lib/dataExport';
 
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/ui/tooltip';
+
 interface HeaderProps {
   onAddDog: () => void;
   onEmailSettings: () => void;
@@ -28,7 +35,13 @@ interface HeaderProps {
   onMenuClick: () => void;
 }
 
-export function Header({ onAddDog, onEmailSettings, dogs, litters, onMenuClick }: HeaderProps) {
+export function Header({
+  onAddDog,
+  onEmailSettings,
+  dogs,
+  litters,
+  onMenuClick,
+}: HeaderProps) {
   const { currentUser, logout } = useAuth();
   const { profile } = useBreederStore();
 
@@ -41,40 +54,54 @@ export function Header({ onAddDog, onEmailSettings, dogs, litters, onMenuClick }
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 h-16 border-b bg-card">
-      <div className="h-full px-4 flex items-center justify-between gap-4">
+    <header className='fixed top-0 left-0 right-0 z-40 h-16 border-b bg-card'>
+      <div className='h-full px-4 flex items-center justify-between gap-4'>
         {/* Left section */}
-        <div className="flex items-center gap-3">
+        <div className='flex items-center gap-3'>
           {/* Hamburger menu - mobile only */}
           <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
+            variant='ghost'
+            size='icon'
+            className='lg:hidden'
             onClick={onMenuClick}
           >
-            <Menu className="h-5 w-5" />
+            <Menu className='h-5 w-5' />
           </Button>
 
           {/* Logo/Brand */}
-          <Link to="/" className="flex items-center gap-3">
+          <Link to='/' className='flex items-center gap-3'>
             {/* Light mode logo - white background */}
             <img
-              src="/logo-light.jpg"
-              alt="Expert Breeder Logo"
-              className="h-12 w-auto dark:hidden"
+              src='/logo-light.jpg'
+              alt='Expert Breeder Logo'
+              className='h-12 w-auto dark:hidden'
             />
             {/* Dark mode logo - blue background */}
             <img
-              src="/logo-dark.jpg"
-              alt="Expert Breeder Logo"
-              className="h-12 w-auto hidden dark:block"
+              src='/logo-dark.jpg'
+              alt='Expert Breeder Logo'
+              className='h-12 w-auto hidden dark:block'
             />
-            {/* Kennel Name */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Menu className='size-5' />
+              </TooltipTrigger>
+              <TooltipContent>Open sidebar menu</TooltipContent>
+            </Tooltip>
             {profile?.kennelName && (
-              <div className="hidden md:flex flex-col">
-                <span className="font-semibold text-lg leading-tight">{profile.kennelName}</span>
+              <div className='hidden md:flex flex-col'>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className='font-bold text-lg cursor-pointer'>
+                      BreederApp
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Go to dashboard</TooltipContent>
+                </Tooltip>
                 {profile.breederName && (
-                  <span className="text-xs text-muted-foreground">{profile.breederName}</span>
+                  <span className='text-xs text-muted-foreground'>
+                    {profile.breederName}
+                  </span>
                 )}
               </div>
             )}
@@ -82,34 +109,37 @@ export function Header({ onAddDog, onEmailSettings, dogs, litters, onMenuClick }
         </div>
 
         {/* Right section */}
-        <div className="flex items-center gap-2">
+        <div className='flex items-center gap-2'>
           {/* Add Dog Button */}
-          <Button onClick={onAddDog} size="sm" className="hidden sm:flex">
-            <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Add Dog</span>
+          <Button onClick={onAddDog} size='sm' className='hidden sm:flex'>
+            <Plus className='h-4 w-4 sm:mr-2' />
+            <span className='hidden sm:inline'>Add Dog</span>
           </Button>
-          <Button onClick={onAddDog} size="icon" className="sm:hidden">
-            <Plus className="h-4 w-4" />
+          <Button onClick={onAddDog} size='icon' className='sm:hidden'>
+            <Plus className='h-4 w-4' />
           </Button>
+
+          {/* Notifications */}
+          <NotificationsDropdown />
 
           {/* Email Settings */}
           <Button
-            variant="ghost"
-            size="icon"
+            variant='ghost'
+            size='icon'
             onClick={onEmailSettings}
-            title="Email Settings"
+            title='Email Settings'
           >
-            <Mail className="h-4 w-4" />
+            <Mail className='h-4 w-4' />
           </Button>
 
           {/* Export Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" title="Export Data">
-                <Download className="h-4 w-4" />
+              <Button variant='ghost' size='icon' title='Export Data'>
+                <Download className='h-4 w-4' />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align='end' className='bg-background'>
               <DropdownMenuItem onClick={() => exportToJSON(dogs, litters)}>
                 Full Backup (JSON)
               </DropdownMenuItem>
@@ -117,13 +147,19 @@ export function Header({ onAddDog, onEmailSettings, dogs, litters, onMenuClick }
               <DropdownMenuItem onClick={() => exportDogsToCSV(dogs)}>
                 Dogs (CSV)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportLittersToCSV(litters, dogs)}>
+              <DropdownMenuItem
+                onClick={() => exportLittersToCSV(litters, dogs)}
+              >
                 Litters (CSV)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportPuppiesToCSV(litters, dogs)}>
+              <DropdownMenuItem
+                onClick={() => exportPuppiesToCSV(litters, dogs)}
+              >
                 Puppies (CSV)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportExpensesToCSV(litters, dogs)}>
+              <DropdownMenuItem
+                onClick={() => exportExpensesToCSV(litters, dogs)}
+              >
                 Expenses (CSV)
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -135,17 +171,17 @@ export function Header({ onAddDog, onEmailSettings, dogs, litters, onMenuClick }
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <User className="h-4 w-4" />
+              <Button variant='ghost' size='icon'>
+                <User className='h-4 w-4' />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+            <DropdownMenuContent align='end' className='bg-background'>
+              <div className='px-2 py-1.5 text-sm text-muted-foreground'>
                 {currentUser?.displayName || currentUser?.email}
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
+                <LogOut className='mr-2 h-4 w-4' />
                 Logout
               </DropdownMenuItem>
             </DropdownMenuContent>

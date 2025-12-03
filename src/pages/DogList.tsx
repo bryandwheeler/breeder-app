@@ -14,15 +14,42 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { DeleteDogDialog } from '@/components/DeleteDogDialog';
 
 export function DogList({
   openEditDialog,
 }: {
   openEditDialog: (dog: Dog) => void;
 }) {
-  const { dogs, deleteDog } = useDogStore();
+  const { dogs, deleteDog, updateDog } = useDogStore();
   const navigate = useNavigate();
   const [programFilter, setProgramFilter] = useState<string>('all');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [dogToDelete, setDogToDelete] = useState<Dog | null>(null);
+
+  const handleDeleteClick = (dog: Dog) => {
+    setDogToDelete(dog);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = (dogId: string) => {
+    deleteDog(dogId);
+  };
+
+  const handleMarkRetired = (dog: Dog) => {
+    updateDog(dog.id, {
+      notes: dog.notes
+        ? `${dog.notes}\n\nRetired: ${new Date().toLocaleDateString()}`
+        : `Retired: ${new Date().toLocaleDateString()}`,
+    });
+  };
+
+  const handleMarkDeceased = (dog: Dog) => {
+    updateDog(dog.id, {
+      isDeceased: true,
+      dateOfDeath: new Date().toISOString().split('T')[0],
+    });
+  };
 
   const columns: ColumnDef<Dog>[] = [
     {
@@ -93,7 +120,7 @@ export function DogList({
           <Button
             size='sm'
             variant='destructive'
-            onClick={() => deleteDog(row.original.id)}
+            onClick={() => handleDeleteClick(row.original)}
           >
             <Trash2 className='h-4 w-4' />
           </Button>
@@ -132,6 +159,15 @@ export function DogList({
         columns={columns}
         data={filteredDogs}
         searchPlaceholder='Search all dogs...'
+      />
+
+      <DeleteDogDialog
+        open={deleteDialogOpen}
+        setOpen={setDeleteDialogOpen}
+        dog={dogToDelete}
+        onDelete={handleDelete}
+        onMarkRetired={handleMarkRetired}
+        onMarkDeceased={handleMarkDeceased}
       />
     </div>
   );

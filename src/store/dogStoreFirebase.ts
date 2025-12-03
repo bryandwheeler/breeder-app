@@ -34,7 +34,9 @@ function calculateLitterStatus(litter: Litter): Litter['status'] {
     if (today >= readyDate) {
       // Check if all puppies are sold/kept
       const puppies = litter.puppies || [];
-      const allPlaced = puppies.length > 0 && puppies.every(p => p.status === 'sold' || p.status === 'kept');
+      const allPlaced =
+        puppies.length > 0 &&
+        puppies.every((p) => p.status === 'sold' || p.status === 'kept');
       if (allPlaced) return 'completed';
       return 'ready';
     }
@@ -52,7 +54,7 @@ type Store = {
   dogs: Dog[];
   litters: Litter[];
   loading: boolean;
-  addDog: (dog: NewDog) => Promise<void>;
+  addDog: (dog: NewDog) => Promise<string>; // Returns the new dog's ID
   updateDog: (id: string, updates: Partial<Dog>) => Promise<void>;
   deleteDog: (id: string) => Promise<void>;
   addLitter: (litter: Omit<Litter, 'id'>) => Promise<void>;
@@ -86,7 +88,8 @@ export const useDogStore = create<Store>()((set, get) => ({
       updatedAt: serverTimestamp(),
     };
 
-    await addDoc(dogsRef, newDog);
+    const docRef = await addDoc(dogsRef, newDog);
+    return docRef.id; // Return the new dog's ID
   },
 
   updateDog: async (id, updates) => {
@@ -157,13 +160,24 @@ export const useDogStore = create<Store>()((set, get) => ({
       where('userId', '==', user.uid)
     );
 
-    const unsubscribeDogs = onSnapshot(dogsQuery, (snapshot) => {
-      const dogs: Dog[] = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      } as Dog));
-      set({ dogs, loading: false });
-    });
+    const unsubscribeDogs = onSnapshot(
+      dogsQuery,
+      (snapshot) => {
+        const dogs: Dog[] = snapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              ...doc.data(),
+            } as Dog)
+        );
+        set({ dogs, loading: false });
+      },
+      (error) => {
+        console.error('[dogStore] Dogs snapshot error:', error);
+        // Gracefully handle permission-denied without crashing UI
+        set({ loading: false });
+      }
+    );
 
     // Subscribe to user's litters
     const littersQuery = query(
@@ -171,16 +185,24 @@ export const useDogStore = create<Store>()((set, get) => ({
       where('userId', '==', user.uid)
     );
 
-    const unsubscribeLitters = onSnapshot(littersQuery, (snapshot) => {
-      const litters: Litter[] = snapshot.docs.map((doc) => {
-        const data = doc.data() as Omit<Litter, 'id'>;
-        const litter = { id: doc.id, ...data } as Litter;
-        // Auto-calculate status based on dates
-        litter.status = calculateLitterStatus(litter);
-        return litter;
-      });
-      set({ litters });
-    });
+    const unsubscribeLitters = onSnapshot(
+      littersQuery,
+      (snapshot) => {
+        const litters: Litter[] = snapshot.docs.map((doc) => {
+          const data = doc.data() as Omit<Litter, 'id'>;
+          const litter = { id: doc.id, ...data } as Litter;
+          // Auto-calculate status based on dates
+          litter.status = calculateLitterStatus(litter);
+          return litter;
+        });
+        set({ litters });
+      },
+      (error) => {
+        console.error('[dogStore] Litters snapshot error:', error);
+        // Keep UI responsive even if listener is denied
+        set({ loading: false });
+      }
+    );
 
     // Return cleanup function
     return () => {

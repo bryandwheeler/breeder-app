@@ -70,7 +70,9 @@ export function Signup() {
       <div className='w-full max-w-md space-y-8'>
         <div className='text-center'>
           <h2 className='text-3xl font-bold'>Create Account</h2>
-          <p className='text-muted-foreground mt-2'>Sign up for Doodle Bliss Kennel</p>
+          <p className='text-muted-foreground mt-2'>
+            Sign up for Doodle Bliss Kennel
+          </p>
         </div>
 
         {error && (
@@ -142,7 +144,7 @@ export function Signup() {
             <div className='w-full border-t'></div>
           </div>
           <div className='relative flex justify-center text-sm'>
-            <span className='bg-background px-2 text-muted-foreground'>
+            <span className='relative z-10 bg-background px-2 text-muted-foreground'>
               Or continue with
             </span>
           </div>
@@ -170,7 +172,9 @@ export function Signup() {
         </div>
 
         <div className='text-center text-sm'>
-          <span className='text-muted-foreground'>Already have an account? </span>
+          <span className='text-muted-foreground'>
+            Already have an account?{' '}
+          </span>
           <Link to='/login' className='text-primary hover:underline'>
             Sign in
           </Link>

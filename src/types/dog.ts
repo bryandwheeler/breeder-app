@@ -16,7 +16,15 @@ export interface ShotRecord {
 export interface Reminder {
   id: string;
   title: string;
-  type: 'vaccination' | 'deworming' | 'vet_visit' | 'heat_expected' | 'due_date' | 'pickup' | 'registration' | 'custom';
+  type:
+    | 'vaccination'
+    | 'deworming'
+    | 'vet_visit'
+    | 'heat_expected'
+    | 'due_date'
+    | 'pickup'
+    | 'registration'
+    | 'custom';
   date: string;
   dogId?: string;
   litterId?: string;
@@ -52,6 +60,15 @@ export interface Deworming {
   notes?: string;
 }
 
+export interface VetVisitAttachment {
+  id: string;
+  name: string;
+  type: 'pdf' | 'image' | 'document' | 'email' | 'other';
+  url: string;
+  uploadDate: string;
+  size?: number;
+}
+
 export interface VetVisit {
   id: string;
   date: string;
@@ -63,17 +80,34 @@ export interface VetVisit {
   followUpDate?: string;
   cost?: number;
   notes?: string;
+  attachments?: VetVisitAttachment[];
 }
 
 export interface HeatCycle {
   id: string;
+  dogId: string;
+  userId: string;
   startDate: string;
   endDate?: string;
   intensity?: 'light' | 'normal' | 'heavy';
-  bred?: boolean;
-  breedingDates?: string[];
-  sireId?: string;
   notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BreedingRecord {
+  id: string;
+  dogId: string; // Female dog
+  heatCycleId: string; // Link to heat cycle
+  userId: string;
+  studId?: string; // Male dog ID if from own kennel
+  studName: string; // External stud name or registered name
+  breedingDate: string; // ISO date string
+  method: 'natural' | 'ai' | 'surgical_ai';
+  aiDetails?: string; // If AI, details about semen source
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Buyer {
@@ -110,21 +144,76 @@ export interface Milestone {
 }
 
 // Default puppy milestones template
-export const DEFAULT_PUPPY_MILESTONES: Omit<Milestone, 'id' | 'completedDate' | 'notes'>[] = [
-  { name: 'Eyes Open', description: 'Puppies begin to open their eyes', expectedWeek: 2 },
-  { name: 'Ears Open', description: 'Puppies begin to hear sounds', expectedWeek: 2 },
-  { name: 'First Steps', description: 'Puppies start walking', expectedWeek: 3 },
-  { name: 'First Teeth', description: 'Baby teeth start coming in', expectedWeek: 3 },
-  { name: 'Weaning Started', description: 'Introduction to solid food', expectedWeek: 4 },
-  { name: 'First Deworming', description: 'First deworming treatment', expectedWeek: 2 },
-  { name: 'Second Deworming', description: 'Second deworming treatment', expectedWeek: 4 },
-  { name: 'Third Deworming', description: 'Third deworming treatment', expectedWeek: 6 },
-  { name: 'First Vaccination', description: 'DHPP or similar vaccine', expectedWeek: 6 },
-  { name: 'Fully Weaned', description: 'Eating solid food only', expectedWeek: 6 },
-  { name: 'Vet Check', description: 'First veterinary examination', expectedWeek: 6 },
+export const DEFAULT_PUPPY_MILESTONES: Omit<
+  Milestone,
+  'id' | 'completedDate' | 'notes'
+>[] = [
+  {
+    name: 'Eyes Open',
+    description: 'Puppies begin to open their eyes',
+    expectedWeek: 2,
+  },
+  {
+    name: 'Ears Open',
+    description: 'Puppies begin to hear sounds',
+    expectedWeek: 2,
+  },
+  {
+    name: 'First Steps',
+    description: 'Puppies start walking',
+    expectedWeek: 3,
+  },
+  {
+    name: 'First Teeth',
+    description: 'Baby teeth start coming in',
+    expectedWeek: 3,
+  },
+  {
+    name: 'Weaning Started',
+    description: 'Introduction to solid food',
+    expectedWeek: 4,
+  },
+  {
+    name: 'First Deworming',
+    description: 'First deworming treatment',
+    expectedWeek: 2,
+  },
+  {
+    name: 'Second Deworming',
+    description: 'Second deworming treatment',
+    expectedWeek: 4,
+  },
+  {
+    name: 'Third Deworming',
+    description: 'Third deworming treatment',
+    expectedWeek: 6,
+  },
+  {
+    name: 'First Vaccination',
+    description: 'DHPP or similar vaccine',
+    expectedWeek: 6,
+  },
+  {
+    name: 'Fully Weaned',
+    description: 'Eating solid food only',
+    expectedWeek: 6,
+  },
+  {
+    name: 'Vet Check',
+    description: 'First veterinary examination',
+    expectedWeek: 6,
+  },
   { name: 'Microchipped', description: 'Microchip implanted', expectedWeek: 7 },
-  { name: 'Second Vaccination', description: 'Booster vaccination', expectedWeek: 8 },
-  { name: 'Ready for Home', description: 'Puppy ready for new family', expectedWeek: 8 },
+  {
+    name: 'Second Vaccination',
+    description: 'Booster vaccination',
+    expectedWeek: 8,
+  },
+  {
+    name: 'Ready for Home',
+    description: 'Puppy ready for new family',
+    expectedWeek: 8,
+  },
 ];
 
 // Registration Information
@@ -145,7 +234,12 @@ export interface Registration {
 export interface RegistrationDocument {
   id: string;
   name: string;
-  type: 'application' | 'certificate' | 'pedigree' | 'litter_certificate' | 'other';
+  type:
+    | 'application'
+    | 'certificate'
+    | 'pedigree'
+    | 'litter_certificate'
+    | 'other';
   url: string;
   uploadDate: string;
   notes?: string;
@@ -261,6 +355,8 @@ export interface Litter {
   litterName?: string;
   damId: string;
   sireId: string;
+  // External sire (when sire is from another kennel)
+  externalSire?: ExternalParent;
   dateOfBirth: string;
   expectedDateOfBirth?: string;
   status: 'planned' | 'pregnant' | 'born' | 'weaning' | 'ready' | 'completed';
@@ -295,6 +391,21 @@ export interface GuardianHome {
   notes?: string;
 }
 
+// External parent info (from another kennel)
+export interface ExternalParent {
+  name: string;
+  registrationNumber?: string;
+  breed?: string;
+  kennelName?: string;
+  breederName?: string;
+  // Connection request tracking
+  connectionRequestId?: string; // ID of the connection request
+  connectionStatus?: 'pending' | 'approved' | 'declined' | 'cancelled'; // Status of the connection request
+  connectedDogId?: string; // ID of the linked/connected dog (when approved)
+  ownerId?: string; // User ID of the dog's owner (for requesting connection)
+  dogId?: string; // Original dog ID in owner's collection
+}
+
 export interface Dog {
   id: string;
   name: string;
@@ -309,6 +420,9 @@ export interface Dog {
   color: string;
   sireId?: string;
   damId?: string;
+  // External parents (when sire/dam is from another kennel)
+  externalSire?: ExternalParent;
+  externalDam?: ExternalParent;
   isDeceased?: boolean;
   dateOfDeath?: string;
   photos: string[];
@@ -319,15 +433,28 @@ export interface Dog {
   medications: Medication[];
   dewormings: Deworming[];
   vetVisits: VetVisit[];
-  heatCycles?: HeatCycle[];
   dnaProfile?: DnaProfile;
 
   // Registration tracking
   registration?: Registration;
 
   // Breeder Program Status
-  programStatus?: 'owned' | 'guardian' | 'external_stud' | 'co-owned';
+  programStatus?:
+    | 'owned'
+    | 'guardian'
+    | 'external_stud'
+    | 'co-owned'
+    | 'retired';
   guardianHome?: GuardianHome;
+
+  // Connected/Linked Dog (from another kennel)
+  isConnectedDog?: boolean; // True if this is a linked dog from another breeder
+  connectionRequestId?: string; // Link to the connection request
+  originalDogId?: string; // Firebase document ID of the original dog in owner's collection
+  originalOwnerId?: string; // User ID of the actual owner
+  originalOwnerKennel?: string; // Kennel name of actual owner
+  sharingPreferences?: DogSharingPreferences; // What data is shared
+  lastSyncDate?: string; // When data was last synced from owner
 
   notes?: string;
 }
@@ -378,7 +505,10 @@ export interface DnaProfile {
   };
 
   // Genetic Health Conditions (Common across breeds)
-  healthConditions?: Record<string, 'clear' | 'carrier' | 'at_risk' | 'not_tested'>;
+  healthConditions?: Record<
+    string,
+    'clear' | 'carrier' | 'at_risk' | 'not_tested'
+  >;
 
   // Performance & Behavior Traits
   performanceTraits?: {
@@ -479,24 +609,43 @@ export interface DailyRoutineTask {
   order: number; // Order within the time of day
 }
 
-export const DEFAULT_CARE_TEMPLATES: Omit<CareTask, 'id' | 'completed' | 'completedDate' | 'notes'>[] = [
+export const DEFAULT_CARE_TEMPLATES: Omit<
+  CareTask,
+  'id' | 'completed' | 'completedDate' | 'notes'
+>[] = [
   // Week 1
   { name: 'Weigh puppies', description: 'Record birth weights', weekDue: 0 },
-  { name: 'Check umbilical cords', description: 'Ensure cords are drying properly', weekDue: 0 },
-  { name: 'Monitor nursing', description: 'Ensure all puppies are nursing well', weekDue: 0 },
+  {
+    name: 'Check umbilical cords',
+    description: 'Ensure cords are drying properly',
+    weekDue: 0,
+  },
+  {
+    name: 'Monitor nursing',
+    description: 'Ensure all puppies are nursing well',
+    weekDue: 0,
+  },
   // Week 2
   { name: 'First deworming', description: 'Pyrantel pamoate', weekDue: 2 },
   { name: 'Trim nails', description: 'First nail trim', weekDue: 2 },
   { name: 'Weekly weigh-in', description: 'Track growth', weekDue: 2 },
   // Week 3
-  { name: 'Begin socialization', description: 'Gentle handling, new sounds', weekDue: 3 },
+  {
+    name: 'Begin socialization',
+    description: 'Gentle handling, new sounds',
+    weekDue: 3,
+  },
   { name: 'Weekly weigh-in', description: 'Track growth', weekDue: 3 },
   // Week 4
   { name: 'Second deworming', description: 'Pyrantel pamoate', weekDue: 4 },
   { name: 'Introduce gruel', description: 'Start weaning process', weekDue: 4 },
   { name: 'Trim nails', description: 'Second nail trim', weekDue: 4 },
   // Week 5
-  { name: 'Increase solid food', description: 'Reduce nursing dependence', weekDue: 5 },
+  {
+    name: 'Increase solid food',
+    description: 'Reduce nursing dependence',
+    weekDue: 5,
+  },
   { name: 'Weekly weigh-in', description: 'Track growth', weekDue: 5 },
   // Week 6
   { name: 'Third deworming', description: 'Pyrantel pamoate', weekDue: 6 },
@@ -509,25 +658,96 @@ export const DEFAULT_CARE_TEMPLATES: Omit<CareTask, 'id' | 'completed' | 'comple
   // Week 8
   { name: 'Second vaccination', description: 'DHPP booster', weekDue: 8 },
   { name: 'Final vet check', description: 'Health certificates', weekDue: 8 },
-  { name: 'Prepare puppy packets', description: 'Contracts, records, food samples', weekDue: 8 },
+  {
+    name: 'Prepare puppy packets',
+    description: 'Contracts, records, food samples',
+    weekDue: 8,
+  },
   { name: 'Trim nails', description: 'Pre-pickup nail trim', weekDue: 8 },
 ];
 
 export const DEFAULT_DAILY_ROUTINES: Omit<DailyRoutineTask, 'id'>[] = [
   // Morning routines
-  { name: 'Check mom and puppies', description: 'Visual health check', timeOfDay: 'morning', weekStart: 0, order: 1 },
-  { name: 'Clean whelping area', description: 'Remove soiled bedding, sanitize', timeOfDay: 'morning', weekStart: 0, order: 2 },
-  { name: 'Weigh puppies', description: 'Daily weight tracking', timeOfDay: 'morning', weekStart: 0, weekEnd: 2, order: 3 },
-  { name: 'Feed mom', description: 'High-quality puppy food', timeOfDay: 'morning', weekStart: 0, order: 4 },
-  { name: 'Feed puppies', description: 'Puppy gruel/kibble', timeOfDay: 'morning', weekStart: 4, order: 5 },
-  { name: 'Socialization time', description: 'Handling, sounds, new experiences', timeOfDay: 'morning', weekStart: 3, order: 6 },
+  {
+    name: 'Check mom and puppies',
+    description: 'Visual health check',
+    timeOfDay: 'morning',
+    weekStart: 0,
+    order: 1,
+  },
+  {
+    name: 'Clean whelping area',
+    description: 'Remove soiled bedding, sanitize',
+    timeOfDay: 'morning',
+    weekStart: 0,
+    order: 2,
+  },
+  {
+    name: 'Weigh puppies',
+    description: 'Daily weight tracking',
+    timeOfDay: 'morning',
+    weekStart: 0,
+    weekEnd: 2,
+    order: 3,
+  },
+  {
+    name: 'Feed mom',
+    description: 'High-quality puppy food',
+    timeOfDay: 'morning',
+    weekStart: 0,
+    order: 4,
+  },
+  {
+    name: 'Feed puppies',
+    description: 'Puppy gruel/kibble',
+    timeOfDay: 'morning',
+    weekStart: 4,
+    order: 5,
+  },
+  {
+    name: 'Socialization time',
+    description: 'Handling, sounds, new experiences',
+    timeOfDay: 'morning',
+    weekStart: 3,
+    order: 6,
+  },
 
   // Evening routines
-  { name: 'Check mom and puppies', description: 'Visual health check', timeOfDay: 'evening', weekStart: 0, order: 1 },
-  { name: 'Clean whelping area', description: 'Remove soiled bedding, freshen water', timeOfDay: 'evening', weekStart: 0, order: 2 },
-  { name: 'Feed mom', description: 'High-quality puppy food', timeOfDay: 'evening', weekStart: 0, order: 3 },
-  { name: 'Feed puppies', description: 'Puppy gruel/kibble', timeOfDay: 'evening', weekStart: 4, order: 4 },
-  { name: 'Play and enrichment', description: 'Age-appropriate toys and activities', timeOfDay: 'evening', weekStart: 3, order: 5 },
+  {
+    name: 'Check mom and puppies',
+    description: 'Visual health check',
+    timeOfDay: 'evening',
+    weekStart: 0,
+    order: 1,
+  },
+  {
+    name: 'Clean whelping area',
+    description: 'Remove soiled bedding, freshen water',
+    timeOfDay: 'evening',
+    weekStart: 0,
+    order: 2,
+  },
+  {
+    name: 'Feed mom',
+    description: 'High-quality puppy food',
+    timeOfDay: 'evening',
+    weekStart: 0,
+    order: 3,
+  },
+  {
+    name: 'Feed puppies',
+    description: 'Puppy gruel/kibble',
+    timeOfDay: 'evening',
+    weekStart: 4,
+    order: 4,
+  },
+  {
+    name: 'Play and enrichment',
+    description: 'Age-appropriate toys and activities',
+    timeOfDay: 'evening',
+    weekStart: 3,
+    order: 5,
+  },
 ];
 
 // Breeder Profile for public website
@@ -583,6 +803,18 @@ export interface BreederProfile {
   acceptingInquiries?: boolean;
   showPricing?: boolean;
 
+  // EmailJS Configuration
+  emailjsPublicKey?: string;
+  emailjsServiceId?: string;
+  emailjsWaitlistTemplateId?: string;
+  emailjsInquiryNotificationTemplateId?: string; // Breeder notification for new inquiries
+  emailjsWaitlistNotificationTemplateId?: string; // Breeder notification for new waitlist apps
+  emailjsConnectionRequestTemplateId?: string; // Notification for dog connection requests
+  notificationEmail?: string; // Email to receive notifications (defaults to profile email)
+  enableInquiryNotifications?: boolean; // Toggle inquiry notifications
+  enableWaitlistNotifications?: boolean; // Toggle waitlist notifications
+  enableConnectionRequestNotifications?: boolean; // Toggle connection request notifications
+
   createdAt?: string;
   updatedAt?: string;
 }
@@ -603,6 +835,14 @@ export interface Testimonial {
   createdAt?: string;
 }
 
+// Activity Log for tracking customer interactions
+export interface ActivityLog {
+  timestamp: string;
+  action: string;
+  details?: string;
+  performedBy?: string; // user ID or 'system'
+}
+
 // Inquiry/Lead
 export interface Inquiry {
   id: string;
@@ -618,7 +858,14 @@ export interface Inquiry {
   timeline?: string; // "immediate", "3-6 months", "6-12 months", "1+ year"
 
   // Status
-  status: 'new' | 'contacted' | 'qualified' | 'waitlist' | 'reserved' | 'completed' | 'not_interested';
+  status:
+    | 'new'
+    | 'contacted'
+    | 'qualified'
+    | 'waitlist'
+    | 'reserved'
+    | 'completed'
+    | 'not_interested';
   priority?: 'low' | 'medium' | 'high';
 
   // Communication
@@ -632,6 +879,10 @@ export interface Inquiry {
   // Follow-up
   lastContactDate?: string;
   nextFollowUpDate?: string;
+  waitlistEmailSent?: string; // Timestamp when waitlist link was sent
+
+  // Activity history
+  activityLog?: ActivityLog[];
 
   createdAt?: string;
   updatedAt?: string;
@@ -641,6 +892,7 @@ export interface Inquiry {
 export interface WaitlistEntry {
   id: string;
   userId: string; // Breeder's user ID
+  inquiryId?: string; // Link to the original inquiry if came from inquiry
 
   // Customer Information
   name: string;
@@ -653,7 +905,15 @@ export interface WaitlistEntry {
 
   // Application Details
   applicationDate: string;
-  status: 'pending' | 'approved' | 'active' | 'matched' | 'reserved' | 'completed' | 'withdrawn' | 'declined';
+  status:
+    | 'pending'
+    | 'approved'
+    | 'active'
+    | 'matched'
+    | 'reserved'
+    | 'completed'
+    | 'withdrawn'
+    | 'declined';
 
   // Preferences
   preferredBreed?: string;
@@ -694,11 +954,15 @@ export interface WaitlistEntry {
   lastContactDate?: string;
   communicationLog?: CommunicationNote[];
 
+  // Activity history
+  activityLog?: ActivityLog[];
+
   // References
   vetReference?: string;
   personalReferences?: string[];
 
   createdAt?: string;
+  submittedAt?: string; // When the customer submitted the application
   updatedAt?: string;
 }
 
@@ -726,12 +990,24 @@ export interface Customer {
   country?: string;
 
   // Customer Type & Status
-  type: 'prospect' | 'waitlist' | 'buyer' | 'past_buyer' | 'guardian' | 'referral_source';
+  type:
+    | 'prospect'
+    | 'waitlist'
+    | 'buyer'
+    | 'past_buyer'
+    | 'guardian'
+    | 'referral_source';
   status: 'active' | 'inactive' | 'archived';
 
   // Tags & Segmentation
   tags?: string[]; // e.g., "VIP", "repeat buyer", "influencer", "vet", etc.
-  source?: 'website' | 'referral' | 'social_media' | 'event' | 'advertising' | 'other';
+  source?:
+    | 'website'
+    | 'referral'
+    | 'social_media'
+    | 'event'
+    | 'advertising'
+    | 'other';
   referredBy?: string; // Customer ID who referred them
 
   // Purchase History
@@ -784,7 +1060,14 @@ export interface Purchase {
 export interface Interaction {
   id: string;
   date: string;
-  type: 'email' | 'phone' | 'text' | 'meeting' | 'video_call' | 'visit' | 'other';
+  type:
+    | 'email'
+    | 'phone'
+    | 'text'
+    | 'meeting'
+    | 'video_call'
+    | 'visit'
+    | 'other';
   subject: string;
   notes?: string;
   outcome?: string;
@@ -819,4 +1102,98 @@ export interface Referral {
   conversionDate?: string;
   reward?: string; // What the referrer received
   notes?: string;
+}
+
+// Dog Connection Request - for linking dogs from other kennels
+export interface DogConnectionRequest {
+  id: string;
+  requesterId: string; // User ID of breeder making the request
+  requesterKennelName: string;
+  ownerId: string; // User ID of dog owner
+  ownerKennelName: string;
+  dogId: string; // The dog being requested to connect
+  dogName: string;
+  dogRegistrationNumber?: string;
+
+  // Request details
+  status: 'pending' | 'approved' | 'declined' | 'cancelled';
+  requestDate: string;
+  responseDate?: string;
+  message?: string; // Message from requester
+  responseMessage?: string; // Message from owner when responding
+
+  // Connection purpose
+  purpose: 'sire' | 'dam' | 'offspring' | 'relative' | 'reference';
+  purposeDetails?: string; // e.g., "Used as sire for my litter #123"
+
+  // Data sharing preferences (set by owner when approving)
+  sharingPreferences?: DogSharingPreferences;
+
+  // Linked dog in requester's system (created after approval)
+  linkedDogId?: string; // The connected/linked dog ID in requester's system
+
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// What data the dog owner wants to share
+export interface DogSharingPreferences {
+  // Basic Info
+  shareBasicInfo: boolean; // name, breed, sex, color
+  shareRegistration: boolean; // registration number, registry
+  sharePhoto: boolean;
+  shareDateOfBirth: boolean;
+
+  // Pedigree
+  sharePedigree: boolean;
+
+  // Health & Testing
+  shareHealthTests: boolean;
+  shareHealthRecords: boolean;
+  shareVaccinations: boolean;
+  shareDnaProfile: boolean;
+
+  // Titles & Achievements
+  shareTitles: boolean;
+  shareShows: boolean;
+
+  // Breeding Info
+  shareBreedingHistory: boolean; // litters produced
+  shareBreedingRights: boolean; // whether dog is breeding quality
+
+  // Contact
+  shareOwnerContact: boolean; // breeder's contact info
+}
+
+// In-app notification system
+export interface Notification {
+  id: string;
+  userId: string; // Who receives the notification
+  type:
+    | 'connection_request'
+    | 'connection_approved'
+    | 'connection_declined'
+    | 'inquiry'
+    | 'waitlist'
+    | 'reminder'
+    | 'system';
+  title: string;
+  message: string;
+  read: boolean;
+
+  // Related entity
+  relatedId?: string; // ID of related entity (e.g., connection request ID)
+  relatedType?:
+    | 'dog_connection'
+    | 'inquiry'
+    | 'waitlist'
+    | 'reminder'
+    | 'litter';
+
+  // Action button
+  actionLabel?: string; // e.g., "View Request", "Respond"
+  actionUrl?: string; // Where to navigate when clicked
+
+  createdAt: string;
+  readAt?: string;
 }

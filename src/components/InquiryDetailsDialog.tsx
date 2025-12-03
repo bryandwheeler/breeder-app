@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Mail, Phone, Calendar } from 'lucide-react';
+import { Mail, Phone, Calendar, Clock, CheckCircle, Send, User } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
 
 interface Props {
   open: boolean;
@@ -164,6 +165,58 @@ export function InquiryDetailsDialog({ open, setOpen, inquiry, onUpdate }: Props
           {inquiry.lastContactDate && (
             <div className="text-sm text-muted-foreground">
               Last contacted: {new Date(inquiry.lastContactDate).toLocaleDateString()}
+            </div>
+          )}
+
+          {/* Activity Timeline */}
+          {inquiry.activityLog && inquiry.activityLog.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="font-semibold">Activity History</h3>
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {inquiry.activityLog
+                  .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                  .map((log, index) => (
+                    <div key={index} className="flex gap-3 p-3 bg-muted/50 rounded-lg">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {log.action.includes('email') || log.action.includes('Waitlist') ? (
+                          <Send className="h-4 w-4 text-blue-500" />
+                        ) : log.action.includes('received') || log.action.includes('submitted') ? (
+                          <User className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4 text-gray-500" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-medium text-sm">{log.action}</p>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
+                          </span>
+                        </div>
+                        {log.details && (
+                          <p className="text-sm text-muted-foreground mt-1">{log.details}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          {format(new Date(log.timestamp), 'MMM d, yyyy h:mm a')}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Waitlist Email Status */}
+          {inquiry.waitlistEmailSent && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm">
+              <div className="flex items-center gap-2 text-green-700">
+                <Send className="h-4 w-4" />
+                <span className="font-semibold">Waitlist link sent</span>
+              </div>
+              <p className="text-green-600 mt-1">
+                {format(new Date(inquiry.waitlistEmailSent), 'MMM d, yyyy h:mm a')}
+              </p>
             </div>
           )}
 

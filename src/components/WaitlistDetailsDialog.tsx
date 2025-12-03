@@ -21,7 +21,8 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mail, Phone, MapPin, Home, CheckCircle, XCircle } from 'lucide-react';
+import { Mail, Phone, MapPin, Home, CheckCircle, XCircle, Clock, Send, User } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
 
 interface Props {
   open: boolean;
@@ -64,6 +65,7 @@ export function WaitlistDetailsDialog({ open, setOpen, entry }: Props) {
             <TabsTrigger value="info">Application Info</TabsTrigger>
             <TabsTrigger value="preferences">Preferences</TabsTrigger>
             <TabsTrigger value="management">Management</TabsTrigger>
+            <TabsTrigger value="activity">Activity History</TabsTrigger>
           </TabsList>
 
           {/* Application Info */}
@@ -381,6 +383,76 @@ export function WaitlistDetailsDialog({ open, setOpen, entry }: Props) {
                 placeholder="Add your notes about this application..."
               />
             </div>
+          </TabsContent>
+
+          {/* Activity History */}
+          <TabsContent value="activity" className="space-y-6">
+            {/* Submission Info */}
+            {entry.submittedAt && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2 text-blue-700 font-semibold mb-2">
+                  <CheckCircle className="h-5 w-5" />
+                  Application Submitted
+                </div>
+                <p className="text-sm text-blue-600">
+                  {format(new Date(entry.submittedAt), 'EEEE, MMMM d, yyyy \'at\' h:mm a')}
+                </p>
+                <p className="text-xs text-blue-500 mt-1">
+                  {formatDistanceToNow(new Date(entry.submittedAt), { addSuffix: true })}
+                </p>
+              </div>
+            )}
+
+            {/* Activity Timeline */}
+            {entry.activityLog && entry.activityLog.length > 0 ? (
+              <div className="space-y-3">
+                <h3 className="font-semibold">Timeline</h3>
+                <div className="space-y-3">
+                  {entry.activityLog
+                    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                    .map((log, index) => (
+                      <div key={index} className="flex gap-3 p-4 bg-muted/50 rounded-lg border">
+                        <div className="flex-shrink-0 mt-0.5">
+                          {log.action.includes('submitted') || log.action.includes('Application') ? (
+                            <User className="h-5 w-5 text-green-500" />
+                          ) : log.action.includes('approved') || log.action.includes('status') ? (
+                            <CheckCircle className="h-5 w-5 text-blue-500" />
+                          ) : log.action.includes('email') || log.action.includes('sent') ? (
+                            <Send className="h-5 w-5 text-purple-500" />
+                          ) : (
+                            <Clock className="h-5 w-5 text-gray-500" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-semibold text-sm">{log.action}</p>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
+                            </span>
+                          </div>
+                          {log.details && (
+                            <p className="text-sm text-muted-foreground mt-1">{log.details}</p>
+                          )}
+                          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {format(new Date(log.timestamp), 'MMM d, yyyy h:mm a')}
+                          </div>
+                          {log.performedBy && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              By: {log.performedBy === 'customer' ? 'Customer' : 'Breeder'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Clock className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No activity recorded yet</p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 

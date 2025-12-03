@@ -21,14 +21,21 @@ type Store = {
   loading: boolean;
 
   // Waitlist methods
-  addToWaitlist: (entry: Omit<WaitlistEntry, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-  updateWaitlistEntry: (id: string, updates: Partial<WaitlistEntry>) => Promise<void>;
+  addToWaitlist: (
+    entry: Omit<WaitlistEntry, 'id' | 'createdAt' | 'updatedAt'>
+  ) => Promise<void>;
+  updateWaitlistEntry: (
+    id: string,
+    updates: Partial<WaitlistEntry>
+  ) => Promise<void>;
   deleteWaitlistEntry: (id: string) => Promise<void>;
   reorderWaitlist: (entries: WaitlistEntry[]) => Promise<void>;
   moveToPosition: (id: string, newPosition: number) => Promise<void>;
 
   // Public methods (for waitlist application form)
-  submitWaitlistApplication: (entry: Omit<WaitlistEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  submitWaitlistApplication: (
+    entry: Omit<WaitlistEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+  ) => Promise<void>;
 
   // Subscription
   subscribeToWaitlist: () => () => void;
@@ -52,7 +59,9 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
 
     const newEntry = {
       ...entry,
+      // Backward-compat: record both, rules use breederId
       userId: user.uid,
+      breederId: user.uid,
       position,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -80,8 +89,10 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
     await deleteDoc(entryRef);
 
     // Reorder remaining entries
-    const remainingEntries = get().waitlist
-      .filter((e) => e.id !== id && (e.status === 'active' || e.status === 'approved'))
+    const remainingEntries = get()
+      .waitlist.filter(
+        (e) => e.id !== id && (e.status === 'active' || e.status === 'approved')
+      )
       .sort((a, b) => (a.position || 0) - (b.position || 0));
 
     for (let i = 0; i < remainingEntries.length; i++) {
@@ -110,8 +121,8 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to reorder waitlist');
 
-    const waitlist = get().waitlist
-      .filter((e) => e.status === 'active' || e.status === 'approved')
+    const waitlist = get()
+      .waitlist.filter((e) => e.status === 'active' || e.status === 'approved')
       .sort((a, b) => (a.position || 0) - (b.position || 0));
 
     const entryIndex = waitlist.findIndex((e) => e.id === id);
@@ -132,14 +143,16 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
     const waitlistRef = collection(db, 'waitlist');
 
     // Get current count to set position
-    const snapshot = await getDocs(query(
-      waitlistRef,
-      where('userId', '==', entry.userId)
-    ));
+    // Count existing entries for this breeder using breederId
+    const snapshot = await getDocs(
+      query(waitlistRef, where('breederId', '==', (entry as any).userId))
+    );
     const position = snapshot.docs.length + 1;
 
     const newEntry = {
       ...entry,
+      // Persist breederId for rules; keep userId for backward compat
+      breederId: (entry as any).userId,
       status: 'pending' as const,
       position,
       applicationDate: new Date().toISOString().split('T')[0],
@@ -158,17 +171,20 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
 
     const waitlistQuery = query(
       collection(db, 'waitlist'),
-      where('userId', '==', user.uid)
+      where('breederId', '==', user.uid)
     );
 
     const unsubscribe = onSnapshot(
       waitlistQuery,
       (snapshot) => {
         const waitlist: WaitlistEntry[] = snapshot.docs
-          .map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          } as WaitlistEntry))
+          .map(
+            (doc) =>
+              ({
+                id: doc.id,
+                ...doc.data(),
+              } as WaitlistEntry)
+          )
           .sort((a, b) => (a.position || 0) - (b.position || 0)); // Sort in memory instead
         set({ waitlist, loading: false });
       },

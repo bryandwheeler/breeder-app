@@ -40,7 +40,12 @@ export function Litters() {
   };
 
   const handleDelete = async (litterId: string) => {
-    if (!confirm('Are you sure you want to delete this litter? This cannot be undone.')) return;
+    if (
+      !confirm(
+        'Are you sure you want to delete this litter? This cannot be undone.'
+      )
+    )
+      return;
     await deleteLitter(litterId);
   };
 
@@ -61,25 +66,37 @@ export function Litters() {
       {litters.length === 0 ? (
         <Card className='p-12 text-center'>
           <Calendar className='h-16 w-16 mx-auto text-muted-foreground mb-4' />
-          <p className='text-xl text-muted-foreground'>No litters planned yet</p>
+          <p className='text-xl text-muted-foreground'>
+            No litters planned yet
+          </p>
         </Card>
       ) : (
         <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
           {litters.map((litter) => {
             // Skip litters without required fields (old data structure)
             if (!litter.dateOfBirth) {
-              console.warn('Skipping litter with missing dateOfBirth:', litter.id);
+              console.warn(
+                'Skipping litter with missing dateOfBirth:',
+                litter.id
+              );
               return null;
             }
 
             const dam = dogs.find((d) => d.id === litter.damId);
             const sire = dogs.find((d) => d.id === litter.sireId);
-            const litterName = litter.litterName || `${dam?.name} x ${sire?.name}`;
+            const litterName =
+              litter.litterName || `${dam?.name} x ${sire?.name}`;
 
             const puppies = litter.puppies || [];
-            const availablePuppies = puppies.filter((p) => p.status === 'available').length;
-            const reservedPuppies = puppies.filter((p) => p.status === 'reserved').length;
-            const soldPuppies = puppies.filter((p) => p.status === 'sold').length;
+            const availablePuppies = puppies.filter(
+              (p) => p.status === 'available'
+            ).length;
+            const reservedPuppies = puppies.filter(
+              (p) => p.status === 'reserved'
+            ).length;
+            const soldPuppies = puppies.filter(
+              (p) => p.status === 'sold'
+            ).length;
 
             return (
               <Card key={litter.id} className='hover:shadow-lg transition'>
@@ -87,7 +104,8 @@ export function Litters() {
                   <div className='flex justify-between items-start'>
                     <CardTitle className='text-lg'>{litterName}</CardTitle>
                     <Badge variant={getStatusColor(litter.status || 'planned')}>
-                      {(litter.status || 'planned').charAt(0).toUpperCase() + (litter.status || 'planned').slice(1)}
+                      {(litter.status || 'planned').charAt(0).toUpperCase() +
+                        (litter.status || 'planned').slice(1)}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -108,7 +126,8 @@ export function Litters() {
                     </p>
                     {litter.pickupReadyDate && (
                       <p className='text-sm'>
-                        <strong>Ready:</strong> {format(new Date(litter.pickupReadyDate), 'PPP')}
+                        <strong>Ready:</strong>{' '}
+                        {format(new Date(litter.pickupReadyDate), 'PPP')}
                       </p>
                     )}
                   </div>
@@ -116,8 +135,8 @@ export function Litters() {
                   <div className='flex items-center gap-2 text-sm'>
                     <Users className='h-4 w-4' />
                     <span>
-                      {puppies.length} puppies ({availablePuppies} available, {reservedPuppies}{' '}
-                      reserved, {soldPuppies} sold)
+                      {puppies.length} puppies ({availablePuppies} available,{' '}
+                      {reservedPuppies} reserved, {soldPuppies} sold)
                     </span>
                   </div>
 
@@ -127,7 +146,11 @@ export function Litters() {
                         <Eye className='mr-2 h-4 w-4' /> View Details
                       </Button>
                     </Link>
-                    <Button size='sm' variant='outline' onClick={() => handleEdit(litter)}>
+                    <Button
+                      size='sm'
+                      variant='outline'
+                      onClick={() => handleEdit(litter)}
+                    >
                       <Edit className='h-4 w-4' />
                     </Button>
                     <Button

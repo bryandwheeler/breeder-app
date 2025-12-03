@@ -1,0 +1,222 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if user owns the resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Helper function to check if user is admin
+    // Returns false if user document doesn't exist (new users)
+    function isAdmin() {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Dogs collection - users can read all dogs (for search) but only write their own
+    match /dogs/{dogId} {
+      // Allow reading all dogs for search functionality
+      allow read: if isAuthenticated();
+
+      // Allow creating if the userId matches the authenticated user
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+
+      // Allow updating only own dogs
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+
+      // Allow deleting only own dogs
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Litters collection - users can only read/write their own litters
+    match /litters/{litterId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Breeder profiles - users can read all profiles (for search) but only write their own
+    match /breederProfiles/{profileId} {
+      allow read: if isAuthenticated();
+      // Allow create if the userId in the document matches the authenticated user
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Allow update if the existing document's userId matches the authenticated user
+      // OR if updating own profile using the profileId pattern (userId as document ID)
+      allow update: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || profileId == request.auth.uid);
+      allow delete: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || profileId == request.auth.uid);
+    }
+
+    // Breeder profiles (with underscore) - same rules as above for backward compatibility
+    match /breeder_profiles/{profileId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || profileId == request.auth.uid);
+      allow delete: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || profileId == request.auth.uid);
+    }
+
+    // Dog connection requests - users can read requests they sent or received
+    match /dogConnectionRequests/{requestId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.requesterId == request.auth.uid ||
+         resource.data.ownerId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.requesterId == request.auth.uid;
+      allow update: if isAuthenticated() &&
+        (resource.data.ownerId == request.auth.uid ||
+         resource.data.requesterId == request.auth.uid);
+      allow delete: if isAuthenticated() && resource.data.requesterId == request.auth.uid;
+    }
+
+    // Notifications - users can only read/write their own notifications
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Heat cycles - users can only read/write their own heat cycle records
+    match /heatCycles/{cycleId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Breeding records - users can only read/write their own breeding records
+    match /breedingRecords/{recordId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Inquiries - users can only read/write their own inquiries
+    match /inquiries/{inquiryId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Waitlist entries - users can only read/write their own waitlist entries
+    match /waitlistEntries/{entryId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Care templates - users can only read/write their own care templates
+    // Document ID is the userId
+    match /careTemplates/{userId} {
+      allow read: if isAuthenticated() && userId == request.auth.uid;
+      allow write: if isAuthenticated() && userId == request.auth.uid;
+    }
+
+    // Testimonials - users can read all approved testimonials, but only write their own
+    match /testimonials/{testimonialId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Waitlist (public submissions) - anyone can create, only owner can read/update/delete
+    match /waitlist/{waitlistId} {
+      allow read: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+      allow create: if true; // Public can submit
+      allow update: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+    }
+
+    // Connection requests - users can read requests they sent or received
+    match /connectionRequests/{requestId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.requesterId == request.auth.uid ||
+         resource.data.ownerId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.requesterId == request.auth.uid;
+      allow update: if isAuthenticated() &&
+        (resource.data.ownerId == request.auth.uid ||
+         resource.data.requesterId == request.auth.uid);
+      allow delete: if isAuthenticated() && resource.data.requesterId == request.auth.uid;
+    }
+
+    // Heat cycles (with underscore) - users can only read/write their own heat cycle records
+    match /heat_cycles/{cycleId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Breeding records (with underscore) - users can only read/write their own breeding records
+    match /breeding_records/{recordId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // CRM Customers - users can only read/write their own customers
+    match /customers/{customerId} {
+      allow read: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.breederId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+    }
+
+    // CRM Customer segments - users can only read/write their own segments
+    match /customer_segments/{segmentId} {
+      allow read: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.breederId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+    }
+
+    // CRM Referrals - users can only read/write their own referrals
+    match /referrals/{referralId} {
+      allow read: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.breederId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+    }
+
+    // User profiles - users can read/write their own profile, admins can list all
+    // Note: We DON'T call isAdmin() in get operations to avoid circular dependency during user creation
+    match /users/{userId} {
+      // Allow users to read their own profile
+      allow get: if isAuthenticated() && userId == request.auth.uid;
+
+      // Allow admins to list all users (for admin dashboard)
+      allow list: if isAuthenticated() &&
+                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+
+      // Allow users to create their own profile
+      allow create: if isAuthenticated() && userId == request.auth.uid;
+
+      // Allow users to update their own profile
+      allow update: if isAuthenticated() && userId == request.auth.uid;
+
+      // Disable user deletion
+      allow delete: if false;
+    }
+
+    // Admin settings - only admins can read/write
+    match /admin/{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

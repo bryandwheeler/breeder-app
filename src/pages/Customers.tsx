@@ -51,7 +51,9 @@ import { formatCurrency } from '@/lib/utils';
 
 export function Customers() {
   const { customers, deleteCustomer } = useCrmStore();
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -84,10 +86,12 @@ export function Customers() {
       if (typeFilter !== 'all' && customer.type !== typeFilter) return false;
 
       // Status filter
-      if (statusFilter !== 'all' && customer.status !== statusFilter) return false;
+      if (statusFilter !== 'all' && customer.status !== statusFilter)
+        return false;
 
       // Tag filter
-      if (tagFilter !== 'all' && !customer.tags?.includes(tagFilter)) return false;
+      if (tagFilter !== 'all' && !customer.tags?.includes(tagFilter))
+        return false;
 
       return true;
     });
@@ -95,13 +99,22 @@ export function Customers() {
 
   // Calculate stats
   const stats = useMemo(() => {
-    const activeCustomers = customers.filter((c) => c.status === 'active').length;
-    const totalRevenue = customers.reduce((sum, c) => sum + (c.totalRevenue || 0), 0);
+    const activeCustomers = customers.filter(
+      (c) => c.status === 'active'
+    ).length;
+    const totalRevenue = customers.reduce(
+      (sum, c) => sum + (c.totalRevenue || 0),
+      0
+    );
     const averageLifetimeValue =
       customers.length > 0
-        ? customers.reduce((sum, c) => sum + (c.lifetimeValue || 0), 0) / customers.length
+        ? customers.reduce((sum, c) => sum + (c.lifetimeValue || 0), 0) /
+          customers.length
         : 0;
-    const totalPurchases = customers.reduce((sum, c) => sum + (c.totalPurchases || 0), 0);
+    const totalPurchases = customers.reduce(
+      (sum, c) => sum + (c.totalPurchases || 0),
+      0
+    );
 
     return {
       total: customers.length,
@@ -145,118 +158,130 @@ export function Customers() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this customer? This action cannot be undone.')) {
+    if (
+      confirm(
+        'Are you sure you want to delete this customer? This action cannot be undone.'
+      )
+    ) {
       await deleteCustomer(id);
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className='flex items-center justify-between'>
         <div>
-          <h1 className="text-3xl font-bold">Customer Database</h1>
-          <p className="text-muted-foreground">Manage all customer relationships and interactions</p>
+          <h1 className='text-3xl font-bold'>Customer Database</h1>
+          <p className='text-muted-foreground'>
+            Manage all customer relationships and interactions
+          </p>
         </div>
         <Button onClick={() => setAddDialogOpen(true)}>
-          <UserPlus className="h-4 w-4 mr-2" />
+          <UserPlus className='h-4 w-4 mr-2' />
           Add Customer
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <User className="h-4 w-4" />
-            <div className="text-sm">Total Customers</div>
+      <div className='grid grid-cols-1 md:grid-cols-5 gap-4'>
+        <Card className='p-4'>
+          <div className='flex items-center gap-2 text-muted-foreground mb-1'>
+            <User className='h-4 w-4' />
+            <div className='text-sm'>Total Customers</div>
           </div>
-          <div className="text-2xl font-bold">{stats.total}</div>
+          <div className='text-2xl font-bold'>{stats.total}</div>
         </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <TrendingUp className="h-4 w-4" />
-            <div className="text-sm">Active</div>
+        <Card className='p-4'>
+          <div className='flex items-center gap-2 text-muted-foreground mb-1'>
+            <TrendingUp className='h-4 w-4' />
+            <div className='text-sm'>Active</div>
           </div>
-          <div className="text-2xl font-bold text-green-600">{stats.active}</div>
+          <div className='text-2xl font-bold text-green-600'>
+            {stats.active}
+          </div>
         </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <DollarSign className="h-4 w-4" />
-            <div className="text-sm">Total Revenue</div>
+        <Card className='p-4'>
+          <div className='flex items-center gap-2 text-muted-foreground mb-1'>
+            <DollarSign className='h-4 w-4' />
+            <div className='text-sm'>Total Revenue</div>
           </div>
-          <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
+          <div className='text-2xl font-bold'>
+            {formatCurrency(stats.totalRevenue)}
+          </div>
         </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <TrendingUp className="h-4 w-4" />
-            <div className="text-sm">Avg. LTV</div>
+        <Card className='p-4'>
+          <div className='flex items-center gap-2 text-muted-foreground mb-1'>
+            <TrendingUp className='h-4 w-4' />
+            <div className='text-sm'>Avg. LTV</div>
           </div>
-          <div className="text-2xl font-bold">{formatCurrency(stats.averageLifetimeValue)}</div>
+          <div className='text-2xl font-bold'>
+            {formatCurrency(stats.averageLifetimeValue)}
+          </div>
         </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <ShoppingCart className="h-4 w-4" />
-            <div className="text-sm">Total Purchases</div>
+        <Card className='p-4'>
+          <div className='flex items-center gap-2 text-muted-foreground mb-1'>
+            <ShoppingCart className='h-4 w-4' />
+            <div className='text-sm'>Total Purchases</div>
           </div>
-          <div className="text-2xl font-bold">{stats.totalPurchases}</div>
+          <div className='text-2xl font-bold'>{stats.totalPurchases}</div>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card className="p-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Card className='p-4'>
+        <div className='flex flex-col md:flex-row gap-4'>
+          <div className='flex-1'>
+            <div className='relative'>
+              <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground' />
               <Input
-                placeholder="Search by name, email, or phone..."
+                placeholder='Search by name, email, or phone...'
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className='pl-10'
               />
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className='flex gap-2'>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Type" />
+              <SelectTrigger className='w-[160px]'>
+                <SelectValue placeholder='Type' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="prospect">Prospect</SelectItem>
-                <SelectItem value="waitlist">Waitlist</SelectItem>
-                <SelectItem value="buyer">Buyer</SelectItem>
-                <SelectItem value="past_buyer">Past Buyer</SelectItem>
-                <SelectItem value="guardian">Guardian</SelectItem>
-                <SelectItem value="referral_source">Referral Source</SelectItem>
+                <SelectItem value='all'>All Types</SelectItem>
+                <SelectItem value='prospect'>Prospect</SelectItem>
+                <SelectItem value='waitlist'>Waitlist</SelectItem>
+                <SelectItem value='buyer'>Buyer</SelectItem>
+                <SelectItem value='past_buyer'>Past Buyer</SelectItem>
+                <SelectItem value='guardian'>Guardian</SelectItem>
+                <SelectItem value='referral_source'>Referral Source</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Status" />
+              <SelectTrigger className='w-[140px]'>
+                <SelectValue placeholder='Status' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
+                <SelectItem value='all'>All Status</SelectItem>
+                <SelectItem value='active'>Active</SelectItem>
+                <SelectItem value='inactive'>Inactive</SelectItem>
+                <SelectItem value='archived'>Archived</SelectItem>
               </SelectContent>
             </Select>
 
             {allTags.length > 0 && (
               <Select value={tagFilter} onValueChange={setTagFilter}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Tags" />
+                <SelectTrigger className='w-[140px]'>
+                  <SelectValue placeholder='Tags' />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Tags</SelectItem>
+                  <SelectItem value='all'>All Tags</SelectItem>
                   {allTags.map((tag) => (
                     <SelectItem key={tag} value={tag}>
                       {tag}
@@ -271,9 +296,9 @@ export function Customers() {
 
       {/* Customer Table */}
       {filteredCustomers.length === 0 ? (
-        <Card className="p-12 text-center">
-          <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">
+        <Card className='p-12 text-center'>
+          <User className='h-12 w-12 text-muted-foreground mx-auto mb-4' />
+          <p className='text-muted-foreground'>
             {customers.length === 0
               ? 'No customers yet. Add your first customer to get started!'
               : 'No customers match your filters.'}
@@ -293,15 +318,17 @@ export function Customers() {
                 <TableHead>LTV</TableHead>
                 <TableHead>Last Contact</TableHead>
                 <TableHead>Tags</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className='text-right'>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCustomers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell>
-                    <div className="font-medium">{customer.name}</div>
-                    <div className="text-sm text-muted-foreground">{customer.email}</div>
+                    <div className='font-medium'>{customer.name}</div>
+                    <div className='text-sm text-muted-foreground'>
+                      {customer.email}
+                    </div>
                   </TableCell>
 
                   <TableCell>
@@ -311,26 +338,28 @@ export function Customers() {
                   </TableCell>
 
                   <TableCell>
-                    <Badge className={getStatusColor(customer.status)}>{customer.status}</Badge>
+                    <Badge className={getStatusColor(customer.status)}>
+                      {customer.status}
+                    </Badge>
                   </TableCell>
 
                   <TableCell>
-                    <div className="flex flex-col gap-1">
+                    <div className='flex flex-col gap-1'>
                       {customer.phone && (
                         <a
                           href={`tel:${customer.phone}`}
-                          className="flex items-center gap-1 text-sm text-primary hover:underline"
+                          className='flex items-center gap-1 text-sm text-primary hover:underline'
                         >
-                          <Phone className="h-3 w-3" />
+                          <Phone className='h-3 w-3' />
                           {customer.phone}
                         </a>
                       )}
                       {customer.email && (
                         <a
                           href={`mailto:${customer.email}`}
-                          className="flex items-center gap-1 text-sm text-primary hover:underline"
+                          className='flex items-center gap-1 text-sm text-primary hover:underline'
                         >
-                          <Mail className="h-3 w-3" />
+                          <Mail className='h-3 w-3' />
                           Email
                         </a>
                       )}
@@ -338,69 +367,75 @@ export function Customers() {
                   </TableCell>
 
                   <TableCell>
-                    <div className="text-sm">{customer.totalPurchases || 0}</div>
+                    <div className='text-sm'>
+                      {customer.totalPurchases || 0}
+                    </div>
                   </TableCell>
 
                   <TableCell>
-                    <div className="font-medium">{formatCurrency(customer.totalRevenue || 0)}</div>
+                    <div className='font-medium'>
+                      {formatCurrency(customer.totalRevenue || 0)}
+                    </div>
                   </TableCell>
 
                   <TableCell>
-                    <div className="font-medium">
+                    <div className='font-medium'>
                       {formatCurrency(customer.lifetimeValue || 0)}
                     </div>
                   </TableCell>
 
                   <TableCell>
-                    <div className="text-sm">
+                    <div className='text-sm'>
                       {customer.lastContactDate
-                        ? new Date(customer.lastContactDate).toLocaleDateString()
+                        ? new Date(
+                            customer.lastContactDate
+                          ).toLocaleDateString()
                         : '-'}
                     </div>
                   </TableCell>
 
                   <TableCell>
-                    <div className="flex flex-wrap gap-1">
+                    <div className='flex flex-wrap gap-1'>
                       {customer.tags?.slice(0, 2).map((tag) => (
-                        <Badge key={tag} variant="outline" className="text-xs">
+                        <Badge key={tag} variant='outline' className='text-xs'>
                           {tag}
                         </Badge>
                       ))}
                       {customer.tags && customer.tags.length > 2 && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant='outline' className='text-xs'>
                           +{customer.tags.length - 2}
                         </Badge>
                       )}
                     </div>
                   </TableCell>
 
-                  <TableCell className="text-right">
+                  <TableCell className='text-right'>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
+                        <Button variant='ghost' size='sm'>
+                          <MoreVertical className='h-4 w-4' />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align='end'>
                         <DropdownMenuItem
                           onClick={() => {
                             setSelectedCustomer(customer);
                             setDetailsOpen(true);
                           }}
                         >
-                          <Eye className="h-4 w-4 mr-2" />
+                          <Eye className='h-4 w-4 mr-2' />
                           View Details
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <a href={`mailto:${customer.email}`}>
-                            <Mail className="h-4 w-4 mr-2" />
+                            <Mail className='h-4 w-4 mr-2' />
                             Send Email
                           </a>
                         </DropdownMenuItem>
                         {customer.phone && (
                           <DropdownMenuItem asChild>
                             <a href={`tel:${customer.phone}`}>
-                              <Phone className="h-4 w-4 mr-2" />
+                              <Phone className='h-4 w-4 mr-2' />
                               Call
                             </a>
                           </DropdownMenuItem>
@@ -408,9 +443,9 @@ export function Customers() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => handleDelete(customer.id)}
-                          className="text-destructive"
+                          className='text-destructive'
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
+                          <Trash2 className='h-4 w-4 mr-2' />
                           Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>

@@ -106,7 +106,7 @@ export function Login() {
             <div className='w-full border-t'></div>
           </div>
           <div className='relative flex justify-center text-sm'>
-            <span className='bg-background px-2 text-muted-foreground'>
+            <span className='relative z-10 bg-background px-2 text-muted-foreground'>
               Or continue with
             </span>
           </div>
@@ -141,7 +141,10 @@ export function Login() {
         </div>
 
         <div className='text-center text-sm'>
-          <Link to='/reset-password' className='text-muted-foreground hover:underline'>
+          <Link
+            to='/reset-password'
+            className='text-muted-foreground hover:underline'
+          >
             Forgot password?
           </Link>
         </div>
