@@ -22,17 +22,20 @@ import { Label } from '@/components/ui/label';
 
 export function RegistryManagement() {
   const { appSettings, updateAppSettings } = useAdminStore();
-  const [localRegistries, setLocalRegistries] = useState<string[]>([]);
   const [newRegistry, setNewRegistry] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
-  // Use app settings or defaults
+  // Always use appSettings.globalRegistries, with defaults as fallback
   const registries = useMemo(() => {
-    if (localRegistries.length > 0) return localRegistries;
-    if (appSettings?.globalRegistries) return appSettings.globalRegistries;
-    // Initialize with defaults if not set
+    if (
+      appSettings?.globalRegistries &&
+      appSettings.globalRegistries.length > 0
+    ) {
+      return appSettings.globalRegistries;
+    }
+    // Use defaults only if nothing is in appSettings
     return ['AKC', 'CKC', 'UKC', 'FCI', 'IABCA', 'ABKC'];
-  }, [appSettings, localRegistries]);
+  }, [appSettings?.globalRegistries]);
 
   const handleAddRegistry = async () => {
     if (!newRegistry.trim()) return;
@@ -47,7 +50,6 @@ export function RegistryManagement() {
 
     try {
       await updateAppSettings({ globalRegistries: updated });
-      setLocalRegistries(updated);
       setNewRegistry('');
       setAddDialogOpen(false);
     } catch (error) {
@@ -69,7 +71,6 @@ export function RegistryManagement() {
 
     try {
       await updateAppSettings({ globalRegistries: updated });
-      setLocalRegistries(updated);
     } catch (error) {
       console.error('Error removing registry:', error);
       alert('Failed to remove registry');

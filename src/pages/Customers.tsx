@@ -137,6 +137,8 @@ export function Customers() {
         return 'bg-purple-500';
       case 'guardian':
         return 'bg-cyan-500';
+      case 'stud_client':
+        return 'bg-pink-500';
       case 'referral_source':
         return 'bg-orange-500';
       default:
@@ -259,6 +261,7 @@ export function Customers() {
                 <SelectItem value='buyer'>Buyer</SelectItem>
                 <SelectItem value='past_buyer'>Past Buyer</SelectItem>
                 <SelectItem value='guardian'>Guardian</SelectItem>
+                <SelectItem value='stud_client'>Stud Client</SelectItem>
                 <SelectItem value='referral_source'>Referral Source</SelectItem>
               </SelectContent>
             </Select>

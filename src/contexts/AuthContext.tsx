@@ -20,6 +20,7 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider, facebookProvider, db } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import { logUserLogin, logUserSignup } from '@/lib/auditLog';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -96,11 +97,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
     await updateProfile(user, { displayName });
     await ensureUserProfile(user, true);
+
+    // Log the signup
+    await logUserSignup(user.uid, email, displayName);
   }
 
   async function login(email: string, password: string) {
     const { user } = await signInWithEmailAndPassword(auth, email, password);
     await ensureUserProfile(user, false);
+
+    // Log the login
+    await logUserLogin(
+      user.uid,
+      user.email || email,
+      user.displayName || 'Unknown User'
+    );
   }
 
   async function logout() {
@@ -116,6 +127,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const credential = await signInWithPopup(auth, googleProvider);
       const isNew = !!getAdditionalUserInfo(credential)?.isNewUser;
       await ensureUserProfile(credential.user, isNew);
+
+      // Log the login (signup is logged in ensureUserProfile for new users)
+      if (!isNew) {
+        await logUserLogin(
+          credential.user.uid,
+          credential.user.email || 'unknown',
+          credential.user.displayName || 'Unknown User'
+        );
+      } else {
+        await logUserSignup(
+          credential.user.uid,
+          credential.user.email || 'unknown',
+          credential.user.displayName || 'Unknown User'
+        );
+      }
     } catch (err: any) {
       // Fallback to redirect for COOP/popup-blocked environments
       console.warn(
@@ -135,6 +161,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const credential = await signInWithPopup(auth, facebookProvider);
       const isNew = !!getAdditionalUserInfo(credential)?.isNewUser;
       await ensureUserProfile(credential.user, isNew);
+
+      // Log the login (signup is logged separately for new users)
+      if (!isNew) {
+        await logUserLogin(
+          credential.user.uid,
+          credential.user.email || 'unknown',
+          credential.user.displayName || 'Unknown User'
+        );
+      } else {
+        await logUserSignup(
+          credential.user.uid,
+          credential.user.email || 'unknown',
+          credential.user.displayName || 'Unknown User'
+        );
+      }
     } catch (err: any) {
       console.warn(
         '[AuthContext] Facebook popup failed, falling back to redirect:',

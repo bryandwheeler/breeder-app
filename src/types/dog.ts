@@ -110,6 +110,110 @@ export interface BreedingRecord {
   updatedAt?: string;
 }
 
+export interface StudJobBreeding {
+  id: string;
+  date: string; // ISO date string
+  method: 'natural' | 'ai' | 'surgical_ai';
+  aiDetails?: string;
+  notes?: string;
+}
+
+export interface StudJobAddOn {
+  id: string;
+  service: string;
+  cost: number;
+  paid: boolean;
+  notes?: string;
+}
+
+export interface StudJob {
+  id: string;
+  studId: string; // Male dog ID from own kennel
+  userId: string; // Owner of the stud
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+
+  // Female dog info
+  femaleDogName: string;
+  femaleDogId?: string; // If the female owner uses the app
+
+  // Breeder/owner info
+  breederName: string;
+  breederUserId?: string; // If they use the app
+  breederEmail?: string;
+  breederPhone?: string;
+
+  // Customer link
+  customerId?: string; // Link to customer record if they're a stud client
+
+  // Dates
+  scheduledDate?: string; // ISO date string for initial/first breeding
+
+  // Multiple breedings
+  breedings: StudJobBreeding[]; // Track all breeding dates
+
+  // Litter tracking
+  litterId?: string; // Link to litter if created
+  puppyCount?: number;
+
+  // Financial
+  studFee?: number; // Base stud fee
+  studFeePaid?: boolean;
+  additionalBreedingFee?: number; // Cost per additional breeding
+  additionalBreedingsPaid?: boolean;
+  pickOfLitter?: boolean;
+  addOns?: StudJobAddOn[]; // Additional services
+
+  // Contract
+  contract?: StudServiceContract;
+
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Stud Service Contract
+export interface StudServiceContract {
+  id: string;
+  templateId?: string; // If created from a template
+  status: 'draft' | 'sent' | 'signed' | 'completed' | 'cancelled';
+
+  // Contract sections with editable content
+  sections: ContractSection[];
+
+  // Signatures
+  breederSignature?: ContractSignature;
+  clientSignature?: ContractSignature;
+
+  // Dates
+  createdDate: string;
+  sentDate?: string;
+  signedDate?: string;
+  expiryDate?: string;
+
+  // PDF generation
+  pdfUrl?: string; // URL to generated PDF
+  lastGeneratedAt?: string;
+}
+
+// Contract section that can be edited
+export interface ContractSection {
+  id: string;
+  title: string;
+  content: string; // Markdown or HTML content
+  order: number;
+  editable: boolean; // Whether breeder can edit this section
+  required: boolean; // Whether this section must be included
+}
+
+// Digital signature
+export interface ContractSignature {
+  name: string;
+  email: string;
+  signedAt: string;
+  ipAddress?: string;
+  signature?: string; // Base64 encoded signature image or typed name
+}
+
 export interface Buyer {
   id: string;
   name: string;
@@ -997,6 +1101,7 @@ export interface Customer {
     | 'buyer'
     | 'past_buyer'
     | 'guardian'
+    | 'stud_client' // Client who uses your stud services
     | 'referral_source';
   status: 'active' | 'inactive' | 'archived';
 
@@ -1041,6 +1146,7 @@ export interface Customer {
   waitlistEntryId?: string;
   inquiryIds?: string[];
   litterIds?: string[]; // Litters they purchased from
+  studJobIds?: string[]; // Stud jobs for stud clients
 
   createdAt?: string;
   updatedAt?: string;
@@ -1065,16 +1171,34 @@ export interface Interaction {
     | 'email'
     | 'phone'
     | 'text'
+    | 'instagram_dm'
+    | 'facebook_msg'
+    | 'tiktok_msg'
     | 'meeting'
     | 'video_call'
     | 'visit'
     | 'other';
   subject: string;
   notes?: string;
+  content?: string; // Full message content (for emails, messages)
+  direction?: 'inbound' | 'outbound'; // Direction of communication
   outcome?: string;
   followUpDate?: string;
   followUpCompleted?: boolean;
   attachments?: string[]; // URLs to files
+
+  // Email-specific fields
+  externalId?: string; // ID from external platform (Gmail message ID, etc)
+  threadId?: string; // For grouping related messages
+  fromEmail?: string;
+  toEmail?: string;
+  ccEmail?: string[];
+  bccEmail?: string[];
+  htmlContent?: string; // HTML version of email
+
+  // Integration metadata
+  source?: 'manual' | 'gmail' | 'outlook' | 'twilio' | 'meta' | 'other';
+  syncedAt?: string; // When it was synced from external source
 }
 
 // Customer Segment for filtering/reporting

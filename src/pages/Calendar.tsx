@@ -1,7 +1,8 @@
 import { useDogStore } from '@/store/dogStoreFirebase';
+import { useStudJobStore } from '@/store/studJobStore';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar as CalendarIcon, Heart, Baby, Download, Settings } from 'lucide-react';
+import { Calendar as CalendarIcon, Heart, Baby, Download, Settings, Briefcase } from 'lucide-react';
 import { format, addDays, isSameMonth, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameDay } from 'date-fns';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -12,17 +13,22 @@ import { ReminderSettingsDialog } from '@/components/ReminderSettingsDialog';
 
 interface CalendarEvent {
   date: Date;
-  type: 'heat' | 'expectedHeat' | 'breeding' | 'dueDate' | 'pickup';
+  type: 'heat' | 'expectedHeat' | 'breeding' | 'dueDate' | 'pickup' | 'studJob';
   title: string;
   dogId: string;
   dogName: string;
   details?: string;
+  studJobId?: string;
+  status?: string;
 }
 
 export function Calendar() {
   const { dogs, litters } = useDogStore();
+  const { getAllStudJobs } = useStudJobStore();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const studJobs = getAllStudJobs();
 
   // Collect all calendar events
   const events: CalendarEvent[] = [];
@@ -98,6 +104,26 @@ export function Calendar() {
     }
   });
 
+  // Stud job events
+  studJobs.forEach(job => {
+    const stud = dogs.find(d => d.id === job.studId);
+    if (!stud) return;
+
+    const eventDate = job.actualDate || job.scheduledDate;
+    if (!eventDate) return;
+
+    events.push({
+      date: new Date(eventDate),
+      type: 'studJob',
+      title: `Stud Service${job.status === 'pending' ? ' (Pending)' : job.status === 'confirmed' ? ' (Confirmed)' : ''}`,
+      dogId: stud.id,
+      dogName: stud.name,
+      details: `${job.femaleDogName} - ${job.breederName}`,
+      studJobId: job.id,
+      status: job.status,
+    });
+  });
+
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -112,6 +138,7 @@ export function Calendar() {
       case 'breeding': return 'bg-purple-500';
       case 'dueDate': return 'bg-blue-500';
       case 'pickup': return 'bg-green-500';
+      case 'studJob': return 'bg-amber-500';
       default: return 'bg-gray-500';
     }
   };

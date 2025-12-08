@@ -2,20 +2,36 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminStore } from '@/store/adminStore';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Save } from 'lucide-react';
 import { AppSettings } from '@/types/admin';
+import { RegistryManagement } from '@/components/RegistryManagement';
+import { BreedManagement } from '@/components/BreedManagement';
+import { SubscriptionManagement } from '@/components/SubscriptionManagement';
+import { AuditLogViewer } from '@/components/AuditLogViewer';
+import { StripeSettings } from '@/components/StripeSettings';
 
 export function AdminSettings() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { appSettings, checkIsAdmin, updateAppSettings, subscribeToAppSettings } =
-    useAdminStore();
+  const {
+    appSettings,
+    checkIsAdmin,
+    updateAppSettings,
+    subscribeToAppSettings,
+  } = useAdminStore();
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -99,7 +115,9 @@ export function AdminSettings() {
         </Button>
         <div className='flex-1'>
           <h1 className='text-3xl font-bold'>Application Settings</h1>
-          <p className='text-muted-foreground'>Configure global application settings</p>
+          <p className='text-muted-foreground'>
+            Configure global application settings
+          </p>
         </div>
         <Button onClick={handleSave} disabled={saving}>
           <Save className='mr-2 h-4 w-4' />
@@ -140,7 +158,10 @@ export function AdminSettings() {
                 placeholder='We are currently performing maintenance. Please check back soon.'
                 value={formData.maintenanceMessage || ''}
                 onChange={(e) =>
-                  setFormData({ ...formData, maintenanceMessage: e.target.value })
+                  setFormData({
+                    ...formData,
+                    maintenanceMessage: e.target.value,
+                  })
                 }
                 rows={3}
               />
@@ -169,9 +190,7 @@ export function AdminSettings() {
       <Card>
         <CardHeader>
           <CardTitle>User Limits</CardTitle>
-          <CardDescription>
-            Set maximum limits for users' data
-          </CardDescription>
+          <CardDescription>Set maximum limits for users' data</CardDescription>
         </CardHeader>
         <CardContent className='space-y-4'>
           <div>
@@ -183,7 +202,10 @@ export function AdminSettings() {
               max='1000'
               value={formData.maxDogsPerUser}
               onChange={(e) =>
-                setFormData({ ...formData, maxDogsPerUser: parseInt(e.target.value) })
+                setFormData({
+                  ...formData,
+                  maxDogsPerUser: parseInt(e.target.value),
+                })
               }
             />
           </div>
@@ -197,7 +219,10 @@ export function AdminSettings() {
               max='1000'
               value={formData.maxLittersPerUser}
               onChange={(e) =>
-                setFormData({ ...formData, maxLittersPerUser: parseInt(e.target.value) })
+                setFormData({
+                  ...formData,
+                  maxLittersPerUser: parseInt(e.target.value),
+                })
               }
             />
           </div>
@@ -226,7 +251,10 @@ export function AdminSettings() {
               onCheckedChange={(checked) =>
                 setFormData({
                   ...formData,
-                  featuresEnabled: { ...formData.featuresEnabled, connections: checked },
+                  featuresEnabled: {
+                    ...formData.featuresEnabled,
+                    connections: checked,
+                  },
                 })
               }
             />
@@ -245,7 +273,10 @@ export function AdminSettings() {
               onCheckedChange={(checked) =>
                 setFormData({
                   ...formData,
-                  featuresEnabled: { ...formData.featuresEnabled, waitlist: checked },
+                  featuresEnabled: {
+                    ...formData.featuresEnabled,
+                    waitlist: checked,
+                  },
                 })
               }
             />
@@ -264,7 +295,10 @@ export function AdminSettings() {
               onCheckedChange={(checked) =>
                 setFormData({
                   ...formData,
-                  featuresEnabled: { ...formData.featuresEnabled, publicPages: checked },
+                  featuresEnabled: {
+                    ...formData.featuresEnabled,
+                    publicPages: checked,
+                  },
                 })
               }
             />
@@ -293,6 +327,44 @@ export function AdminSettings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Tabbed Management Sections */}
+      <Tabs defaultValue='global' className='w-full'>
+        <TabsList className='grid w-full grid-cols-5'>
+          <TabsTrigger value='global'>Global Lists</TabsTrigger>
+          <TabsTrigger value='registries'>Registries</TabsTrigger>
+          <TabsTrigger value='subscriptions'>Subscriptions</TabsTrigger>
+          <TabsTrigger value='stripe'>Stripe Settings</TabsTrigger>
+          <TabsTrigger value='audit'>Audit Logs</TabsTrigger>
+        </TabsList>
+
+        {/* Global Lists Tab */}
+        <TabsContent value='global'>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            <BreedManagement />
+          </div>
+        </TabsContent>
+
+        {/* Registries Tab */}
+        <TabsContent value='registries'>
+          <RegistryManagement />
+        </TabsContent>
+
+        {/* Subscriptions Tab */}
+        <TabsContent value='subscriptions'>
+          <SubscriptionManagement />
+        </TabsContent>
+
+        {/* Stripe Settings Tab */}
+        <TabsContent value='stripe'>
+          <StripeSettings />
+        </TabsContent>
+
+        {/* Audit Logs Tab */}
+        <TabsContent value='audit'>
+          <AuditLogViewer />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

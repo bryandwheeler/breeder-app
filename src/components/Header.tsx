@@ -70,37 +70,25 @@ export function Header({
 
           {/* Logo/Brand */}
           <Link to='/' className='flex items-center gap-3'>
-            {/* Light mode logo - white background */}
+            {/* Expert Breeder Logo */}
             <img
-              src='/logo-light.jpg'
+              src='/expert-breeder-logo.webp'
               alt='Expert Breeder Logo'
-              className='h-12 w-auto dark:hidden'
+              className='h-16 w-auto'
             />
-            {/* Dark mode logo - blue background */}
-            <img
-              src='/logo-dark.jpg'
-              alt='Expert Breeder Logo'
-              className='h-12 w-auto hidden dark:block'
-            />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Menu className='size-5' />
-              </TooltipTrigger>
-              <TooltipContent>Open sidebar menu</TooltipContent>
-            </Tooltip>
             {profile?.kennelName && (
               <div className='hidden lg:flex flex-col'>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className='font-bold text-lg cursor-pointer'>
-                      BreederApp
+                    <span className='font-bold text-lg cursor-pointer text-breeder-navy dark:text-white'>
+                      Expert Breeder
                     </span>
                   </TooltipTrigger>
                   <TooltipContent>Go to dashboard</TooltipContent>
                 </Tooltip>
-                {profile.breederName && (
+                {profile.kennelName && (
                   <span className='text-xs text-muted-foreground'>
-                    {profile.breederName}
+                    {profile.kennelName}
                   </span>
                 )}
               </div>

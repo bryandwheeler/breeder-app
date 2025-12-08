@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { HeatCycle, BreedingRecord } from '@/types/dog';
+import { FIRESTORE_COLLECTIONS } from '@/types/guards';
 
 type Store = {
   heatCycles: HeatCycle[];
@@ -53,7 +54,7 @@ export const useHeatCycleStore = create<Store>()((set, get) => ({
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to add heat cycles');
 
-    const heatCyclesRef = collection(db, 'heat_cycles');
+    const heatCyclesRef = collection(db, FIRESTORE_COLLECTIONS.HEAT_CYCLES);
 
     const newCycle = {
       ...cycle,
@@ -69,7 +70,7 @@ export const useHeatCycleStore = create<Store>()((set, get) => ({
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to update heat cycles');
 
-    const cycleRef = doc(db, 'heat_cycles', id);
+    const cycleRef = doc(db, FIRESTORE_COLLECTIONS.HEAT_CYCLES, id);
     await updateDoc(cycleRef, {
       ...updates,
       updatedAt: serverTimestamp(),
@@ -83,11 +84,11 @@ export const useHeatCycleStore = create<Store>()((set, get) => ({
     // First delete all breeding records for this cycle
     const breedingRecords = get().getBreedingRecordsForCycle(id);
     for (const record of breedingRecords) {
-      await deleteDoc(doc(db, 'breeding_records', record.id));
+      await deleteDoc(doc(db, FIRESTORE_COLLECTIONS.BREEDING_RECORDS, record.id));
     }
 
     // Then delete the heat cycle
-    const cycleRef = doc(db, 'heat_cycles', id);
+    const cycleRef = doc(db, FIRESTORE_COLLECTIONS.HEAT_CYCLES, id);
     await deleteDoc(cycleRef);
   },
 
@@ -104,7 +105,7 @@ export const useHeatCycleStore = create<Store>()((set, get) => ({
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to add breeding records');
 
-    const breedingRecordsRef = collection(db, 'breeding_records');
+    const breedingRecordsRef = collection(db, FIRESTORE_COLLECTIONS.BREEDING_RECORDS);
 
     const newRecord = {
       ...record,
@@ -120,7 +121,7 @@ export const useHeatCycleStore = create<Store>()((set, get) => ({
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to update breeding records');
 
-    const recordRef = doc(db, 'breeding_records', id);
+    const recordRef = doc(db, FIRESTORE_COLLECTIONS.BREEDING_RECORDS, id);
     await updateDoc(recordRef, {
       ...updates,
       updatedAt: serverTimestamp(),
@@ -131,7 +132,7 @@ export const useHeatCycleStore = create<Store>()((set, get) => ({
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to delete breeding records');
 
-    const recordRef = doc(db, 'breeding_records', id);
+    const recordRef = doc(db, FIRESTORE_COLLECTIONS.BREEDING_RECORDS, id);
     await deleteDoc(recordRef);
   },
 
@@ -163,7 +164,7 @@ export const useHeatCycleStore = create<Store>()((set, get) => ({
 
     // Subscribe to heat cycles
     const heatCyclesQuery = query(
-      collection(db, 'heat_cycles'),
+      collection(db, FIRESTORE_COLLECTIONS.HEAT_CYCLES),
       where('userId', '==', user.uid)
     );
 
@@ -187,7 +188,7 @@ export const useHeatCycleStore = create<Store>()((set, get) => ({
 
     // Subscribe to breeding records
     const breedingRecordsQuery = query(
-      collection(db, 'breeding_records'),
+      collection(db, FIRESTORE_COLLECTIONS.BREEDING_RECORDS),
       where('userId', '==', user.uid)
     );
 

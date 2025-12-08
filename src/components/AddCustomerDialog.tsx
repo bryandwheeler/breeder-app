@@ -177,6 +177,7 @@ export function AddCustomerDialog({ open, setOpen }: Props) {
                     <SelectItem value="buyer">Buyer</SelectItem>
                     <SelectItem value="past_buyer">Past Buyer</SelectItem>
                     <SelectItem value="guardian">Guardian</SelectItem>
+                    <SelectItem value="stud_client">Stud Client</SelectItem>
                     <SelectItem value="referral_source">Referral Source</SelectItem>
                   </SelectContent>
                 </Select>

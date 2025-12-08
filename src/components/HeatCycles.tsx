@@ -21,11 +21,13 @@ export function HeatCycles({ dogId, dogName }: HeatCyclesProps) {
   const [breedingDialogOpen, setBreedingDialogOpen] = useState(false);
   const [editingCycle, setEditingCycle] = useState<HeatCycle | null>(null);
   const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
+  const [editingBreedingRecord, setEditingBreedingRecord] = useState<BreedingRecord | null>(null);
 
   const {
     getHeatCyclesForDog,
     getBreedingRecordsForDog,
-    deleteHeatCycle
+    deleteHeatCycle,
+    deleteBreedingRecord
   } = useHeatCycleStore();
 
   const heatCycles = getHeatCyclesForDog(dogId);
@@ -92,7 +94,20 @@ export function HeatCycles({ dogId, dogName }: HeatCyclesProps) {
 
   const handleAddBreeding = (cycleId: string) => {
     setSelectedCycleId(cycleId);
+    setEditingBreedingRecord(null);
     setBreedingDialogOpen(true);
+  };
+
+  const handleEditBreeding = (record: BreedingRecord) => {
+    setSelectedCycleId(record.heatCycleId);
+    setEditingBreedingRecord(record);
+    setBreedingDialogOpen(true);
+  };
+
+  const handleDeleteBreeding = async (recordId: string) => {
+    if (confirm('Are you sure you want to delete this breeding record?')) {
+      await deleteBreedingRecord(recordId);
+    }
   };
 
   const getBreedingsForCycle = (cycleId: string) => {
@@ -199,12 +214,38 @@ export function HeatCycles({ dogId, dogName }: HeatCyclesProps) {
                       <TableCell>{fertile.end}</TableCell>
                       <TableCell>
                         {breedings.length > 0 ? (
-                          <div className="space-y-1">
+                          <div className="space-y-2">
                             {breedings.map((breeding) => (
-                              <Badge key={breeding.id} variant="secondary" className="mr-1">
-                                {breeding.studName} - {format(parseISO(breeding.breedingDate), 'MMM d')}
-                              </Badge>
+                              <div key={breeding.id} className="flex items-center gap-2">
+                                <Badge variant="secondary" className="flex-1">
+                                  {breeding.studName} - {format(parseISO(breeding.breedingDate), 'MMM d')}
+                                </Badge>
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditBreeding(breeding)}
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteBreeding(breeding.id)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
                             ))}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleAddBreeding(cycle.id)}
+                            >
+                              <Plus className="mr-1 h-3 w-3" />
+                              Add Another
+                            </Button>
                           </div>
                         ) : (
                           <Button
@@ -261,6 +302,7 @@ export function HeatCycles({ dogId, dogName }: HeatCyclesProps) {
         setOpen={setBreedingDialogOpen}
         dogId={dogId}
         heatCycleId={selectedCycleId}
+        editingRecord={editingBreedingRecord}
       />
     </div>
   );

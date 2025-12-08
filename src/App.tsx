@@ -10,8 +10,11 @@ import { Reminders } from '@/pages/Reminders';
 import { Pedigrees } from '@/pages/Pedigrees';
 import { PublicLitter } from '@/pages/PublicLitter';
 import { PublicHome } from '@/pages/PublicHome';
+import { PublicWebsite } from '@/pages/PublicWebsite';
 import { ContactForm } from '@/pages/ContactForm';
 import { BreederSettings } from '@/pages/BreederSettings';
+import { WebsiteDesign } from '@/pages/WebsiteDesign';
+import { AccountManagement } from '@/pages/AccountManagement';
 import { Inquiries } from '@/pages/Inquiries';
 import { Waitlist } from '@/pages/Waitlist';
 import { WaitlistApplication } from '@/pages/WaitlistApplication';
@@ -19,19 +22,25 @@ import { Customers } from '@/pages/Customers';
 import { Connections } from '@/pages/Connections';
 import { BuyerPortal } from '@/pages/BuyerPortal';
 import { HealthRecords } from '@/pages/HealthRecords';
+import { StudJobsPage } from '@/pages/StudJobsPage';
 import { Help } from '@/pages/Help';
 import { Login } from '@/pages/Login';
 import { Signup } from '@/pages/Signup';
 import { AdminDashboard } from '@/pages/AdminDashboard';
 import { AdminSettings } from '@/pages/AdminSettings';
+import { AdminCustomers } from '@/pages/AdminCustomers';
+import { GmailCallback } from '@/pages/auth/GmailCallback';
+import { OutlookCallback } from '@/pages/auth/OutlookCallback';
 import { DogFormDialog } from '@/components/DogFormDialog';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { EmailSettingsDialog } from '@/components/EmailSettingsDialog';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { HelmetProvider } from 'react-helmet-async';
 import { useState, useEffect } from 'react';
 import { Dog } from '@/types/dog';
 import { useDogStore } from '@/store/dogStoreFirebase';
@@ -40,6 +49,8 @@ import { useWaitlistStore } from '@/store/waitlistStore';
 import { useCrmStore } from '@/store/crmStore';
 import { useConnectionStore } from '@/store/connectionStore';
 import { useAdminStore } from '@/store/adminStore';
+import { useStudJobStore } from '@/store/studJobStore';
+import { useHeatCycleStore } from '@/store/heatCycleStore';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { cn } from '@/lib/utils';
 
@@ -68,6 +79,12 @@ function AppContent() {
   );
   const subscribeToNotifications = useConnectionStore(
     (state) => state.subscribeToNotifications
+  );
+  const subscribeToStudJobs = useStudJobStore(
+    (state) => state.subscribeToStudJobs
+  );
+  const subscribeToHeatCycles = useHeatCycleStore(
+    (state) => state.subscribeToHeatCycles
   );
   const impersonatedUserId = useAdminStore((s) => s.impersonatedUserId);
   const dogs = useDogStore((state) => state.dogs);
@@ -114,6 +131,22 @@ function AppContent() {
     }
   }, [currentUser, subscribeToNotifications]);
 
+  // Subscribe to stud jobs when user logs in
+  useEffect(() => {
+    if (currentUser) {
+      const unsubscribe = subscribeToStudJobs();
+      return unsubscribe;
+    }
+  }, [currentUser, subscribeToStudJobs]);
+
+  // Subscribe to heat cycles when user logs in
+  useEffect(() => {
+    if (currentUser) {
+      const unsubscribe = subscribeToHeatCycles();
+      return unsubscribe;
+    }
+  }, [currentUser, subscribeToHeatCycles]);
+
   // Persist sidebar state to localStorage
   useEffect(() => {
     localStorage.setItem('sidebarOpen', JSON.stringify(sidebarOpen));
@@ -135,40 +168,49 @@ function AppContent() {
 
   return (
     <TooltipProvider>
-      <div className='min-h-screen bg-background'>
-        {currentUser && (
-          <>
-            <Header
-              onAddDog={openAddDialog}
-              onEmailSettings={() => setEmailSettingsOpen(true)}
-              dogs={dogs}
-              litters={litters}
-              onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-            />
-            <ImpersonationBanner />
-            <Sidebar
-              isOpen={sidebarOpen}
-              setIsOpen={setSidebarOpen}
-              isPinned={sidebarPinned}
-              setIsPinned={setSidebarPinned}
-            />
-          </>
-        )}
-
-        <main
-          className={cn(
-            'min-h-screen transition-all duration-300',
-            currentUser && 'pt-16',
-            currentUser && sidebarPinned && sidebarOpen && 'lg:ml-64',
-            currentUser && sidebarPinned && !sidebarOpen && 'lg:ml-20'
+      <ErrorBoundary>
+        <div className='min-h-screen bg-background'>
+          {currentUser && (
+            <>
+              <Header
+                onAddDog={openAddDialog}
+                onEmailSettings={() => setEmailSettingsOpen(true)}
+                dogs={dogs}
+                litters={litters}
+                onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+              />
+              <ImpersonationBanner />
+              <Sidebar
+                isOpen={sidebarOpen}
+                setIsOpen={setSidebarOpen}
+                isPinned={sidebarPinned}
+                setIsPinned={setSidebarPinned}
+              />
+            </>
           )}
-        >
-          <div className='container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 max-w-7xl'>
-            <Routes>
+
+          <main
+            className={cn(
+              'min-h-screen transition-all duration-300',
+              currentUser && 'pt-16',
+              currentUser && sidebarPinned && sidebarOpen && 'lg:ml-64',
+              currentUser && sidebarPinned && !sidebarOpen && 'lg:ml-20'
+            )}
+          >
+            <div className='container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 max-w-7xl'>
+              <Routes>
               <Route path='/login' element={<Login />} />
               <Route path='/signup' element={<Signup />} />
 
+              {/* OAuth Callback routes */}
+              <Route path='/auth/gmail/callback' element={<GmailCallback />} />
+              <Route
+                path='/auth/outlook/callback'
+                element={<OutlookCallback />}
+              />
+
               {/* Public routes */}
+              <Route path='/website/:userId' element={<PublicWebsite />} />
               <Route path='/home/:userId' element={<PublicHome />} />
               <Route path='/contact/:userId' element={<ContactForm />} />
               <Route
@@ -211,6 +253,22 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <BreederSettings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/account'
+                element={
+                  <ProtectedRoute>
+                    <AccountManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/website-design'
+                element={
+                  <ProtectedRoute>
+                    <WebsiteDesign />
                   </ProtectedRoute>
                 }
               />
@@ -303,6 +361,14 @@ function AppContent() {
                 }
               />
               <Route
+                path='/stud-jobs'
+                element={
+                  <ProtectedRoute>
+                    <StudJobsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path='/help'
                 element={
                   <ProtectedRoute>
@@ -326,6 +392,14 @@ function AppContent() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path='/admin/customers'
+                element={
+                  <ProtectedRoute>
+                    <AdminCustomers />
+                  </ProtectedRoute>
+                }
+              />
               <Route path='*' element={<Navigate to='/' replace />} />
             </Routes>
           </div>
@@ -345,14 +419,17 @@ function AppContent() {
         />
         <Toaster />
       </div>
+      </ErrorBoundary>
     </TooltipProvider>
   );
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <HelmetProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </HelmetProvider>
   );
 }

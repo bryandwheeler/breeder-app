@@ -9,11 +9,17 @@ import {
   Bell,
   Dog as DogIcon,
   Edit,
+  Briefcase,
+  Plus,
+  Trash2,
+  DollarSign,
+  Check,
+  X,
 } from 'lucide-react';
 import { PedigreeTree } from '@/components/PedigreeTree';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format, isPast, isFuture } from 'date-fns';
+import { format, isPast, isFuture, parseISO } from 'date-fns';
 import { WeightChart } from '@/components/WeightChart';
 import { WeightTracker } from '@/components/WeightTracker';
 import { HealthTracking } from '@/components/HealthTracking';
@@ -25,24 +31,41 @@ import {
 import { DnaProfile, Dog as DogType } from '@/types/dog';
 import { useState, useEffect } from 'react';
 import { useHeatCycleStore } from '@/store/heatCycleStore';
+import { useStudJobStore } from '@/store/studJobStore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DogFormDialog } from '@/components/DogFormDialog';
+import { StudJobDialog } from '@/components/StudJobDialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 export function DogProfile() {
   const { id } = useParams<{ id: string }>();
   const { dogs, updateDog } = useDogStore();
   const { subscribeToHeatCycles } = useHeatCycleStore();
+  const { getStudJobsForStud, deleteStudJob, subscribeToStudJobs } = useStudJobStore();
   const [dnaDialogOpen, setDnaDialogOpen] = useState(false);
   const [dogFormOpen, setDogFormOpen] = useState(false);
+  const [studJobDialogOpen, setStudJobDialogOpen] = useState(false);
   const [editingDog, setEditingDog] = useState<DogType | null>(null);
+  const [editingStudJob, setEditingStudJob] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const dog = dogs.find((d) => d.id === id);
 
-  // Subscribe to heat cycles when component mounts
+  // Subscribe to heat cycles and stud jobs when component mounts
   useEffect(() => {
-    const unsubscribe = subscribeToHeatCycles();
-    return () => unsubscribe();
-  }, [subscribeToHeatCycles]);
+    const unsubscribeHeatCycles = subscribeToHeatCycles();
+    const unsubscribeStudJobs = subscribeToStudJobs();
+    return () => {
+      unsubscribeHeatCycles();
+      unsubscribeStudJobs();
+    };
+  }, [subscribeToHeatCycles, subscribeToStudJobs]);
 
   if (!dog) {
     return (
@@ -76,6 +99,55 @@ export function DogProfile() {
     setDogFormOpen(true);
   };
 
+  const handleEditStudJob = (job: any) => {
+    setEditingStudJob(job);
+    setStudJobDialogOpen(true);
+  };
+
+  const handleAddNewStudJob = () => {
+    setEditingStudJob(null);
+    setStudJobDialogOpen(true);
+  };
+
+  const handleDeleteStudJob = async (jobId: string) => {
+    if (confirm('Are you sure you want to delete this stud job?')) {
+      await deleteStudJob(jobId);
+    }
+  };
+
+  const studJobs = dog ? getStudJobsForStud(dog.id) : [];
+
+  const getStatusBadge = (status: 'pending' | 'confirmed' | 'completed' | 'cancelled') => {
+    const variants: Record<typeof status, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+      pending: 'outline',
+      confirmed: 'default',
+      completed: 'secondary',
+      cancelled: 'destructive',
+    };
+
+    return (
+      <Badge variant={variants[status]}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </Badge>
+    );
+  };
+
+  const calculateTotalFees = (job: any) => {
+    let total = job.studFee || 0;
+
+    // Add additional breeding fees
+    if (job.additionalBreedingFee && job.breedings?.length > 1) {
+      total += job.additionalBreedingFee * (job.breedings.length - 1);
+    }
+
+    // Add add-on fees
+    if (job.addOns) {
+      total += job.addOns.reduce((sum: number, addon: any) => sum + addon.cost, 0);
+    }
+
+    return total;
+  };
+
   return (
     <div className='space-y-8 pb-20'>
       <div className='flex items-center justify-between'>
@@ -102,6 +174,9 @@ export function DogProfile() {
           <TabsTrigger value='overview'>Overview</TabsTrigger>
           {dog.sex === 'female' && (
             <TabsTrigger value='heat-cycles'>Heat Cycles</TabsTrigger>
+          )}
+          {dog.sex === 'male' && (
+            <TabsTrigger value='stud-jobs'>Stud Jobs ({studJobs.length})</TabsTrigger>
           )}
         </TabsList>
 
@@ -507,6 +582,114 @@ export function DogProfile() {
             <HeatCycles dogId={dog.id} dogName={dog.name} />
           </TabsContent>
         )}
+
+        {/* Stud Jobs Tab - Males Only */}
+        {dog.sex === 'male' && (
+          <TabsContent value='stud-jobs' className='mt-6'>
+            <Card>
+              <CardHeader className='flex flex-row items-center justify-between'>
+                <CardTitle className='flex items-center gap-2'>
+                  <Briefcase className='h-5 w-5' /> Stud Job History
+                </CardTitle>
+                <Button onClick={handleAddNewStudJob}>
+                  <Plus className='mr-2 h-4 w-4' />
+                  Add Stud Job
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {studJobs.length === 0 ? (
+                  <p className='text-center text-muted-foreground py-8'>
+                    No stud jobs recorded yet. Click "Add Stud Job" to track a breeding.
+                  </p>
+                ) : (
+                  <div className='rounded-md border'>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Female</TableHead>
+                          <TableHead>Breeder</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Fee</TableHead>
+                          <TableHead>Puppies</TableHead>
+                          <TableHead className='text-right'>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {studJobs.map((job) => {
+                          const totalFees = calculateTotalFees(job);
+                          const allBreedings = job.breedings || [];
+                          const breedingDates = allBreedings.length > 0
+                            ? allBreedings.map((b: any) => format(parseISO(b.date), 'MMM d')).join(', ')
+                            : job.scheduledDate
+                            ? `Scheduled: ${format(parseISO(job.scheduledDate), 'MMM d, yyyy')}`
+                            : '-';
+
+                          return (
+                            <TableRow key={job.id}>
+                              <TableCell className='font-medium'>
+                                {job.femaleDogName}
+                              </TableCell>
+                              <TableCell>{job.breederName}</TableCell>
+                              <TableCell>
+                                <div className='flex flex-col'>
+                                  <span className='text-sm'>{breedingDates}</span>
+                                  {allBreedings.length > 1 && (
+                                    <Badge variant='secondary' className='mt-1 w-fit text-xs'>
+                                      {allBreedings.length} breedings
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>{getStatusBadge(job.status)}</TableCell>
+                              <TableCell>
+                                <div className='flex flex-col gap-1'>
+                                  {job.studFee ? (
+                                    <span className='flex items-center gap-1 text-sm'>
+                                      <DollarSign className='h-3 w-3' />
+                                      {totalFees.toFixed(2)}
+                                      {job.studFeePaid && job.additionalBreedingsPaid && (!job.addOns || job.addOns.every((a: any) => a.paid)) ? (
+                                        <Check className='h-3 w-3 text-green-600' />
+                                      ) : (
+                                        <X className='h-3 w-3 text-red-600' />
+                                      )}
+                                    </span>
+                                  ) : (
+                                    '-'
+                                  )}
+                                  {job.pickOfLitter && <Badge variant='outline' className='w-fit text-xs'>POL</Badge>}
+                                </div>
+                              </TableCell>
+                              <TableCell>{job.puppyCount || '-'}</TableCell>
+                              <TableCell className='text-right'>
+                                <div className='flex justify-end gap-2'>
+                                  <Button
+                                    variant='ghost'
+                                    size='sm'
+                                    onClick={() => handleEditStudJob(job)}
+                                  >
+                                    <Edit className='h-4 w-4' />
+                                  </Button>
+                                  <Button
+                                    variant='ghost'
+                                    size='sm'
+                                    onClick={() => handleDeleteStudJob(job.id)}
+                                  >
+                                    <Trash2 className='h-4 w-4' />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* DNA Profile Dialog */}
@@ -522,6 +705,14 @@ export function DogProfile() {
         open={dogFormOpen}
         setOpen={setDogFormOpen}
         dog={editingDog}
+      />
+
+      {/* Stud Job Dialog */}
+      <StudJobDialog
+        open={studJobDialogOpen}
+        setOpen={setStudJobDialogOpen}
+        preselectedStudId={dog.id}
+        editingJob={editingStudJob}
       />
     </div>
   );

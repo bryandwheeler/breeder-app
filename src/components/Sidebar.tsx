@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   GitFork,
   HelpCircle,
+  Briefcase,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
@@ -56,6 +57,7 @@ const breederNavigation: NavGroup[] = [
     items: [
       { name: 'Health Records', path: '/health', icon: FileText },
       { name: 'Pedigrees', path: '/pedigrees', icon: Users },
+      { name: 'Stud Jobs', path: '/stud-jobs', icon: Briefcase },
     ],
   },
   {
@@ -66,7 +68,16 @@ const breederNavigation: NavGroup[] = [
       { name: 'Inquiries', path: '/inquiries', icon: MessageSquare },
       { name: 'Connections', path: '/connections', icon: GitFork },
       { name: 'Analytics', path: '/analytics', icon: BarChart3 },
-      { name: 'Website', path: '/breeder-settings', icon: Globe },
+    ],
+  },
+  {
+    title: 'Website',
+    items: [{ name: 'Website Design', path: '/website-design', icon: Globe }],
+  },
+  {
+    title: 'Account',
+    items: [
+      { name: 'Account Management', path: '/account', icon: Settings },
       { name: 'Settings', path: '/settings', icon: Settings },
       { name: 'Help', path: '/help', icon: HelpCircle },
     ],
@@ -78,6 +89,7 @@ const adminNavigation: NavGroup[] = [
     title: 'Administration',
     items: [
       { name: 'Admin Dashboard', path: '/admin', icon: LayoutDashboard },
+      { name: 'Customers', path: '/admin/customers', icon: Users },
       { name: 'Admin Settings', path: '/admin/settings', icon: Settings },
     ],
   },
@@ -244,11 +256,11 @@ export function Sidebar({
           ))}
         </nav>
 
-        {/* Footer - user info section (optional) */}
+        {/* Footer - Expert Breeder branding */}
         {isOpen && (
           <div className='border-t p-4'>
             <div className='text-xs text-muted-foreground text-center'>
-              Breeder Management System
+              Powered by Expert Breeder
             </div>
           </div>
         )}

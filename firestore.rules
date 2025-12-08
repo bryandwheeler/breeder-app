@@ -20,24 +20,24 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Dogs collection - users can read all dogs (for search) but only write their own
+    // Dogs collection - users can read all dogs (for search), admins can read all for analytics
     match /dogs/{dogId} {
-      // Allow reading all dogs for search functionality
-      allow read: if isAuthenticated();
+      // Allow reading all dogs for authenticated users (for search functionality), admins always can read
+      allow read: if isAuthenticated() && (isAdmin() || true);
 
-      // Allow creating if the userId matches the authenticated user
+      // Allow creating if the userId matches the authenticated user or if admin
       allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
 
-      // Allow updating only own dogs
+      // Allow updating own dogs or if admin
       allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
 
-      // Allow deleting only own dogs
+      // Allow deleting own dogs or if admin
       allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
-    // Litters collection - users can only read/write their own litters
+    // Litters collection - users can only read/write their own litters, admins can read all
     match /litters/{litterId} {
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow read: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid);
       allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
       allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
@@ -50,16 +50,6 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       // Allow update if the existing document's userId matches the authenticated user
       // OR if updating own profile using the profileId pattern (userId as document ID)
-      allow update: if isAuthenticated() &&
-        (resource.data.userId == request.auth.uid || profileId == request.auth.uid);
-      allow delete: if isAuthenticated() &&
-        (resource.data.userId == request.auth.uid || profileId == request.auth.uid);
-    }
-
-    // Breeder profiles (with underscore) - same rules as above for backward compatibility
-    match /breeder_profiles/{profileId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated() &&
         (resource.data.userId == request.auth.uid || profileId == request.auth.uid);
       allow delete: if isAuthenticated() &&
@@ -153,32 +143,24 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && resource.data.requesterId == request.auth.uid;
     }
 
-    // Heat cycles (with underscore) - users can only read/write their own heat cycle records
-    match /heat_cycles/{cycleId} {
+    // Stud jobs - users can only read/write their own stud jobs
+    match /studJobs/{jobId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
-    // Breeding records (with underscore) - users can only read/write their own breeding records
-    match /breeding_records/{recordId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
-    }
-
-    // CRM Customers - users can only read/write their own customers
+    // CRM Customers - users can only read/write their own customers, admins can read all
     match /customers/{customerId} {
-      allow read: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+      allow read: if isAuthenticated() && (isAdmin() || resource.data.breederId == request.auth.uid);
       allow create: if isAuthenticated() && request.resource.data.breederId == request.auth.uid;
       allow update: if isAuthenticated() && resource.data.breederId == request.auth.uid;
       allow delete: if isAuthenticated() && resource.data.breederId == request.auth.uid;
     }
 
     // CRM Customer segments - users can only read/write their own segments
-    match /customer_segments/{segmentId} {
+    match /customerSegments/{segmentId} {
       allow read: if isAuthenticated() && resource.data.breederId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.breederId == request.auth.uid;
       allow update: if isAuthenticated() && resource.data.breederId == request.auth.uid;
@@ -193,7 +175,7 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && resource.data.breederId == request.auth.uid;
     }
 
-    // User profiles - users can read/write their own profile, admins can list all
+    // User profiles - users can read/write their own profile, admins can list and update all
     // Note: We DON'T call isAdmin() in get operations to avoid circular dependency during user creation
     match /users/{userId} {
       // Allow users to read their own profile
@@ -207,8 +189,8 @@ service cloud.firestore {
       // Allow users to create their own profile
       allow create: if isAuthenticated() && userId == request.auth.uid;
 
-      // Allow users to update their own profile
-      allow update: if isAuthenticated() && userId == request.auth.uid;
+      // Allow users to update their own profile, admins can update any profile
+      allow update: if isAuthenticated() && (userId == request.auth.uid || isAdmin());
 
       // Disable user deletion
       allow delete: if false;
@@ -217,6 +199,55 @@ service cloud.firestore {
     // Admin settings - only admins can read/write
     match /admin/{document=**} {
       allow read, write: if isAdmin();
+    }
+
+    // Website settings - users can only read/write their own website settings
+    match /websiteSettings/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && isOwner(userId);
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+
+    // Email integrations - users can only read/write their own email settings
+    // NOTE: Access tokens are sensitive - handle with care in production
+    match /emailIntegrations/{userId} {
+      allow read: if isAuthenticated() && userId == request.auth.uid;
+      allow create: if isAuthenticated() && userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && userId == request.auth.uid && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && userId == request.auth.uid && resource.data.userId == request.auth.uid;
+    }
+
+    // Email templates - users can only read/write their own email templates
+    match /emailTemplates/{templateId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Workflows - users can only read/write their own workflows
+    match /workflows/{workflowId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Scheduled emails - users can only read/write their own scheduled emails
+    match /scheduledEmails/{emailId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Workflow execution logs - users can only read their own execution logs
+    match /workflowExecutionLogs/{logId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
   }
 }

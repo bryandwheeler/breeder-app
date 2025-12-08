@@ -14,6 +14,10 @@ import { BreederProfile } from '@/types/dog';
 import { CareScheduleEditor } from '@/components/CareScheduleEditor';
 import { Combobox } from '@/components/ui/combobox';
 import { DOG_BREEDS } from '@/data/dogBreeds';
+import { EmailSettings } from '@/components/EmailSettings';
+import { EmailTemplatesManager } from '@/components/EmailTemplatesManager';
+import { WorkflowManager } from '@/components/WorkflowManager';
+import { ScheduledEmailsManager } from '@/components/ScheduledEmailsManager';
 
 export function BreederSettings() {
   const { currentUser } = useAuth();
@@ -134,6 +138,10 @@ export function BreederSettings() {
           <TabsTrigger value='credentials'>Credentials</TabsTrigger>
           <TabsTrigger value='care'>Care Schedule</TabsTrigger>
           <TabsTrigger value='email'>Email Configuration</TabsTrigger>
+          <TabsTrigger value='emailIntegration'>Email Integration</TabsTrigger>
+          <TabsTrigger value='emailTemplates'>Email Templates</TabsTrigger>
+          <TabsTrigger value='workflows'>Workflows</TabsTrigger>
+          <TabsTrigger value='scheduledEmails'>Scheduled Emails</TabsTrigger>
           <TabsTrigger value='settings'>Settings</TabsTrigger>
         </TabsList>
 
@@ -476,6 +484,26 @@ export function BreederSettings() {
           <Card className='p-6'>
             <CareScheduleEditor />
           </Card>
+        </TabsContent>
+
+        {/* Email Integration */}
+        <TabsContent value='emailIntegration'>
+          <EmailSettings />
+        </TabsContent>
+
+        {/* Email Templates */}
+        <TabsContent value='emailTemplates'>
+          <EmailTemplatesManager />
+        </TabsContent>
+
+        {/* Workflows */}
+        <TabsContent value='workflows'>
+          <WorkflowManager />
+        </TabsContent>
+
+        {/* Scheduled Emails */}
+        <TabsContent value='scheduledEmails'>
+          <ScheduledEmailsManager />
         </TabsContent>
 
         {/* Email Configuration */}
@@ -953,6 +981,12 @@ export function BreederSettings() {
             </div>
           </Card>
         </TabsContent>
+
+        {/* Website Design */}
+        {/* REMOVED - Now in /website-design route */}
+
+        {/* Available Puppies */}
+        {/* REMOVED - Now in /website-design route */}
       </Tabs>
 
       <div className='flex justify-end'>

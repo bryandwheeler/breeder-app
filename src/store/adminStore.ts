@@ -9,9 +9,18 @@ import {
   query,
   orderBy,
   onSnapshot,
+  where,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { UserProfile, AppSettings, AdminStats } from '@/types/admin';
+import {
+  logRoleChange,
+  logUserActivation,
+  logUserDeactivation,
+  logSettingsUpdate,
+  logImpersonationStart,
+  logImpersonationEnd,
+} from '@/lib/auditLog';
 
 interface AdminState {
   users: UserProfile[];
@@ -29,7 +38,12 @@ interface AdminState {
   updateAppSettings: (settings: Partial<AppSettings>) => Promise<void>;
   setImpersonatedUser: (uid: string | null) => void;
   getAdminStats: () => Promise<AdminStats>;
-  createUserProfile: (uid: string, email: string, displayName: string) => Promise<void>;
+  createUserProfile: (
+    uid: string,
+    email: string,
+    displayName: string
+  ) => Promise<void>;
+  syncAllUserCounts: () => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
@@ -42,7 +56,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   checkIsAdmin: async (uid: string) => {
     try {
       // Wait a bit for auth state to propagate to Firestore
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       const userDoc = await getDoc(doc(db, 'users', uid));
       if (!userDoc.exists()) {
@@ -51,7 +65,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       }
 
       const userData = userDoc.data();
-      console.log('User data for admin check:', userData);
       return userData?.role === 'admin';
     } catch (error) {
       console.error('Error checking admin status:', error);
@@ -112,6 +125,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
               publicPages: true,
               emailNotifications: true,
             },
+            globalRegistries: ['AKC', 'CKC', 'UKC'],
           };
           await setDoc(docRef, defaultSettings);
           set({ appSettings: defaultSettings });
@@ -127,7 +141,27 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   updateUserRole: async (uid: string, role: 'user' | 'admin') => {
     try {
+      const users = get().users;
+      const targetUser = users.find((u) => u.uid === uid);
+      const oldRole = targetUser?.role || 'user';
+
       await updateDoc(doc(db, 'users', uid), { role });
+
+      // Log the role change (assumes admin user is calling this)
+      if (targetUser) {
+        // You'll need to pass the admin user info when calling this function
+        // For now, we'll log it generically
+        await logRoleChange(
+          'admin',
+          'admin@system',
+          'System Admin',
+          uid,
+          targetUser.email,
+          targetUser.displayName,
+          oldRole,
+          role
+        );
+      }
     } catch (error) {
       console.error('Error updating user role:', error);
       throw error;
@@ -136,7 +170,33 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   toggleUserActive: async (uid: string, isActive: boolean) => {
     try {
+      const users = get().users;
+      const targetUser = users.find((u) => u.uid === uid);
+
       await updateDoc(doc(db, 'users', uid), { isActive });
+
+      // Log the activation/deactivation
+      if (targetUser) {
+        if (isActive) {
+          await logUserActivation(
+            'admin',
+            'admin@system',
+            'System Admin',
+            uid,
+            targetUser.email,
+            targetUser.displayName
+          );
+        } else {
+          await logUserDeactivation(
+            'admin',
+            'admin@system',
+            'System Admin',
+            uid,
+            targetUser.email,
+            targetUser.displayName
+          );
+        }
+      }
     } catch (error) {
       console.error('Error toggling user active status:', error);
       throw error;
@@ -146,7 +206,15 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   updateAppSettings: async (settings: Partial<AppSettings>) => {
     try {
       const docRef = doc(db, 'admin', 'settings');
-      await updateDoc(docRef, settings);
+      await updateDoc(docRef, settings as Record<string, unknown>);
+
+      // Log the settings update
+      await logSettingsUpdate(
+        'admin',
+        'admin@system',
+        'System Admin',
+        settings as Record<string, unknown>
+      );
     } catch (error) {
       console.error('Error updating app settings:', error);
       throw error;
@@ -154,11 +222,38 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   setImpersonatedUser: (uid: string | null) => {
+    const users = get().users;
+    const previousUid = get().impersonatedUserId;
+
     set({ impersonatedUserId: uid });
     if (uid) {
       localStorage.setItem('impersonatedUserId', uid);
+      const targetUser = users.find((u) => u.uid === uid);
+      if (targetUser) {
+        logImpersonationStart(
+          'admin',
+          'admin@system',
+          'System Admin',
+          uid,
+          targetUser.email,
+          targetUser.displayName
+        );
+      }
     } else {
       localStorage.removeItem('impersonatedUserId');
+      if (previousUid) {
+        const targetUser = users.find((u) => u.uid === previousUid);
+        if (targetUser) {
+          logImpersonationEnd(
+            'admin',
+            'admin@system',
+            'System Admin',
+            previousUid,
+            targetUser.email,
+            targetUser.displayName
+          );
+        }
+      }
     }
   },
 
@@ -179,8 +274,14 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
       // Use aggregated counts from user profiles instead of querying subcollections
       // This avoids permission issues with reading other users' dogs/litters
-      const totalDogs = users.reduce((sum, user) => sum + (user.totalDogs || 0), 0);
-      const totalLitters = users.reduce((sum, user) => sum + (user.totalLitters || 0), 0);
+      const totalDogs = users.reduce(
+        (sum, user) => sum + (user.totalDogs || 0),
+        0
+      );
+      const totalLitters = users.reduce(
+        (sum, user) => sum + (user.totalLitters || 0),
+        0
+      );
 
       const stats: AdminStats = {
         totalUsers: users.length,
@@ -198,7 +299,11 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
 
-  createUserProfile: async (uid: string, email: string, displayName: string) => {
+  createUserProfile: async (
+    uid: string,
+    email: string,
+    displayName: string
+  ) => {
     try {
       const userDoc = await getDoc(doc(db, 'users', uid));
       if (!userDoc.exists()) {
@@ -212,6 +317,44 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       }
     } catch (error) {
       console.error('Error creating user profile:', error);
+      throw error;
+    }
+  },
+
+  syncAllUserCounts: async () => {
+    try {
+      const usersSnap = await getDocs(collection(db, 'users'));
+
+      for (const userDoc of usersSnap.docs) {
+        const uid = userDoc.id;
+
+        try {
+          // Count non-deceased dogs (filter in code to avoid index requirement)
+          const dogsSnap = await getDocs(
+            query(collection(db, 'dogs'), where('userId', '==', uid))
+          );
+          const totalDogs = dogsSnap.docs.filter(
+            (doc) => !doc.data().isDeceased
+          ).length;
+
+          // Count litters
+          const littersSnap = await getDocs(
+            query(collection(db, 'litters'), where('userId', '==', uid))
+          );
+          const totalLitters = littersSnap.size;
+
+          // Update user profile
+          await updateDoc(doc(db, 'users', uid), {
+            totalDogs,
+            totalLitters,
+          });
+        } catch (userError) {
+          // Log but continue with other users
+          console.warn(`Could not sync counts for user ${uid}:`, userError);
+        }
+      }
+    } catch (error) {
+      console.error('Error syncing user counts:', error);
       throw error;
     }
   },

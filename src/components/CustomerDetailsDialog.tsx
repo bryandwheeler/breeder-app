@@ -36,6 +36,7 @@ import {
   Edit2,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { EmailCompose } from '@/components/EmailCompose';
 
 interface Props {
   open: boolean;
@@ -50,6 +51,7 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
   const [showAddInteraction, setShowAddInteraction] = useState(false);
   const [showAddPurchase, setShowAddPurchase] = useState(false);
   const [newTag, setNewTag] = useState('');
+  const [emailComposeOpen, setEmailComposeOpen] = useState(false);
 
   // Interaction form state
   const [newInteraction, setNewInteraction] = useState<Omit<Interaction, 'id'>>({
@@ -133,6 +135,8 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
         return 'bg-purple-500';
       case 'guardian':
         return 'bg-cyan-500';
+      case 'stud_client':
+        return 'bg-pink-500';
       case 'referral_source':
         return 'bg-orange-500';
       default:
@@ -177,13 +181,23 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
 
                 <div className="col-span-2">
                   <div className="font-medium mb-1">Email</div>
-                  <a
-                    href={`mailto:${customer.email}`}
-                    className="flex items-center gap-2 text-primary hover:underline"
-                  >
-                    <Mail className="h-4 w-4" />
-                    {customer.email}
-                  </a>
+                  <div className="flex items-center justify-between">
+                    <a
+                      href={`mailto:${customer.email}`}
+                      className="flex items-center gap-2 text-primary hover:underline"
+                    >
+                      <Mail className="h-4 w-4" />
+                      {customer.email}
+                    </a>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEmailComposeOpen(true)}
+                    >
+                      <Mail className="h-3 w-3 mr-1" />
+                      Compose
+                    </Button>
+                  </div>
                 </div>
 
                 {customer.phone && (
@@ -363,7 +377,10 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
                       <SelectContent>
                         <SelectItem value="email">Email</SelectItem>
                         <SelectItem value="phone">Phone</SelectItem>
-                        <SelectItem value="text">Text</SelectItem>
+                        <SelectItem value="text">Text/SMS</SelectItem>
+                        <SelectItem value="instagram_dm">Instagram DM</SelectItem>
+                        <SelectItem value="facebook_msg">Facebook Message</SelectItem>
+                        <SelectItem value="tiktok_msg">TikTok Message</SelectItem>
                         <SelectItem value="meeting">Meeting</SelectItem>
                         <SelectItem value="video_call">Video Call</SelectItem>
                         <SelectItem value="visit">Visit</SelectItem>
@@ -630,6 +647,7 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
                       <SelectItem value="buyer">Buyer</SelectItem>
                       <SelectItem value="past_buyer">Past Buyer</SelectItem>
                       <SelectItem value="guardian">Guardian</SelectItem>
+                      <SelectItem value="stud_client">Stud Client</SelectItem>
                       <SelectItem value="referral_source">Referral Source</SelectItem>
                     </SelectContent>
                   </Select>
@@ -717,6 +735,18 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
           <Button onClick={handleSave}>Save Changes</Button>
         </div>
       </DialogContent>
+
+      {/* Email Compose Dialog */}
+      <EmailCompose
+        open={emailComposeOpen}
+        setOpen={setEmailComposeOpen}
+        defaultTo={customer.email}
+        customerId={customer.id}
+        onSent={() => {
+          // Optionally refresh customer data or log interaction
+          console.log('Email sent to customer:', customer.email);
+        }}
+      />
     </Dialog>
   );
 }

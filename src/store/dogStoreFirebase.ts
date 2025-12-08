@@ -14,6 +14,32 @@ import {
 import { db, auth } from '@/lib/firebase';
 import { Dog, NewDog, Litter } from '@/types/dog';
 import { differenceInDays } from 'date-fns';
+import { getDocs } from 'firebase/firestore';
+
+// Update user profile with current counts of dogs and litters
+async function updateUserCounters(uid: string) {
+  const dogsQuery = query(collection(db, 'dogs'), where('userId', '==', uid));
+  const littersQuery = query(
+    collection(db, 'litters'),
+    where('userId', '==', uid)
+  );
+
+  try {
+    const [dogsSnap, littersSnap] = await Promise.all([
+      getDocs(dogsQuery),
+      getDocs(littersQuery),
+    ]);
+
+    const totalDogs = dogsSnap.docs.filter(
+      (doc) => !doc.data().isDeceased
+    ).length;
+    const totalLitters = littersSnap.size;
+
+    await updateDoc(doc(db, 'users', uid), { totalDogs, totalLitters });
+  } catch (e) {
+    console.error('Failed to update user counters:', e);
+  }
+}
 
 // Calculate litter status based on dates
 function calculateLitterStatus(litter: Litter): Litter['status'] {
@@ -89,6 +115,8 @@ export const useDogStore = create<Store>()((set, get) => ({
     };
 
     const docRef = await addDoc(dogsRef, newDog);
+    // Update user profile with new dog count
+    await updateUserCounters(targetUid || user.uid);
     return docRef.id; // Return the new dog's ID
   },
 
@@ -107,8 +135,17 @@ export const useDogStore = create<Store>()((set, get) => ({
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to delete dogs');
 
+    // Get the dog to find its owner
     const dogRef = doc(db, 'dogs', id);
+    const dogSnap = await getDoc(dogRef);
+    const dogData = dogSnap.data() as Dog | undefined;
+
     await deleteDoc(dogRef);
+
+    // Update user profile with new dog count
+    if (dogData?.userId) {
+      await updateUserCounters(dogData.userId);
+    }
   },
 
   addLitter: async (litter, targetUid) => {
@@ -127,6 +164,8 @@ export const useDogStore = create<Store>()((set, get) => ({
     };
 
     await addDoc(littersRef, newLitter);
+    // Update user profile with new litter count
+    await updateUserCounters(targetUid || user.uid);
   },
 
   updateLitter: async (id, updates) => {
@@ -144,8 +183,17 @@ export const useDogStore = create<Store>()((set, get) => ({
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to delete litters');
 
+    // Get the litter to find its owner
     const litterRef = doc(db, 'litters', id);
+    const litterSnap = await getDoc(litterRef);
+    const litterData = litterSnap.data() as Litter | undefined;
+
     await deleteDoc(litterRef);
+
+    // Update user profile with new litter count
+    if (litterData?.userId) {
+      await updateUserCounters(litterData.userId);
+    }
   },
 
   subscribeToUserData: (targetUid?: string) => {

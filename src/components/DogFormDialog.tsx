@@ -53,6 +53,7 @@ import emailjs from '@emailjs/browser';
 import { Badge } from '@/components/ui/badge';
 import { Link2 } from 'lucide-react';
 import { useAdminStore } from '@/store/adminStore';
+import { BreedAutocomplete } from '@/components/BreedAutocomplete';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -655,10 +656,10 @@ function DogFormContent({
               name='name'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Registered Name *</FormLabel>
+                  <FormLabel>Name *</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder='CH Doodle Bliss King of Hearts'
+                      placeholder='Registered or common name'
                       {...field}
                       value={field.value || ''}
                     />
@@ -716,10 +717,11 @@ function DogFormContent({
               name='breed'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Breed *</FormLabel>
-                  <FormControl>
-                    <Input placeholder='Goldendoodle' {...field} />
-                  </FormControl>
+                  <BreedAutocomplete
+                    value={field.value || ''}
+                    onChange={(v) => field.onChange(v)}
+                    placeholder='Type to search breeds...'
+                  />
                   <FormMessage />
                 </FormItem>
               )}

@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { BreederProfile, Testimonial, Inquiry } from '@/types/dog';
+import { FIRESTORE_COLLECTIONS } from '@/types/guards';
 
 type Store = {
   profile: BreederProfile | null;
@@ -61,7 +62,7 @@ export const useBreederStore = create<Store>()((set, get) => ({
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to create profile');
 
-    const profilesRef = collection(db, 'breeder_profiles');
+    const profilesRef = collection(db, FIRESTORE_COLLECTIONS.BREEDER_PROFILES);
     const newProfile = {
       ...profile,
       userId: user.uid,
@@ -79,7 +80,7 @@ export const useBreederStore = create<Store>()((set, get) => ({
     const { profile } = get();
     if (!profile) throw new Error('No profile found');
 
-    const profileRef = doc(db, 'breeder_profiles', profile.id);
+    const profileRef = doc(db, FIRESTORE_COLLECTIONS.BREEDER_PROFILES, profile.id);
     await updateDoc(profileRef, {
       ...updates,
       updatedAt: serverTimestamp(),
@@ -88,7 +89,7 @@ export const useBreederStore = create<Store>()((set, get) => ({
 
   getPublicProfile: async (userId: string) => {
     const profilesQuery = query(
-      collection(db, 'breeder_profiles'),
+      collection(db, FIRESTORE_COLLECTIONS.BREEDER_PROFILES),
       where('userId', '==', userId)
     );
 
@@ -181,7 +182,7 @@ export const useBreederStore = create<Store>()((set, get) => ({
 
     // Subscribe to profile
     const profileQuery = query(
-      collection(db, 'breeder_profiles'),
+      collection(db, FIRESTORE_COLLECTIONS.BREEDER_PROFILES),
       where('userId', '==', user.uid)
     );
 

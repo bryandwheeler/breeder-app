@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useDogStore } from '@/store/dogStore';
+import { useDogStore } from '@/store/dogStoreFirebase';
 import { useHeatCycleStore } from '@/store/heatCycleStore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -12,18 +12,20 @@ import { searchDogs, type DogSearchResult } from '@/lib/kennelSearch';
 import { useAuth } from '@/contexts/AuthContext';
 import { Search, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { BreedingRecord } from '@/types/dog';
 
 interface BreedingRecordDialogProps {
   open: boolean;
   setOpen: (open: boolean) => void;
   dogId: string;
   heatCycleId: string | null;
+  editingRecord?: BreedingRecord | null;
 }
 
-export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId }: BreedingRecordDialogProps) {
+export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId, editingRecord }: BreedingRecordDialogProps) {
   const { currentUser } = useAuth();
   const { dogs } = useDogStore();
-  const { addBreedingRecord } = useHeatCycleStore();
+  const { addBreedingRecord, updateBreedingRecord } = useHeatCycleStore();
 
   const [studSource, setStudSource] = useState<'own' | 'external'>('external');
   const [studId, setStudId] = useState('');
@@ -44,7 +46,23 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId }: Bree
   const maleDogs = dogs.filter((dog) => dog.sex === 'male' && !dog.isDeceased);
 
   useEffect(() => {
-    if (!open) {
+    if (open && editingRecord) {
+      // Populate form with existing record data
+      setBreedingDate(editingRecord.breedingDate);
+      setMethod(editingRecord.method);
+      setAiDetails(editingRecord.aiDetails || '');
+      setNotes(editingRecord.notes || '');
+      setStudName(editingRecord.studName);
+
+      // Determine if using own kennel or external stud
+      if (editingRecord.studId) {
+        setStudSource('own');
+        setStudId(editingRecord.studId);
+      } else {
+        setStudSource('external');
+        setStudId('');
+      }
+    } else if (!open) {
       // Reset form when dialog closes
       setStudSource('external');
       setStudId('');
@@ -57,7 +75,7 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId }: Bree
       setStudSearchTerm('');
       setStudSearchResults([]);
     }
-  }, [open]);
+  }, [open, editingRecord]);
 
   const handleStudSearch = async () => {
     if (!studSearchTerm.trim() || !currentUser) return;
@@ -66,7 +84,8 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId }: Bree
     setStudSearchResults([]);
 
     try {
-      const results = await searchDogs(studSearchTerm, currentUser.uid);
+      // Don't exclude own dogs - allow searching all dogs including own kennel
+      const results = await searchDogs(studSearchTerm);
       const maleResults = results.filter(r => r.sex === 'male');
 
       if (maleResults.length > 0) {
@@ -94,7 +113,20 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId }: Bree
     e.preventDefault();
 
     if (!heatCycleId) {
-      alert('No heat cycle selected');
+      toast({
+        title: 'Error',
+        description: 'No heat cycle selected',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!breedingDate) {
+      toast({
+        title: 'Error',
+        description: 'Please select a breeding date',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -102,39 +134,89 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId }: Bree
 
     try {
       let finalStudName = studName;
+      let finalStudId = undefined;
 
       // If using own stud, get the dog's name
-      if (studSource === 'own' && studId) {
+      if (studSource === 'own') {
+        if (!studId) {
+          toast({
+            title: 'Error',
+            description: 'Please select a male dog from your kennel',
+            variant: 'destructive',
+          });
+          setSaving(false);
+          return;
+        }
         const selectedStud = maleDogs.find((dog) => dog.id === studId);
         if (selectedStud) {
           finalStudName = selectedStud.registeredName || selectedStud.name;
+          finalStudId = studId;
+        } else {
+          toast({
+            title: 'Error',
+            description: 'Selected dog not found. Please try again.',
+            variant: 'destructive',
+          });
+          setSaving(false);
+          return;
         }
       } else if (studSource === 'external' && externalStud) {
         // If using external stud from search, get its name
         finalStudName = externalStud.dogName;
       }
 
-      if (!finalStudName) {
-        alert('Please select or enter a stud');
+      if (!finalStudName || finalStudName.trim() === '') {
+        toast({
+          title: 'Error',
+          description: 'Please select or enter a stud name',
+          variant: 'destructive',
+        });
         setSaving(false);
         return;
       }
 
-      await addBreedingRecord({
+      const recordData: any = {
         dogId,
         heatCycleId,
-        studId: studSource === 'own' ? studId : undefined,
         studName: finalStudName,
         breedingDate,
         method,
-        aiDetails: method !== 'natural' ? aiDetails : undefined,
         notes,
-      });
+      };
+
+      // Only add optional fields if they have values (Firestore doesn't allow undefined)
+      if (finalStudId) {
+        recordData.studId = finalStudId;
+      }
+      if (method !== 'natural' && aiDetails) {
+        recordData.aiDetails = aiDetails;
+      }
+
+      if (editingRecord) {
+        // Update existing record
+        await updateBreedingRecord(editingRecord.id, recordData);
+        toast({
+          title: 'Success',
+          description: 'Breeding record updated successfully',
+        });
+      } else {
+        // Add new record
+        await addBreedingRecord(recordData);
+        toast({
+          title: 'Success',
+          description: 'Breeding record added successfully',
+        });
+      }
 
       setOpen(false);
     } catch (error) {
       console.error('Error saving breeding record:', error);
-      alert('Failed to save breeding record. Please try again.');
+      // Log detailed error info for debugging
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      alert(`Failed to save breeding record:\n\n${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -144,7 +226,7 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId }: Bree
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Add Breeding Record</DialogTitle>
+          <DialogTitle>{editingRecord ? 'Edit Breeding Record' : 'Add Breeding Record'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

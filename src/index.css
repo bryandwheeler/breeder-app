@@ -1,78 +1,78 @@
 /* src/index.css */
 @import 'tailwindcss';
 
-/* Expert Breeder color palette - matching logo */
+/* Expert Breeder color palette - Official Brand Colors */
 :root {
-  /* Light mode - matches expert-breeder-1.jpg */
-  --background: #ffffff;
-  --foreground: #1e3a5f; /* Navy blue from logo */
+  /* Light mode - Expert Breeder Brand */
+  --background: #FFFFFF; /* Clean White */
+  --foreground: #0B2E4E; /* Breeder Navy */
 
-  /* Cards use slightly off-white */
-  --card: #f8fafc;
-  --card-foreground: #1e3a5f;
+  /* Cards use Clean White */
+  --card: #FFFFFF;
+  --card-foreground: #0B2E4E;
 
-  --popover: #ffffff;
-  --popover-foreground: #1e3a5f;
+  --popover: #FFFFFF;
+  --popover-foreground: #0B2E4E;
 
-  /* Primary blue from logo */
-  --primary: #3b82f6;
-  --primary-foreground: #ffffff;
+  /* Primary - Expert Orange for CTAs and highlights */
+  --primary: #FF8A1E;
+  --primary-foreground: #FFFFFF;
 
-  /* Secondary lighter blue */
-  --secondary: #60a5fa;
-  --secondary-foreground: #1e3a5f;
+  /* Secondary - Puppy Blue for accents */
+  --secondary: #4DB3E6;
+  --secondary-foreground: #FFFFFF;
 
   /* Muted grays */
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  --muted: #E6EAF0; /* Soft Gray */
+  --muted-foreground: #1F2933; /* Dark Charcoal */
 
-  /* Accent using logo blue */
-  --accent: #dbeafe;
-  --accent-foreground: #1e3a5f;
+  /* Accent using very light gray/blue */
+  --accent: #F8FAFC;
+  --accent-foreground: #0B2E4E;
 
   /* Destructive stays reddish for warnings */
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
 
   /* Borders */
-  --border: #e2e8f0;
-  --input: #e2e8f0;
+  --border: #E6EAF0; /* Soft Gray */
+  --input: #E6EAF0;
 
-  /* Ring matches primary */
-  --ring: #3b82f6;
+  /* Ring matches primary orange */
+  --ring: #FF8A1E;
   --radius: 0.5rem;
 }
 
-/* Dark mode overrides - matches unnamed.jpg (dark mode logo) */
+/* Dark mode - Expert Breeder Brand (Dark Theme) */
 .dark {
-  /* Dark navy blue background from logo */
-  --background: #1e3a5f;
-  --foreground: #f8fafc;
-  --card: #2d4a6f;
-  --card-foreground: #f8fafc;
-  --popover: #2d4a6f;
-  --popover-foreground: #f8fafc;
+  /* Dark Breeder Navy background */
+  --background: #0B2E4E; /* Breeder Navy */
+  --foreground: #FFFFFF;
+  --card: #1F2933; /* Dark Charcoal */
+  --card-foreground: #FFFFFF;
+  --popover: #1F2933;
+  --popover-foreground: #FFFFFF;
 
-  /* Cyan/turquoise from dark logo */
-  --primary: #06b6d4;
-  --primary-foreground: #1e3a5f;
+  /* Primary - Expert Orange (stays vibrant in dark mode) */
+  --primary: #FF8A1E;
+  --primary-foreground: #FFFFFF;
 
-  /* Lighter cyan for secondary */
-  --secondary: #22d3ee;
-  --secondary-foreground: #1e3a5f;
+  /* Secondary - Puppy Blue for accents */
+  --secondary: #4DB3E6;
+  --secondary-foreground: #FFFFFF;
 
-  --muted: #334155;
-  --muted-foreground: #cbd5e1;
+  --muted: #1F2933; /* Dark Charcoal */
+  --muted-foreground: #E6EAF0;
 
-  /* Softer cyan for accents */
-  --accent: #164e63;
-  --accent-foreground: #06b6d4;
+  /* Accent using Light Sky Blue */
+  --accent: #A9DBF4;
+  --accent-foreground: #0B2E4E;
 
   --destructive: #ef4444;
-  --destructive-foreground: #f8fafc;
-  --border: #475569;
-  --input: #475569;
-  --ring: #06b6d4;
+  --destructive-foreground: #ffffff;
+  --border: #1F2933;
+  --input: #1F2933;
+  --ring: #FF8A1E;
 }
 
 /* Apply colors to elements directly */

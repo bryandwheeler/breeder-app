@@ -15,7 +15,6 @@ import { Badge } from '@/components/ui/badge';
 import {
   Users,
   Shield,
-  Database,
   TrendingUp,
   Search,
   Settings,
@@ -23,8 +22,8 @@ import {
   Ban,
   CheckCircle,
 } from 'lucide-react';
-import { UserProfile } from '@/types/admin';
-import { RegistryManagement } from '@/components/RegistryManagement';
+import { UserListDialog } from '@/components/UserListDialog';
+import { AnalyticsComponent } from '@/components/AnalyticsComponent';
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -39,12 +38,18 @@ export function AdminDashboard() {
     toggleUserActive,
     setImpersonatedUser,
     getAdminStats,
+    syncAllUserCounts,
   } = useAdminStore();
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statsLoading, setStatsLoading] = useState(false);
+  const [userListDialogOpen, setUserListDialogOpen] = useState(false);
+  const [userListFilter, setUserListFilter] = useState<
+    'all' | 'active' | 'new' | 'inactive'
+  >('all');
+  const [userListTitle, setUserListTitle] = useState('');
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -71,19 +76,33 @@ export function AdminDashboard() {
       const unsubUsers = subscribeToUsers();
       const unsubSettings = subscribeToAppSettings();
 
+      // Sync all user counts on first load
+      syncAllUserCounts().catch((e) =>
+        console.error('Failed to sync user counts:', e)
+      );
+
       return () => {
         unsubUsers();
         unsubSettings();
       };
     }
-  }, [isAdmin, subscribeToUsers, subscribeToAppSettings]);
+  }, [isAdmin, subscribeToUsers, subscribeToAppSettings, syncAllUserCounts]);
 
   useEffect(() => {
-    if (isAdmin && users.length > 0 && !adminStats) {
-      setStatsLoading(true);
-      getAdminStats().finally(() => setStatsLoading(false));
-    }
-  }, [isAdmin, users, adminStats, getAdminStats]);
+    if (!isAdmin) return;
+    let mounted = true;
+    (async () => {
+      if (mounted) setStatsLoading(true);
+      try {
+        await getAdminStats();
+      } finally {
+        if (mounted) setStatsLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [isAdmin, users, getAdminStats]);
 
   const filteredUsers = users.filter(
     (user) =>
@@ -119,6 +138,15 @@ export function AdminDashboard() {
     }
   };
 
+  const openUserList = (
+    filter: 'all' | 'active' | 'new' | 'inactive',
+    title: string
+  ) => {
+    setUserListFilter(filter);
+    setUserListTitle(title);
+    setUserListDialogOpen(true);
+  };
+
   if (loading) {
     return (
       <div className='flex items-center justify-center h-screen'>
@@ -150,7 +178,10 @@ export function AdminDashboard() {
 
       {/* Stats Cards */}
       <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
-        <Card>
+        <Card
+          className='cursor-pointer hover:shadow-lg transition-shadow'
+          onClick={() => openUserList('all', 'All Users')}
+        >
           <CardHeader className='pb-3'>
             <CardTitle className='text-sm font-medium text-muted-foreground flex items-center gap-2'>
               <Users className='h-4 w-4' />
@@ -161,10 +192,16 @@ export function AdminDashboard() {
             <div className='text-2xl font-bold'>
               {statsLoading ? '...' : adminStats?.totalUsers || 0}
             </div>
+            <p className='text-xs text-muted-foreground mt-2'>
+              Click to view all
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card
+          className='cursor-pointer hover:shadow-lg transition-shadow'
+          onClick={() => openUserList('active', 'Active Users')}
+        >
           <CardHeader className='pb-3'>
             <CardTitle className='text-sm font-medium text-green-600 dark:text-green-400 flex items-center gap-2'>
               <CheckCircle className='h-4 w-4' />
@@ -175,10 +212,16 @@ export function AdminDashboard() {
             <div className='text-2xl font-bold text-green-600 dark:text-green-400'>
               {statsLoading ? '...' : adminStats?.activeUsers || 0}
             </div>
+            <p className='text-xs text-muted-foreground mt-2'>
+              Click to view all
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card
+          className='cursor-pointer hover:shadow-lg transition-shadow'
+          onClick={() => openUserList('new', 'New Users This Month')}
+        >
           <CardHeader className='pb-3'>
             <CardTitle className='text-sm font-medium text-blue-600 dark:text-blue-400 flex items-center gap-2'>
               <TrendingUp className='h-4 w-4' />
@@ -189,26 +232,37 @@ export function AdminDashboard() {
             <div className='text-2xl font-bold text-blue-600 dark:text-blue-400'>
               {statsLoading ? '...' : adminStats?.newUsersThisMonth || 0}
             </div>
+            <p className='text-xs text-muted-foreground mt-2'>
+              Click to view all
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card
+          className='cursor-pointer hover:shadow-lg transition-shadow'
+          onClick={() => openUserList('inactive', 'Inactive Users')}
+        >
           <CardHeader className='pb-3'>
-            <CardTitle className='text-sm font-medium text-purple-600 dark:text-purple-400 flex items-center gap-2'>
-              <Database className='h-4 w-4' />
-              Total Dogs
+            <CardTitle className='text-sm font-medium text-orange-600 dark:text-orange-400 flex items-center gap-2'>
+              <Ban className='h-4 w-4' />
+              Inactive Users
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold text-purple-600 dark:text-purple-400'>
-              {statsLoading ? '...' : adminStats?.totalDogs || 0}
+            <div className='text-2xl font-bold text-orange-600 dark:text-orange-400'>
+              {statsLoading
+                ? '...'
+                : users.filter((u) => !u.isActive).length || 0}
             </div>
+            <p className='text-xs text-muted-foreground mt-2'>
+              Click to view all
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Global Registry Management */}
-      <RegistryManagement />
+      {/* Analytics Section */}
+      <AnalyticsComponent />
 
       {/* User Management */}
       <Card>
@@ -309,6 +363,18 @@ export function AdminDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* User List Dialog */}
+      <UserListDialog
+        open={userListDialogOpen}
+        onOpenChange={setUserListDialogOpen}
+        title={userListTitle}
+        users={users}
+        filterType={userListFilter}
+        onImpersonate={handleImpersonate}
+        onToggleRole={handleToggleRole}
+        onToggleActive={handleToggleActive}
+      />
     </div>
   );
 }
