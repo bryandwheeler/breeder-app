@@ -519,6 +519,7 @@ export interface Dog {
   breederName?: string;
   microchip?: string;
   breed: string;
+  breedGeneration?: string; // For breeds with generations (e.g., F1, F1B, F2BB for doodles)
   sex: 'male' | 'female';
   dateOfBirth: string;
   color: string;

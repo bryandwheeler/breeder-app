@@ -64,6 +64,7 @@ const formSchema = z.object({
   kennelName: z.string().optional(),
   breederName: z.string().optional(),
   breed: z.string().min(1, 'Breed is required'),
+  breedGeneration: z.string().optional(),
   sex: z.enum(['male', 'female']),
   dateOfBirth: z.string().min(1, 'DOB is required'),
   color: z.string().optional(),
@@ -216,6 +217,7 @@ function DogFormContent({
       kennelName: dog?.kennelName || '',
       breederName: dog?.breederName || '',
       breed: dog?.breed || '',
+      breedGeneration: dog?.breedGeneration || '',
       sex: dog?.sex || 'female',
       dateOfBirth: dog?.dateOfBirth || '',
       color: dog?.color || '',
@@ -757,6 +759,26 @@ function DogFormContent({
                     onChange={(v) => field.onChange(v)}
                     placeholder='Type to search breeds...'
                   />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='breedGeneration'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Generation/Subcategory</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder='e.g., F1, F1B, F2BB, Multigen'
+                      {...field}
+                    />
+                  </FormControl>
+                  <p className='text-xs text-muted-foreground'>
+                    For breeds with generations (Goldendoodle, Labradoodle, etc.) or other subcategories
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

@@ -219,7 +219,20 @@ export function DogList({
         </span>
       ),
     },
-    breed: { accessorKey: 'breed', header: 'Breed' },
+    breed: {
+      accessorKey: 'breed',
+      header: 'Breed',
+      cell: ({ row }) => (
+        <div>
+          <div>{row.original.breed}</div>
+          {row.original.breedGeneration && (
+            <div className='text-xs text-muted-foreground'>
+              {row.original.breedGeneration}
+            </div>
+          )}
+        </div>
+      ),
+    },
     dateOfBirth: { accessorKey: 'dateOfBirth', header: 'DOB' },
     age: {
       id: 'age',

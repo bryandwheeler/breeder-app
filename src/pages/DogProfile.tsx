@@ -459,6 +459,11 @@ export function DogProfile() {
                   </div>
                   <div>
                     <strong>Breed:</strong> {dog.breed}
+                    {dog.breedGeneration && (
+                      <span className='text-sm text-muted-foreground ml-2'>
+                        ({dog.breedGeneration})
+                      </span>
+                    )}
                   </div>
                   <div>
                     <strong>DOB:</strong> {dog.dateOfBirth}
