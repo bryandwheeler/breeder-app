@@ -19,6 +19,7 @@ import {
   GitFork,
   HelpCircle,
   Briefcase,
+  TrendingUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
@@ -63,6 +64,7 @@ const breederNavigation: NavGroup[] = [
   {
     title: 'Business',
     items: [
+      { name: 'Litter Forecast', path: '/forecast', icon: TrendingUp },
       { name: 'Customers', path: '/customers', icon: Users },
       { name: 'Waitlist', path: '/waitlist', icon: ListOrdered },
       { name: 'Inquiries', path: '/inquiries', icon: MessageSquare },

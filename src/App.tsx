@@ -23,6 +23,7 @@ import { Connections } from '@/pages/Connections';
 import { BuyerPortal } from '@/pages/BuyerPortal';
 import { HealthRecords } from '@/pages/HealthRecords';
 import { StudJobsPage } from '@/pages/StudJobsPage';
+import { LitterForecast } from '@/pages/LitterForecast';
 import { Help } from '@/pages/Help';
 import { Login } from '@/pages/Login';
 import { Signup } from '@/pages/Signup';
@@ -365,6 +366,14 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <StudJobsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/forecast'
+                element={
+                  <ProtectedRoute>
+                    <LitterForecast />
                   </ProtectedRoute>
                 }
               />
