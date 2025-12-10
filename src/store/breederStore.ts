@@ -80,9 +80,14 @@ export const useBreederStore = create<Store>()((set, get) => ({
     const { profile } = get();
     if (!profile) throw new Error('No profile found');
 
+    // Filter out undefined values - Firestore doesn't support them
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+
     const profileRef = doc(db, FIRESTORE_COLLECTIONS.BREEDER_PROFILES, profile.id);
     await updateDoc(profileRef, {
-      ...updates,
+      ...filteredUpdates,
       updatedAt: serverTimestamp(),
     });
   },
@@ -118,8 +123,13 @@ export const useBreederStore = create<Store>()((set, get) => ({
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to update testimonials');
 
+    // Filter out undefined values - Firestore doesn't support them
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+
     const testimonialRef = doc(db, 'testimonials', id);
-    await updateDoc(testimonialRef, updates);
+    await updateDoc(testimonialRef, filteredUpdates);
   },
 
   deleteTestimonial: async (id) => {
@@ -159,9 +169,14 @@ export const useBreederStore = create<Store>()((set, get) => ({
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to update inquiries');
 
+    // Filter out undefined values - Firestore doesn't support them
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+
     const inquiryRef = doc(db, 'inquiries', id);
     await updateDoc(inquiryRef, {
-      ...updates,
+      ...filteredUpdates,
       updatedAt: serverTimestamp(),
     });
   },

@@ -154,9 +154,14 @@ export const useCrmStore = create<Store>()((set, get) => ({
   },
 
   updateCustomer: async (id, updates) => {
+    // Filter out undefined values - Firestore doesn't support them
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+
     const customerRef = doc(db, 'customers', id);
     await updateDoc(customerRef, {
-      ...updates,
+      ...filteredUpdates,
       updatedAt: serverTimestamp(),
     });
   },
@@ -337,8 +342,13 @@ export const useCrmStore = create<Store>()((set, get) => ({
   },
 
   updateSegment: async (id, updates) => {
+    // Filter out undefined values - Firestore doesn't support them
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+
     await updateDoc(doc(db, 'customer_segments', id), {
-      ...updates,
+      ...filteredUpdates,
       updatedAt: serverTimestamp(),
     });
   },
@@ -411,8 +421,13 @@ export const useCrmStore = create<Store>()((set, get) => ({
   },
 
   updateReferral: async (id, updates) => {
+    // Filter out undefined values - Firestore doesn't support them
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+
     await updateDoc(doc(db, 'referrals', id), {
-      ...updates,
+      ...filteredUpdates,
       updatedAt: serverTimestamp(),
     });
   },

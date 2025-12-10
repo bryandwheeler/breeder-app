@@ -126,9 +126,14 @@ export const useDogStore = create<Store>()((set, get) => ({
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to update dogs');
 
+    // Filter out undefined values - Firestore doesn't support them
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+
     const dogRef = doc(db, 'dogs', id);
     await updateDoc(dogRef, {
-      ...updates,
+      ...filteredUpdates,
       updatedAt: serverTimestamp(),
     });
   },
@@ -174,9 +179,14 @@ export const useDogStore = create<Store>()((set, get) => ({
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to update litters');
 
+    // Filter out undefined values - Firestore doesn't support them
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+
     const litterRef = doc(db, 'litters', id);
     await updateDoc(litterRef, {
-      ...updates,
+      ...filteredUpdates,
       updatedAt: serverTimestamp(),
     });
   },
