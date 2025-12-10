@@ -1342,7 +1342,6 @@ function DogFormContent({
                   <SelectValue placeholder="Select status..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value=''>Not Set</SelectItem>
                   <SelectItem value='future-stud'>
                     Future Stud (Young Male)
                   </SelectItem>
