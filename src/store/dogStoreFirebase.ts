@@ -101,7 +101,7 @@ export const useDogStore = create<Store>()((set, get) => ({
     if (!user) throw new Error('Must be logged in to add dogs');
 
     const dogsRef = collection(db, 'dogs');
-    const newDog = {
+    const newDogData = {
       ...dog,
       userId: targetUid || user.uid,
       photos: dog.photos || [],
@@ -116,7 +116,12 @@ export const useDogStore = create<Store>()((set, get) => ({
       updatedAt: serverTimestamp(),
     };
 
-    const docRef = await addDoc(dogsRef, newDog);
+    // Filter out undefined values - Firestore doesn't support them
+    const filteredDogData = Object.fromEntries(
+      Object.entries(newDogData).filter(([_, value]) => value !== undefined)
+    );
+
+    const docRef = await addDoc(dogsRef, filteredDogData);
     // Update user profile with new dog count
     await updateUserCounters(targetUid || user.uid);
     return docRef.id; // Return the new dog's ID

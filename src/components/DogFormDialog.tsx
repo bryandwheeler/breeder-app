@@ -245,6 +245,7 @@ function DogFormContent({
       healthTestsPending,
       agePending,
       spayedNeutered,
+      // Only include these fields if they have values
       spayNeuterDate: spayedNeutered && spayNeuterDate ? spayNeuterDate : undefined,
       spayNeuterNotes: spayedNeutered && spayNeuterNotes ? spayNeuterNotes : undefined,
     };
