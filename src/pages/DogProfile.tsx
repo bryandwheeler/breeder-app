@@ -43,6 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { calculateAge } from '@/lib/utils';
 
 export function DogProfile() {
   const { id } = useParams<{ id: string }>();
@@ -461,6 +462,9 @@ export function DogProfile() {
                   </div>
                   <div>
                     <strong>DOB:</strong> {dog.dateOfBirth}
+                    <div className='text-sm text-muted-foreground'>
+                      Age: {calculateAge(dog.dateOfBirth)}
+                    </div>
                   </div>
                   <div>
                     <strong>Color:</strong> {dog.color || '-'}

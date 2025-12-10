@@ -798,6 +798,70 @@ function DogFormContent({
                 )}
               />
             </div>
+
+            <div>
+              <Label>Breeding Status</Label>
+              <Select
+                value={breedingStatus || ''}
+                onValueChange={(value) =>
+                  setBreedingStatus(
+                    value === ''
+                      ? undefined
+                      : (value as
+                          | 'future-stud'
+                          | 'future-dam'
+                          | 'active-stud'
+                          | 'active-dam'
+                          | 'retired'
+                          | 'pet'
+                          | 'guardian')
+                  )
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select breeding status..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='future-stud'>
+                    Future Stud (Young Male)
+                  </SelectItem>
+                  <SelectItem value='future-dam'>
+                    Future Dam (Young Female)
+                  </SelectItem>
+                  <SelectItem value='active-stud'>
+                    Active Stud (Breeding Male)
+                  </SelectItem>
+                  <SelectItem value='active-dam'>
+                    Active Dam (Breeding Female)
+                  </SelectItem>
+                  <SelectItem value='retired'>
+                    Retired from Breeding
+                  </SelectItem>
+                  <SelectItem value='pet'>
+                    Pet Quality (Not for Breeding)
+                  </SelectItem>
+                  <SelectItem value='guardian'>
+                    Guardian Program
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className='text-xs text-muted-foreground mt-1'>
+                {breedingStatus === 'future-stud' &&
+                  'Young male not yet ready for breeding'}
+                {breedingStatus === 'future-dam' &&
+                  'Young female not yet ready for breeding'}
+                {breedingStatus === 'active-stud' &&
+                  'Actively breeding male'}
+                {breedingStatus === 'active-dam' &&
+                  'Actively breeding female'}
+                {breedingStatus === 'retired' &&
+                  'Retired from breeding program'}
+                {breedingStatus === 'pet' &&
+                  'Pet quality, not intended for breeding'}
+                {breedingStatus === 'guardian' &&
+                  'In guardian home program'}
+              </p>
+            </div>
           </div>
 
           {/* Parents */}
