@@ -29,6 +29,9 @@ export function DogList({
   const [programFilter, setProgramFilter] = useState<
     'all' | 'owned' | 'guardian' | 'external_stud' | 'co-owned'
   >('all');
+  const [breedingStatusFilter, setBreedingStatusFilter] = useState<
+    'all' | 'future-stud' | 'future-dam' | 'active-stud' | 'active-dam' | 'retired' | 'pet' | 'guardian'
+  >('all');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dogToDelete, setDogToDelete] = useState<Dog | null>(null);
 
@@ -190,48 +193,94 @@ export function DogList({
     },
   ];
 
-  // Filter dogs based on program status
-  const filteredDogs = dogs.filter((dog) => {
-    if (programFilter === 'all') return true;
-    return (dog.programStatus || 'owned') === programFilter;
-  });
+  // Filter and sort dogs
+  const filteredDogs = dogs
+    .filter((dog) => {
+      // Filter by program status
+      if (programFilter !== 'all' && (dog.programStatus || 'owned') !== programFilter) {
+        return false;
+      }
+
+      // Filter by breeding status
+      if (breedingStatusFilter !== 'all' && dog.breedingStatus !== breedingStatusFilter) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      // Sort by name alphabetically
+      return a.name.localeCompare(b.name);
+    });
 
   return (
     <div className='space-y-4'>
-      <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4'>
-        <div className='flex flex-col xs:flex-row items-start xs:items-center gap-2 w-full sm:w-auto'>
-          <label className='text-sm font-medium whitespace-nowrap'>
-            Filter by Program:
-          </label>
-          <Select
-            value={programFilter}
-            onValueChange={(v) =>
-              setProgramFilter(
-                v as 'all' | 'owned' | 'guardian' | 'external_stud' | 'co-owned'
-              )
-            }
-          >
-            <SelectTrigger className='w-full xs:w-[200px]'>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>All Dogs</SelectItem>
-              <SelectItem value='owned'>Owned</SelectItem>
-              <SelectItem value='guardian'>Guardian Home</SelectItem>
-              <SelectItem value='external_stud'>External Stud</SelectItem>
-              <SelectItem value='co-owned'>Co-Owned</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <div className='flex flex-col gap-3'>
+        <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3'>
+          <div className='flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto'>
+            <div className='flex flex-col xs:flex-row items-start xs:items-center gap-2 w-full sm:w-auto'>
+              <label className='text-sm font-medium whitespace-nowrap'>
+                Program:
+              </label>
+              <Select
+                value={programFilter}
+                onValueChange={(v) =>
+                  setProgramFilter(
+                    v as 'all' | 'owned' | 'guardian' | 'external_stud' | 'co-owned'
+                  )
+                }
+              >
+                <SelectTrigger className='w-full xs:w-[180px]'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='all'>All</SelectItem>
+                  <SelectItem value='owned'>Owned</SelectItem>
+                  <SelectItem value='guardian'>Guardian Home</SelectItem>
+                  <SelectItem value='external_stud'>External Stud</SelectItem>
+                  <SelectItem value='co-owned'>Co-Owned</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        <Button
-          onClick={() => openEditDialog(null)}
-          size='sm'
-          className='w-full sm:w-auto'
-        >
-          <Edit className='h-4 w-4 mr-2' />
-          Add Dog
-        </Button>
+            <div className='flex flex-col xs:flex-row items-start xs:items-center gap-2 w-full sm:w-auto'>
+              <label className='text-sm font-medium whitespace-nowrap'>
+                Breeding Status:
+              </label>
+              <Select
+                value={breedingStatusFilter}
+                onValueChange={(v) =>
+                  setBreedingStatusFilter(
+                    v as 'all' | 'future-stud' | 'future-dam' | 'active-stud' | 'active-dam' | 'retired' | 'pet' | 'guardian'
+                  )
+                }
+              >
+                <SelectTrigger className='w-full xs:w-[180px]'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='all'>All</SelectItem>
+                  <SelectItem value='future-stud'>Future Stud</SelectItem>
+                  <SelectItem value='future-dam'>Future Dam</SelectItem>
+                  <SelectItem value='active-stud'>Active Stud</SelectItem>
+                  <SelectItem value='active-dam'>Active Dam</SelectItem>
+                  <SelectItem value='retired'>Retired</SelectItem>
+                  <SelectItem value='pet'>Pet Quality</SelectItem>
+                  <SelectItem value='guardian'>Guardian Program</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <Button
+            onClick={() => openEditDialog(null)}
+            size='sm'
+            className='w-full sm:w-auto'
+          >
+            <Edit className='h-4 w-4 mr-2' />
+            Add Dog
+          </Button>
+        </div>
       </div>
 
       <DataTable
