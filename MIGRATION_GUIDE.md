@@ -17,6 +17,7 @@ We're standardizing naming conventions across the codebase to improve consistenc
 ## Migration Checklist
 
 ### ✅ Phase 1: Preparation (No Risk)
+
 - [x] Read `NAMING_CONVENTIONS.md`
 - [x] ESLint rules added
 - [x] TypeScript helper types created (`src/types/guards.ts`)
@@ -26,6 +27,7 @@ We're standardizing naming conventions across the codebase to improve consistenc
 - [ ] Create full database backup (via Firebase Console)
 
 ### 🟡 Phase 2: String Literal Migration (Medium Risk)
+
 - [ ] Run string literal migration in dry-run mode
 - [ ] Review proposed changes
 - [ ] Execute string literal migration
@@ -35,6 +37,7 @@ We're standardizing naming conventions across the codebase to improve consistenc
 - [ ] Verify production data
 
 ### 🔴 Phase 3: Collection Rename (High Risk)
+
 - [ ] **STOP**: Ensure Phase 2 is complete and tested
 - [ ] Schedule longer maintenance window (30-60 minutes)
 - [ ] Enable maintenance mode
@@ -92,6 +95,7 @@ npx tsx scripts/migrateStringLiterals.ts --dry-run
 ```
 
 **Expected Output:**
+
 ```
 🚀 Starting String Literal Migration
 📝 Mode: DRY RUN (no changes)
@@ -128,7 +132,7 @@ After running the migration, update your TypeScript code:
 
 ```typescript
 // ❌ OLD (remove these)
-import { /* old types */ } from '@/types/dog';
+import /* old types */ '@/types/dog';
 
 // ✅ NEW (use these)
 import {
@@ -142,7 +146,7 @@ import {
 const reminder: Reminder = {
   id: '123',
   title: 'Vet Visit',
-  type: 'vet-visit',        // ✅ kebab-case
+  type: 'vet-visit', // ✅ kebab-case
   date: '2024-12-15',
 };
 
@@ -210,6 +214,7 @@ npx tsx scripts/migrateCollections.ts --backup
 ```
 
 **Output:**
+
 ```
 📦 Backing up collection: breeder_profiles
   ✅ Backed up 45 documents to: backups/breeder_profiles_2024-12-07T15-30-00.json
@@ -220,6 +225,7 @@ npx tsx scripts/migrateCollections.ts --backup
 ```
 
 Verify backup files exist:
+
 ```bash
 ls -lh backups/
 ```
@@ -232,6 +238,7 @@ npx tsx scripts/migrateCollections.ts --dry-run
 ```
 
 **Review output carefully:**
+
 - Check document counts
 - Verify collections being renamed
 - Ensure no errors
@@ -244,12 +251,14 @@ npx tsx scripts/migrateCollections.ts --execute
 ```
 
 **Expected flow:**
+
 1. Creates backups
 2. Copies all documents to new collections
 3. Verifies document counts match
 4. Deletes old collections (after confirmation)
 
 **Duration estimate:**
+
 - Small databases (<1000 docs): 1-2 minutes
 - Medium databases (<10000 docs): 5-10 minutes
 - Large databases (>10000 docs): 15-30 minutes
@@ -260,20 +269,20 @@ Update all Firestore collection references:
 
 ```typescript
 // ❌ OLD (remove these)
-collection(db, 'breeder_profiles')
-collection(db, 'breeding_records')
-collection(db, 'heat_cycles')
-collection(db, 'stud_jobs')
-collection(db, 'customer_segments')
+collection(db, 'breeder_profiles');
+collection(db, 'breeding_records');
+collection(db, 'heat_cycles');
+collection(db, 'stud_jobs');
+collection(db, 'customer_segments');
 
 // ✅ NEW (use these)
 import { FIRESTORE_COLLECTIONS } from '@/types/guards';
 
-collection(db, FIRESTORE_COLLECTIONS.BREEDER_PROFILES)  // 'breederProfiles'
-collection(db, FIRESTORE_COLLECTIONS.BREEDING_RECORDS)  // 'breedingRecords'
-collection(db, FIRESTORE_COLLECTIONS.HEAT_CYCLES)       // 'heatCycles'
-collection(db, FIRESTORE_COLLECTIONS.STUD_JOBS)         // 'studJobs'
-collection(db, FIRESTORE_COLLECTIONS.CUSTOMER_SEGMENTS) // 'customerSegments'
+collection(db, FIRESTORE_COLLECTIONS.BREEDER_PROFILES); // 'breederProfiles'
+collection(db, FIRESTORE_COLLECTIONS.BREEDING_RECORDS); // 'breedingRecords'
+collection(db, FIRESTORE_COLLECTIONS.HEAT_CYCLES); // 'heatCycles'
+collection(db, FIRESTORE_COLLECTIONS.STUD_JOBS); // 'studJobs'
+collection(db, FIRESTORE_COLLECTIONS.CUSTOMER_SEGMENTS); // 'customerSegments'
 ```
 
 ### 3.7 Update Firestore Security Rules
@@ -297,6 +306,7 @@ match /customerSegments/{segmentId} { ... }
 ```
 
 Deploy updated rules:
+
 ```bash
 firebase deploy --only firestore:rules
 ```
@@ -316,6 +326,7 @@ npm run build
 ### 3.9 Verification Checklist
 
 Test all features:
+
 - [ ] User can log in
 - [ ] Dogs list loads correctly
 - [ ] Litters list loads correctly
@@ -368,18 +379,21 @@ const MAINTENANCE_MODE = false;
 ## Post-Migration Tasks
 
 ### Immediate (Within 24 hours)
+
 - [ ] Monitor error logs
 - [ ] Check user reports
 - [ ] Verify all features working
 - [ ] Check database query performance
 
 ### Short-term (Within 1 week)
+
 - [ ] Remove legacy string literal values from codebase
 - [ ] Update documentation
 - [ ] Train team on new conventions
 - [ ] Update onboarding materials
 
 ### Long-term (Within 1 month)
+
 - [ ] Delete backup files after verification
 - [ ] Review and optimize Firestore indexes
 - [ ] Consider adding monitoring for naming violations
@@ -391,6 +405,7 @@ const MAINTENANCE_MODE = false;
 ### Issue: Migration script fails with "Permission Denied"
 
 **Solution:**
+
 - Ensure Firebase credentials are correct in `.env`
 - Verify user has Firestore write permissions
 - Check Firebase IAM roles
@@ -398,6 +413,7 @@ const MAINTENANCE_MODE = false;
 ### Issue: Document counts don't match after migration
 
 **Solution:**
+
 1. Stop immediately
 2. Don't delete old collections
 3. Run verification manually:
@@ -412,6 +428,7 @@ const MAINTENANCE_MODE = false;
 ### Issue: Application crashes after collection rename
 
 **Solution:**
+
 1. Check console errors for collection name references
 2. Search codebase for old collection names:
    ```bash
@@ -427,6 +444,7 @@ const MAINTENANCE_MODE = false;
 ### Issue: Firestore rules not working after migration
 
 **Solution:**
+
 1. Check `firestore.rules` for old collection names
 2. Update rules to use new names
 3. Deploy rules:

@@ -9,11 +9,19 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { LitterFormDialog } from '@/components/LitterFormDialog';
 import { Litter } from '@/types/dog';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 
 export function Litters() {
   const { litters, dogs, deleteLitter } = useDogStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingLitter, setEditingLitter] = useState<Litter | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'active' | 'completed'>('all');
 
   const getStatusColor = (status: Litter['status']) => {
     switch (status) {
@@ -54,6 +62,15 @@ export function Litters() {
     setDialogOpen(true);
   };
 
+  // Filter litters based on status
+  const filteredLitters = litters.filter((litter) => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'pending') return litter.status === 'planned' || litter.status === 'pregnant';
+    if (statusFilter === 'active') return litter.status === 'born' || litter.status === 'weaning' || litter.status === 'ready';
+    if (statusFilter === 'completed') return litter.status === 'completed';
+    return true;
+  });
+
   return (
     <div className='space-y-4 sm:space-y-6 md:space-y-8'>
       <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3'>
@@ -69,6 +86,25 @@ export function Litters() {
         </Button>
       </div>
 
+      {/* Filter */}
+      <div className='flex items-center gap-2'>
+        <label className='text-sm font-medium'>Filter:</label>
+        <Select
+          value={statusFilter}
+          onValueChange={(v: 'all' | 'pending' | 'active' | 'completed') => setStatusFilter(v)}
+        >
+          <SelectTrigger className='w-[180px]'>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='all'>All Litters</SelectItem>
+            <SelectItem value='pending'>Pending (Bred/Pregnant)</SelectItem>
+            <SelectItem value='active'>Active (Born/Weaning)</SelectItem>
+            <SelectItem value='completed'>Completed</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {litters.length === 0 ? (
         <Card className='p-8 sm:p-12 text-center'>
           <Calendar className='h-12 w-12 sm:h-16 sm:w-16 mx-auto text-muted-foreground mb-4' />
@@ -76,17 +112,16 @@ export function Litters() {
             No litters planned yet
           </p>
         </Card>
+      ) : filteredLitters.length === 0 ? (
+        <Card className='p-8 sm:p-12 text-center'>
+          <Calendar className='h-12 w-12 sm:h-16 sm:w-16 mx-auto text-muted-foreground mb-4' />
+          <p className='text-lg sm:text-xl text-muted-foreground'>
+            No litters match this filter
+          </p>
+        </Card>
       ) : (
         <div className='grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3'>
-          {litters.map((litter) => {
-            // Skip litters without required fields (old data structure)
-            if (!litter.dateOfBirth) {
-              console.warn(
-                'Skipping litter with missing dateOfBirth:',
-                litter.id
-              );
-              return null;
-            }
+          {filteredLitters.map((litter) => {
 
             const dam = dogs.find((d) => d.id === litter.damId);
             const sire = dogs.find((d) => d.id === litter.sireId);
@@ -126,10 +161,17 @@ export function Litters() {
                   </div>
 
                   <div>
-                    <p className='text-sm'>
-                      <strong>Date of Birth:</strong>{' '}
-                      {format(new Date(litter.dateOfBirth), 'PPP')}
-                    </p>
+                    {litter.dateOfBirth ? (
+                      <p className='text-sm'>
+                        <strong>Date of Birth:</strong>{' '}
+                        {format(new Date(litter.dateOfBirth), 'PPP')}
+                      </p>
+                    ) : litter.expectedDateOfBirth ? (
+                      <p className='text-sm'>
+                        <strong>Expected Due:</strong>{' '}
+                        {format(new Date(litter.expectedDateOfBirth), 'PPP')}
+                      </p>
+                    ) : null}
                     {litter.pickupReadyDate && (
                       <p className='text-sm'>
                         <strong>Ready:</strong>{' '}

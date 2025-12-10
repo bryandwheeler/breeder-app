@@ -129,6 +129,16 @@ export function LitterFormDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate that at least one date is provided
+    if (!formData.dateOfBirth && !formData.expectedDateOfBirth) {
+      toast({
+        title: 'Missing date',
+        description: 'Please provide either an expected due date or actual birth date.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Prepare litter data with external sire info if applicable
     const litterData = { ...formData };
     if (externalSire) {
@@ -365,9 +375,17 @@ export function LitterFormDialog({
 
           <div className='grid grid-cols-2 gap-4'>
             <div>
-              <Label htmlFor='expectedDateOfBirth'>
-                Expected Date of Birth
-              </Label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Label htmlFor='expectedDateOfBirth'>
+                    Expected Due Date
+                    {!formData.dateOfBirth && ' *'}
+                  </Label>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Estimated due date (typically 63 days from breeding)
+                </TooltipContent>
+              </Tooltip>
               <Input
                 id='expectedDateOfBirth'
                 type='date'
@@ -382,11 +400,20 @@ export function LitterFormDialog({
             </div>
 
             <div>
-              <Label htmlFor='dateOfBirth'>Actual Date of Birth *</Label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Label htmlFor='dateOfBirth'>
+                    Actual Birth Date
+                    {formData.dateOfBirth && ' *'}
+                  </Label>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Leave empty for pending litters - fill in once puppies are born
+                </TooltipContent>
+              </Tooltip>
               <Input
                 id='dateOfBirth'
                 type='date'
-                required
                 value={formData.dateOfBirth}
                 onChange={(e) =>
                   setFormData({ ...formData, dateOfBirth: e.target.value })

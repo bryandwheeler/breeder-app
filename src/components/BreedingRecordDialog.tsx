@@ -24,7 +24,7 @@ interface BreedingRecordDialogProps {
 
 export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId, editingRecord }: BreedingRecordDialogProps) {
   const { currentUser } = useAuth();
-  const { dogs } = useDogStore();
+  const { dogs, addLitter } = useDogStore();
   const { addBreedingRecord, updateBreedingRecord } = useHeatCycleStore();
 
   const [studSource, setStudSource] = useState<'own' | 'external'>('external');
@@ -107,6 +107,48 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId, editin
     } finally {
       setStudSearching(false);
     }
+  };
+
+  const createPendingLitter = async (
+    damId: string,
+    sireId: string | undefined,
+    breedingDate: string,
+    externalStud: DogSearchResult | null
+  ) => {
+    // Calculate expected due date (63 days from breeding)
+    const breedingDateObj = new Date(breedingDate);
+    const expectedDueDate = new Date(breedingDateObj);
+    expectedDueDate.setDate(expectedDueDate.getDate() + 63);
+    const expectedDateOfBirth = expectedDueDate.toISOString().split('T')[0];
+
+    // Get the dam's name for the litter name
+    const dam = dogs.find((d) => d.id === damId);
+    const damName = dam?.name || 'Unknown';
+
+    // Create litter data
+    const litterData: any = {
+      litterName: `${damName}'s ${new Date().getFullYear()} Litter`,
+      damId,
+      sireId: sireId || '',
+      dateOfBirth: '', // Empty for pending litter
+      expectedDateOfBirth,
+      status: 'planned', // Start as 'planned', update to 'pregnant' after confirmation (~30 days)
+      puppies: [],
+      buyers: [],
+    };
+
+    // Add external sire info if applicable
+    if (!sireId && externalStud) {
+      litterData.externalSire = {
+        name: externalStud.dogName,
+        registrationNumber: externalStud.registrationNumber,
+        breed: externalStud.breed,
+        kennelName: externalStud.ownerKennel,
+        breederName: externalStud.ownerBreederName,
+      };
+    }
+
+    await addLitter(litterData);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -202,9 +244,13 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId, editin
       } else {
         // Add new record
         await addBreedingRecord(recordData);
+
+        // Automatically create a pending litter for this breeding
+        await createPendingLitter(dogId, finalStudId, breedingDate, externalStud);
+
         toast({
           title: 'Success',
-          description: 'Breeding record added successfully',
+          description: 'Breeding record added and pending litter created',
         });
       }
 

@@ -33,21 +33,23 @@ export async function createAuditLog(params: {
   errorMessage?: string;
 }): Promise<void> {
   try {
-    const logEntry: Omit<AuditLogEntry, 'id'> = {
+    const logEntry: Partial<Omit<AuditLogEntry, 'id'>> = {
       timestamp: new Date().toISOString(),
       category: params.category,
       action: params.action,
       actorUid: params.actorUid,
       actorEmail: params.actorEmail,
       actorDisplayName: params.actorDisplayName,
-      targetUid: params.targetUid,
-      targetEmail: params.targetEmail,
-      targetDisplayName: params.targetDisplayName,
       description: params.description,
-      metadata: params.metadata,
       success: params.success !== false, // default to true
-      errorMessage: params.errorMessage,
     };
+
+    // Only include optional fields if they are defined
+    if (params.targetUid !== undefined) logEntry.targetUid = params.targetUid;
+    if (params.targetEmail !== undefined) logEntry.targetEmail = params.targetEmail;
+    if (params.targetDisplayName !== undefined) logEntry.targetDisplayName = params.targetDisplayName;
+    if (params.metadata !== undefined) logEntry.metadata = params.metadata;
+    if (params.errorMessage !== undefined) logEntry.errorMessage = params.errorMessage;
 
     await addDoc(collection(db, 'audit_logs'), logEntry);
   } catch (error) {

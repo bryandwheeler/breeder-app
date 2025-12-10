@@ -46,7 +46,7 @@ import {
 
 export function DogProfile() {
   const { id } = useParams<{ id: string }>();
-  const { dogs, updateDog } = useDogStore();
+  const { dogs, updateDog, litters } = useDogStore();
   const { subscribeToHeatCycles } = useHeatCycleStore();
   const { getStudJobsForStud, deleteStudJob, subscribeToStudJobs } = useStudJobStore();
   const [dnaDialogOpen, setDnaDialogOpen] = useState(false);
@@ -56,6 +56,15 @@ export function DogProfile() {
   const [editingStudJob, setEditingStudJob] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const dog = dogs.find((d) => d.id === id);
+
+  // Get litters for this dog (if female)
+  const pendingLitters = dog?.sex === 'female'
+    ? litters.filter(l => l.damId === dog.id && (l.status === 'planned' || l.status === 'pregnant'))
+    : [];
+
+  const activeLitters = dog?.sex === 'female'
+    ? litters.filter(l => l.damId === dog.id && (l.status === 'born' || l.status === 'weaning' || l.status === 'ready'))
+    : [];
 
   // Subscribe to heat cycles and stud jobs when component mounts
   useEffect(() => {
@@ -181,6 +190,111 @@ export function DogProfile() {
         </TabsList>
 
         <TabsContent value='overview' className='space-y-8 mt-6'>
+          {/* Active Litters - Show for females with active litters */}
+          {dog.sex === 'female' && activeLitters.length > 0 && (
+            <Card className='border-blue-200 bg-blue-50/50'>
+              <CardHeader>
+                <div className='flex justify-between items-center'>
+                  <CardTitle className='flex items-center gap-2'>
+                    <DogIcon className='h-5 w-5 text-blue-600' />
+                    Current Litters
+                  </CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className='space-y-3'>
+                  {activeLitters.map((litter) => {
+                    const sire = dogs.find((d) => d.id === litter.sireId);
+                    const puppyCount = litter.puppies?.length || 0;
+                    const availableCount = litter.puppies?.filter(p => p.status === 'available').length || 0;
+
+                    return (
+                      <Link
+                        key={litter.id}
+                        to={`/litters/${litter.id}`}
+                        className='block p-4 bg-white rounded-lg border hover:border-blue-400 hover:shadow-md transition-all'
+                      >
+                        <div className='flex items-center justify-between'>
+                          <div className='flex-1'>
+                            <div className='font-semibold text-lg'>
+                              {litter.litterName || `${dog.name}'s Litter`}
+                            </div>
+                            <div className='text-sm text-muted-foreground mt-1'>
+                              Sire: {litter.externalSire?.name || sire?.name || 'Unknown'}
+                            </div>
+                            {litter.dateOfBirth && (
+                              <div className='text-sm text-muted-foreground mt-1'>
+                                Born: {format(new Date(litter.dateOfBirth), 'PPP')}
+                              </div>
+                            )}
+                            {puppyCount > 0 && (
+                              <div className='text-sm text-muted-foreground mt-1'>
+                                {puppyCount} puppies ({availableCount} available)
+                              </div>
+                            )}
+                          </div>
+                          <Badge variant="default" className='bg-blue-600'>
+                            {litter.status.charAt(0).toUpperCase() + litter.status.slice(1)}
+                          </Badge>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Pending Litters - Show for females with pending/pregnant litters */}
+          {dog.sex === 'female' && pendingLitters.length > 0 && (
+            <Card className='border-pink-200 bg-pink-50/50'>
+              <CardHeader>
+                <div className='flex justify-between items-center'>
+                  <CardTitle className='flex items-center gap-2'>
+                    <Calendar className='h-5 w-5 text-pink-600' />
+                    Pending Litters
+                  </CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className='space-y-3'>
+                  {pendingLitters.map((litter) => {
+                    const sire = dogs.find((d) => d.id === litter.sireId);
+                    return (
+                      <Link
+                        key={litter.id}
+                        to={`/litters/${litter.id}`}
+                        className='block p-4 bg-white rounded-lg border hover:border-pink-400 hover:shadow-md transition-all'
+                      >
+                        <div className='flex items-center justify-between'>
+                          <div className='flex-1'>
+                            <div className='font-semibold text-lg'>
+                              {litter.litterName || `${dog.name}'s Litter`}
+                            </div>
+                            <div className='text-sm text-muted-foreground mt-1'>
+                              Sire: {litter.externalSire?.name || sire?.name || 'Unknown'}
+                            </div>
+                            {litter.expectedDateOfBirth && (
+                              <div className='text-sm text-muted-foreground mt-1'>
+                                Expected Due: {format(new Date(litter.expectedDateOfBirth), 'PPP')}
+                              </div>
+                            )}
+                          </div>
+                          <Badge
+                            variant={litter.status === 'pregnant' ? 'default' : 'secondary'}
+                            className={litter.status === 'pregnant' ? 'bg-pink-600' : ''}
+                          >
+                            {litter.status === 'pregnant' ? 'Pregnant' : 'Bred'}
+                          </Badge>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Photo Gallery */}
           {dog.photos && dog.photos.length > 0 && (
             <Card>

@@ -249,5 +249,17 @@ service cloud.firestore {
       allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
+
+    // Audit logs - any authenticated user can write logs, only admins can read
+    match /audit_logs/{logId} {
+      // Allow any authenticated user to create audit log entries
+      allow create: if isAuthenticated();
+
+      // Only admins can read audit logs (for Admin > Audit Logs viewer)
+      allow read: if isAdmin();
+
+      // Prevent client-side updates or deletions of audit logs
+      allow update, delete: if false;
+    }
   }
 }

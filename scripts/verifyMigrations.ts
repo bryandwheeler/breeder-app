@@ -10,8 +10,9 @@ import { getFirestore } from 'firebase-admin/firestore';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load environment variables
-dotenv.config({ path: path.join(process.cwd(), '.env.development') });
+// Load environment variables from .env.production or .env.development
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
+dotenv.config({ path: path.join(process.cwd(), envFile) });
 
 // Initialize Firebase Admin SDK
 if (getApps().length === 0) {

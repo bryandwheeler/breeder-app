@@ -1,10 +1,12 @@
 // src/pages/DogList.tsx
 import { useDogStore } from '@/store/dogStoreFirebase';
+import { useHeatCycleStore } from '@/store/heatCycleStore';
 import { DataTable } from '@/components/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
 import { Dog } from '@/types/dog';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, ArrowRight, Home } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Edit, Trash2, ArrowRight, Home, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import {
@@ -15,13 +17,15 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { DeleteDogDialog } from '@/components/DeleteDogDialog';
+import { differenceInDays, parseISO } from 'date-fns';
 export function DogList({
   openEditDialog,
 }: {
   openEditDialog: (dog: Dog | null) => void;
 }) {
   const navigate = useNavigate();
-  const { dogs, deleteDog, updateDog } = useDogStore();
+  const { dogs, deleteDog, updateDog, litters } = useDogStore();
+  const { getBreedingRecordsForDog } = useHeatCycleStore();
   const [programFilter, setProgramFilter] = useState<
     'all' | 'owned' | 'guardian' | 'external_stud' | 'co-owned'
   >('all');
@@ -83,8 +87,63 @@ export function DogList({
     { accessorKey: 'breed', header: 'Breed' },
     { accessorKey: 'dateOfBirth', header: 'DOB' },
     {
+      id: 'breedingStatus',
+      header: 'Status',
+      cell: ({ row }) => {
+        const dog = row.original;
+
+        // Only show breeding status for females
+        if (dog.sex !== 'female') return null;
+
+        // Check for recent breeding records (last 90 days)
+        const breedingRecords = getBreedingRecordsForDog(dog.id);
+        const recentBreedings = breedingRecords.filter((record) => {
+          const breedingDate = parseISO(record.breedingDate);
+          const daysSince = differenceInDays(new Date(), breedingDate);
+          return daysSince >= 0 && daysSince <= 90; // Within last 90 days
+        });
+
+        // Check for planned/pregnant litters
+        const pendingLitters = litters.filter(
+          (litter) =>
+            litter.damId === dog.id &&
+            (litter.status === 'planned' || litter.status === 'pregnant')
+        );
+
+        if (pendingLitters.length > 0) {
+          const litter = pendingLitters[0];
+          if (litter.status === 'pregnant') {
+            return (
+              <Badge variant="default" className="bg-pink-600">
+                <Heart className="h-3 w-3 mr-1" />
+                Pregnant
+              </Badge>
+            );
+          } else {
+            return (
+              <Badge variant="secondary">
+                <Heart className="h-3 w-3 mr-1" />
+                Bred
+              </Badge>
+            );
+          }
+        }
+
+        if (recentBreedings.length > 0) {
+          return (
+            <Badge variant="outline" className="border-pink-600 text-pink-600">
+              <Heart className="h-3 w-3 mr-1" />
+              Recently Bred
+            </Badge>
+          );
+        }
+
+        return null;
+      },
+    },
+    {
       accessorKey: 'programStatus',
-      header: 'Program Status',
+      header: 'Program',
       cell: ({ row }) => {
         const status = row.original.programStatus || 'owned';
         const isGuardian = status === 'guardian';

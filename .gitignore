@@ -27,6 +27,7 @@ firestore-debug.log
 ui-debug.log
 serviceAccountKey*.json
 firebase-admin-key.json
+production-firebase-admin-key.json
 
 # Migration backups
 backups/

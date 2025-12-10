@@ -255,11 +255,19 @@ export function LitterDetails() {
             </CardTitle>
           </CardHeader>
           <CardContent className='space-y-2'>
-            <div>
-              <strong>Date of Birth:</strong>{' '}
-              {format(new Date(litter.dateOfBirth), 'PPP')}
-            </div>
-            {litter.expectedDateOfBirth && (
+            {litter.dateOfBirth ? (
+              <div>
+                <strong>Date of Birth:</strong>{' '}
+                {format(new Date(litter.dateOfBirth), 'PPP')}
+              </div>
+            ) : litter.expectedDateOfBirth ? (
+              <div>
+                <strong>Expected Due Date:</strong>{' '}
+                {format(new Date(litter.expectedDateOfBirth), 'PPP')}
+                <Badge variant="secondary" className="ml-2">Pending</Badge>
+              </div>
+            ) : null}
+            {litter.dateOfBirth && litter.expectedDateOfBirth && (
               <div>
                 <strong>Expected DOB:</strong>{' '}
                 {format(new Date(litter.expectedDateOfBirth), 'PPP')}
