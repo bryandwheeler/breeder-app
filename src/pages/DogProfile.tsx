@@ -322,121 +322,6 @@ export function DogProfile() {
             </Card>
           )}
 
-          {/* Parents - Always show this section */}
-          <Card>
-            <CardHeader>
-              <div className='flex justify-between items-center'>
-                <CardTitle className='flex items-center gap-2'>
-                  <DogIcon className='h-6 w-6' /> Parents
-                </CardTitle>
-                <Button size='sm' variant='outline' onClick={handleEditDog}>
-                  <Edit className='h-4 w-4 mr-1' /> Edit
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-              {/* Sire */}
-              <div className='text-center'>
-                <p className='text-sm text-muted-foreground mb-2'>
-                  Sire (Father)
-                </p>
-                {sire ? (
-                  <Link
-                    to={`/dogs/${sire.id}`}
-                    className='font-bold text-xl hover:text-primary transition'
-                  >
-                    {sire.name} {sire.callName && `("${sire.callName}")`}
-                  </Link>
-                ) : dog.externalSire ? (
-                  <div>
-                    <div className='font-bold text-xl'>
-                      {dog.externalSire.name}
-                    </div>
-                    <div className='text-sm text-muted-foreground'>
-                      {dog.externalSire.registrationNumber && (
-                        <div>{dog.externalSire.registrationNumber}</div>
-                      )}
-                      {dog.externalSire.kennelName && (
-                        <div>Kennel: {dog.externalSire.kennelName}</div>
-                      )}
-                      {dog.externalSire.connectionStatus && (
-                        <Badge
-                          variant={
-                            dog.externalSire.connectionStatus === 'approved'
-                              ? 'default'
-                              : 'secondary'
-                          }
-                          className='mt-2'
-                        >
-                          {dog.externalSire.connectionStatus === 'pending' &&
-                            'Request Pending'}
-                          {dog.externalSire.connectionStatus === 'approved' &&
-                            'Connected'}
-                          {dog.externalSire.connectionStatus === 'declined' &&
-                            'Request Declined'}
-                          {dog.externalSire.connectionStatus === 'cancelled' &&
-                            'Request Cancelled'}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <p className='text-muted-foreground italic'>Unknown</p>
-                )}
-              </div>
-
-              {/* Dam */}
-              <div className='text-center'>
-                <p className='text-sm text-muted-foreground mb-2'>
-                  Dam (Mother)
-                </p>
-                {dam ? (
-                  <Link
-                    to={`/dogs/${dam.id}`}
-                    className='font-bold text-xl hover:text-primary transition'
-                  >
-                    {dam.name} {dam.callName && `("${dam.callName}")`}
-                  </Link>
-                ) : dog.externalDam ? (
-                  <div>
-                    <div className='font-bold text-xl'>
-                      {dog.externalDam.name}
-                    </div>
-                    <div className='text-sm text-muted-foreground'>
-                      {dog.externalDam.registrationNumber && (
-                        <div>{dog.externalDam.registrationNumber}</div>
-                      )}
-                      {dog.externalDam.kennelName && (
-                        <div>Kennel: {dog.externalDam.kennelName}</div>
-                      )}
-                      {dog.externalDam.connectionStatus && (
-                        <Badge
-                          variant={
-                            dog.externalDam.connectionStatus === 'approved'
-                              ? 'default'
-                              : 'secondary'
-                          }
-                          className='mt-2'
-                        >
-                          {dog.externalDam.connectionStatus === 'pending' &&
-                            'Request Pending'}
-                          {dog.externalDam.connectionStatus === 'approved' &&
-                            'Connected'}
-                          {dog.externalDam.connectionStatus === 'declined' &&
-                            'Request Declined'}
-                          {dog.externalDam.connectionStatus === 'cancelled' &&
-                            'Request Cancelled'}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <p className='text-muted-foreground italic'>Unknown</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Info Grid */}
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
             <Card>
@@ -612,6 +497,92 @@ export function DogProfile() {
                     </div>
                   </div>
                 )}
+
+                {/* Parents Section */}
+                <div className='pt-4 border-t space-y-2'>
+                  <h4 className='font-semibold'>Parents</h4>
+                  <div className='grid grid-cols-2 gap-3 text-sm'>
+                    <div>
+                      <strong>Sire:</strong>{' '}
+                      {sire ? (
+                        <Link
+                          to={`/dogs/${sire.id}`}
+                          className='text-primary hover:underline'
+                        >
+                          {sire.name}
+                        </Link>
+                      ) : dog.externalSire ? (
+                        <span>
+                          {dog.externalSire.name}
+                          {dog.externalSire.kennelName && (
+                            <span className='text-muted-foreground'>
+                              {' '}({dog.externalSire.kennelName})
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className='text-muted-foreground'>Unknown</span>
+                      )}
+                    </div>
+                    <div>
+                      <strong>Dam:</strong>{' '}
+                      {dam ? (
+                        <Link
+                          to={`/dogs/${dam.id}`}
+                          className='text-primary hover:underline'
+                        >
+                          {dam.name}
+                        </Link>
+                      ) : dog.externalDam ? (
+                        <span>
+                          {dog.externalDam.name}
+                          {dog.externalDam.kennelName && (
+                            <span className='text-muted-foreground'>
+                              {' '}({dog.externalDam.kennelName})
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className='text-muted-foreground'>Unknown</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Registration Section */}
+                <div className='pt-4 border-t space-y-2'>
+                  <div className='flex items-center justify-between'>
+                    <h4 className='font-semibold'>Registry Information</h4>
+                    <Button
+                      size='sm'
+                      variant='ghost'
+                      onClick={handleEditDog}
+                      className='h-7 text-xs'
+                    >
+                      <Edit className='h-3 w-3 mr-1' /> Edit
+                    </Button>
+                  </div>
+                  {dog.registrations && dog.registrations.length > 0 ? (
+                    <div className='space-y-2'>
+                      {dog.registrations.map((reg) => (
+                        <div key={reg.id} className='text-sm border-l-2 border-primary pl-3 py-1'>
+                          <div>
+                            <strong>{reg.registry}:</strong> {reg.registrationNumber}
+                          </div>
+                          {reg.registeredName && reg.registeredName !== dog.name && (
+                            <div className='text-muted-foreground'>
+                              Registered as: {reg.registeredName}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className='text-sm text-muted-foreground'>
+                      No registration information on file
+                    </div>
+                  )}
+                </div>
 
                 {dog.notes && (
                   <div className='pt-4 border-t'>
