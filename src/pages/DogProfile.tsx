@@ -526,6 +526,84 @@ export function DogProfile() {
                     </div>
                   </div>
                 )}
+
+                {/* Breeding Status Section */}
+                {dog.breedingStatus && (
+                  <div className='pt-4 border-t space-y-2'>
+                    <h4 className='font-semibold'>Breeding Status</h4>
+                    <div className='space-y-2 text-sm'>
+                      <div>
+                        <strong>Status:</strong>{' '}
+                        {dog.breedingStatus === 'future-stud' && (
+                          <Badge variant='secondary'>Future Stud</Badge>
+                        )}
+                        {dog.breedingStatus === 'future-dam' && (
+                          <Badge variant='secondary'>Future Dam</Badge>
+                        )}
+                        {dog.breedingStatus === 'active-stud' && (
+                          <Badge variant='default' className='bg-blue-500'>Active Stud</Badge>
+                        )}
+                        {dog.breedingStatus === 'active-dam' && (
+                          <Badge variant='default' className='bg-blue-500'>Active Dam</Badge>
+                        )}
+                        {dog.breedingStatus === 'retired' && (
+                          <Badge variant='outline'>Retired</Badge>
+                        )}
+                        {dog.breedingStatus === 'pet' && (
+                          <Badge variant='secondary'>Pet Quality</Badge>
+                        )}
+                        {dog.breedingStatus === 'guardian' && (
+                          <Badge variant='secondary'>Guardian Program</Badge>
+                        )}
+                      </div>
+
+                      {/* Pending Requirements for Future Studs/Dams */}
+                      {(dog.breedingStatus === 'future-stud' || dog.breedingStatus === 'future-dam') &&
+                       (dog.agePending || dog.healthTestsPending) && (
+                        <div className='pl-4 space-y-1'>
+                          <p className='font-medium text-muted-foreground'>Pending Requirements:</p>
+                          {dog.agePending && (
+                            <div className='flex items-center gap-2'>
+                              <Badge variant='outline' className='text-xs'>Age Pending</Badge>
+                              <span className='text-xs text-muted-foreground'>
+                                Not yet old enough for breeding
+                              </span>
+                            </div>
+                          )}
+                          {dog.healthTestsPending && (
+                            <div className='flex items-center gap-2'>
+                              <Badge variant='outline' className='text-xs'>Health Tests Pending</Badge>
+                              <span className='text-xs text-muted-foreground'>
+                                Required health tests not complete
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Spayed/Neutered Information */}
+                {dog.spayedNeutered && (
+                  <div className='pt-4 border-t space-y-2'>
+                    <h4 className='font-semibold'>Spayed/Neutered</h4>
+                    <div className='space-y-2 text-sm'>
+                      {dog.spayNeuterDate && (
+                        <div>
+                          <strong>Date:</strong>{' '}
+                          {new Date(dog.spayNeuterDate).toLocaleDateString()}
+                        </div>
+                      )}
+                      {dog.spayNeuterNotes && (
+                        <div>
+                          <strong>Notes:</strong> {dog.spayNeuterNotes}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {dog.notes && (
                   <div className='pt-4 border-t'>
                     <strong>Notes:</strong> {dog.notes}

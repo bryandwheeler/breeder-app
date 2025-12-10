@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useCareTemplateStore, CareTemplate, DailyRoutineTemplate } from '@/store/careTemplateStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Trash2, GripVertical, RotateCcw, Save, Sun, Moon } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
 import {
   DndContext,
   closestCenter,
@@ -31,7 +30,7 @@ import { CSS } from '@dnd-kit/utilities';
 // Sortable task item component
 function SortableTaskItem({
   task,
-  index,
+  index: _index,
   onUpdate,
   onRemove,
 }: {
@@ -105,7 +104,7 @@ function SortableTaskItem({
 // Sortable daily routine item component
 function SortableDailyRoutineItem({
   routine,
-  index,
+  index: _index,
   onUpdate,
   onRemove,
 }: {

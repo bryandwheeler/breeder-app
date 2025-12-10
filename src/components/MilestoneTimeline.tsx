@@ -162,7 +162,7 @@ export function MilestoneTimeline({
           <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
 
           <div className="space-y-4">
-            {timelineData.map((milestone, index) => (
+            {timelineData.map((milestone) => (
               <div key={milestone.id} className="relative flex items-start gap-4 pl-10">
                 {/* Timeline dot */}
                 <div className={cn(

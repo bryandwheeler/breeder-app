@@ -551,6 +551,21 @@ export interface Dog {
     | 'retired';
   guardianHome?: GuardianHome;
 
+  // Breeding Program Status (lifecycle tracking)
+  breedingStatus?:
+    | 'future-stud' // Young male, not ready for breeding yet
+    | 'future-dam' // Young female, not ready for breeding yet
+    | 'active-stud' // Actively breeding male
+    | 'active-dam' // Actively breeding female
+    | 'retired' // Retired from breeding program
+    | 'pet' // Pet quality, not for breeding
+    | 'guardian'; // In guardian home
+  healthTestsPending?: boolean; // True if health tests required before breeding
+  agePending?: boolean; // True if dog is too young for breeding
+  spayedNeutered?: boolean; // True if dog has been spayed/neutered
+  spayNeuterDate?: string; // Date of spay/neuter procedure
+  spayNeuterNotes?: string; // Notes about spay/neuter (clinic, reason, etc.)
+
   // Connected/Linked Dog (from another kennel)
   isConnectedDog?: boolean; // True if this is a linked dog from another breeder
   connectionRequestId?: string; // Link to the connection request

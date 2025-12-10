@@ -76,18 +76,18 @@ export function RegistrationStatusCard({ puppies, onManageRegistration }: Regist
 
   const registrationStats = {
     total: puppies.length,
-    notStarted: puppies.filter((p) => !p.registration || p.registration.status === 'not_started').length,
-    pending: puppies.filter((p) => p.registration?.status === 'pending').length,
-    submitted: puppies.filter((p) => p.registration?.status === 'submitted').length,
-    approved: puppies.filter((p) => p.registration?.status === 'approved').length,
-    issued: puppies.filter((p) => p.registration?.status === 'issued').length,
+    notStarted: puppies.filter((p) => !p.registrations?.[0] || p.registrations?.[0].status === 'not_started').length,
+    pending: puppies.filter((p) => p.registrations?.[0]?.status === 'pending').length,
+    submitted: puppies.filter((p) => p.registrations?.[0]?.status === 'submitted').length,
+    approved: puppies.filter((p) => p.registrations?.[0]?.status === 'approved').length,
+    issued: puppies.filter((p) => p.registrations?.[0]?.status === 'issued').length,
   };
 
   const upcomingDeadlines = puppies
-    .filter((p) => p.registration?.registrationDeadline)
+    .filter((p) => p.registrations?.[0]?.registrationDeadline)
     .map((p) => ({
       puppy: p,
-      daysUntil: differenceInDays(parseISO(p.registration!.registrationDeadline!), new Date()),
+      daysUntil: differenceInDays(parseISO(p.registrations![0].registrationDeadline!), new Date()),
     }))
     .filter((d) => d.daysUntil >= 0 && d.daysUntil <= 30)
     .sort((a, b) => a.daysUntil - b.daysUntil);
@@ -149,7 +149,7 @@ export function RegistrationStatusCard({ puppies, onManageRegistration }: Regist
         {/* Puppy List */}
         <div className='space-y-2 max-h-96 overflow-y-auto'>
           {puppies.map((puppy) => {
-            const reg = puppy.registration;
+            const reg = puppy.registrations?.[0];
             const regType = reg?.registrationType || 'none';
 
             return (

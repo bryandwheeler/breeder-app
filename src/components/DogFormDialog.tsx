@@ -54,6 +54,8 @@ import { Badge } from '@/components/ui/badge';
 import { Link2 } from 'lucide-react';
 import { useAdminStore } from '@/store/adminStore';
 import { BreedAutocomplete } from '@/components/BreedAutocomplete';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -113,6 +115,33 @@ function DogFormContent({
   const [guardianDialogOpen, setGuardianDialogOpen] = useState(false);
   const [registrations, setRegistrations] = useState<Registration[]>(
     dog?.registrations || []
+  );
+
+  // Breeding status state
+  const [breedingStatus, setBreedingStatus] = useState<
+    | 'future-stud'
+    | 'future-dam'
+    | 'active-stud'
+    | 'active-dam'
+    | 'retired'
+    | 'pet'
+    | 'guardian'
+    | undefined
+  >(dog?.breedingStatus);
+  const [healthTestsPending, setHealthTestsPending] = useState<boolean>(
+    dog?.healthTestsPending || false
+  );
+  const [agePending, setAgePending] = useState<boolean>(
+    dog?.agePending || false
+  );
+  const [spayedNeutered, setSpayedNeutered] = useState<boolean>(
+    dog?.spayedNeutered || false
+  );
+  const [spayNeuterDate, setSpayNeuterDate] = useState<string>(
+    dog?.spayNeuterDate || ''
+  );
+  const [spayNeuterNotes, setSpayNeuterNotes] = useState<string>(
+    dog?.spayNeuterNotes || ''
   );
 
   // Sire search state
@@ -210,6 +239,12 @@ function DogFormContent({
       vetVisits: dog?.vetVisits || [],
       programStatus,
       registrations,
+      breedingStatus,
+      healthTestsPending,
+      agePending,
+      spayedNeutered,
+      spayNeuterDate: spayedNeutered && spayNeuterDate ? spayNeuterDate : undefined,
+      spayNeuterNotes: spayedNeutered && spayNeuterNotes ? spayNeuterNotes : undefined,
     };
 
     // Handle external sire
@@ -1278,6 +1313,159 @@ function DogFormContent({
                 )}
               </div>
             )}
+          </div>
+
+          {/* Breeding Status & Lifecycle */}
+          <div className='space-y-4 border-t pt-4'>
+            <h3 className='font-semibold text-lg'>Breeding Status</h3>
+
+            <div>
+              <Label>Breeding Program Status</Label>
+              <Select
+                value={breedingStatus || ''}
+                onValueChange={(value) =>
+                  setBreedingStatus(
+                    value === ''
+                      ? undefined
+                      : (value as
+                          | 'future-stud'
+                          | 'future-dam'
+                          | 'active-stud'
+                          | 'active-dam'
+                          | 'retired'
+                          | 'pet'
+                          | 'guardian')
+                  )
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value=''>Not Set</SelectItem>
+                  <SelectItem value='future-stud'>
+                    Future Stud (Young Male)
+                  </SelectItem>
+                  <SelectItem value='future-dam'>
+                    Future Dam (Young Female)
+                  </SelectItem>
+                  <SelectItem value='active-stud'>
+                    Active Stud
+                  </SelectItem>
+                  <SelectItem value='active-dam'>
+                    Active Dam
+                  </SelectItem>
+                  <SelectItem value='retired'>
+                    Retired from Breeding
+                  </SelectItem>
+                  <SelectItem value='pet'>
+                    Pet Quality
+                  </SelectItem>
+                  <SelectItem value='guardian'>
+                    Guardian Program
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className='text-xs text-muted-foreground mt-1'>
+                {breedingStatus === 'future-stud' &&
+                  'Young male not yet ready for breeding'}
+                {breedingStatus === 'future-dam' &&
+                  'Young female not yet ready for breeding'}
+                {breedingStatus === 'active-stud' &&
+                  'Actively breeding male dog'}
+                {breedingStatus === 'active-dam' &&
+                  'Actively breeding female dog'}
+                {breedingStatus === 'retired' &&
+                  'Retired from breeding program'}
+                {breedingStatus === 'pet' &&
+                  'Pet quality, not for breeding'}
+                {breedingStatus === 'guardian' &&
+                  'In guardian breeding program'}
+              </p>
+            </div>
+
+            {/* Pending Requirements */}
+            {(breedingStatus === 'future-stud' || breedingStatus === 'future-dam') && (
+              <div className='space-y-3 p-3 border rounded-md bg-muted/30'>
+                <p className='text-sm font-medium'>Requirements Pending:</p>
+
+                <div className='flex items-center space-x-2'>
+                  <Checkbox
+                    id='agePending'
+                    checked={agePending}
+                    onCheckedChange={(checked) => setAgePending(checked === true)}
+                  />
+                  <label
+                    htmlFor='agePending'
+                    className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+                  >
+                    Age requirement pending
+                  </label>
+                </div>
+
+                <div className='flex items-center space-x-2'>
+                  <Checkbox
+                    id='healthTestsPending'
+                    checked={healthTestsPending}
+                    onCheckedChange={(checked) => setHealthTestsPending(checked === true)}
+                  />
+                  <label
+                    htmlFor='healthTestsPending'
+                    className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+                  >
+                    Health tests pending
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Spayed/Neutered Section */}
+            <div className='space-y-3 p-3 border rounded-md'>
+              <div className='flex items-center space-x-2'>
+                <Checkbox
+                  id='spayedNeutered'
+                  checked={spayedNeutered}
+                  onCheckedChange={(checked) => setSpayedNeutered(checked === true)}
+                />
+                <label
+                  htmlFor='spayedNeutered'
+                  className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+                >
+                  Spayed/Neutered
+                </label>
+              </div>
+
+              {spayedNeutered && (
+                <div className='space-y-3 ml-6'>
+                  <div>
+                    <Label htmlFor='spayNeuterDate'>
+                      Date of Spay/Neuter
+                    </Label>
+                    <Input
+                      id='spayNeuterDate'
+                      type='date'
+                      value={spayNeuterDate}
+                      onChange={(e) => setSpayNeuterDate(e.target.value)}
+                      className='mt-1'
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor='spayNeuterNotes'>
+                      Notes (clinic, reason, etc.)
+                    </Label>
+                    <Textarea
+                      id='spayNeuterNotes'
+                      value={spayNeuterNotes}
+                      onChange={(e) => setSpayNeuterNotes(e.target.value)}
+                      placeholder='e.g., Performed at ABC Vet Clinic, retired from breeding program'
+                      className='mt-1'
+                      rows={2}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

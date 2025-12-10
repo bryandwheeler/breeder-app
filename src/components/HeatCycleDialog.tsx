@@ -11,12 +11,16 @@ interface HeatCycleDialogProps {
   open: boolean;
   setOpen: (open: boolean) => void;
   heatCycle: HeatCycle | null;
+  dogId: string;
+  userId: string;
   onSave: (heatCycle: HeatCycle) => Promise<void>;
 }
 
-export function HeatCycleDialog({ open, setOpen, heatCycle, onSave }: HeatCycleDialogProps) {
+export function HeatCycleDialog({ open, setOpen, heatCycle, dogId, userId, onSave }: HeatCycleDialogProps) {
   const [formData, setFormData] = useState<HeatCycle>({
     id: crypto.randomUUID(),
+    dogId,
+    userId,
     startDate: new Date().toISOString().split('T')[0],
     intensity: 'normal',
   });
@@ -27,11 +31,13 @@ export function HeatCycleDialog({ open, setOpen, heatCycle, onSave }: HeatCycleD
     } else {
       setFormData({
         id: crypto.randomUUID(),
+        dogId,
+        userId,
         startDate: new Date().toISOString().split('T')[0],
         intensity: 'normal',
       });
     }
-  }, [heatCycle, open]);
+  }, [heatCycle, open, dogId, userId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -204,7 +204,7 @@ export function AddCustomerDialog({ open, setOpen }: Props) {
                 <Label htmlFor="source">Source</Label>
                 <Select
                   value={formData.source}
-                  onValueChange={(value: Customer['source']) => setFormData({ ...formData, source: value })}
+                  onValueChange={(value) => setFormData({ ...formData, source: value as Customer['source'] })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -224,8 +224,8 @@ export function AddCustomerDialog({ open, setOpen }: Props) {
                 <Label htmlFor="preferredContact">Preferred Contact</Label>
                 <Select
                   value={formData.preferredContact}
-                  onValueChange={(value: Customer['preferredContact']) =>
-                    setFormData({ ...formData, preferredContact: value })
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, preferredContact: value as Customer['preferredContact'] })
                   }
                 >
                   <SelectTrigger>

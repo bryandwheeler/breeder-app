@@ -25,15 +25,11 @@ import {
   Mail,
   Phone,
   MapPin,
-  Calendar,
   DollarSign,
   MessageSquare,
   Plus,
   Trash2,
-  Tag,
-  CheckCircle,
   XCircle,
-  Edit2,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { EmailCompose } from '@/components/EmailCompose';
@@ -676,8 +672,8 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
                   <Label>Preferred Contact Method</Label>
                   <Select
                     value={formData.preferredContact}
-                    onValueChange={(value: Customer['preferredContact']) =>
-                      setFormData({ ...formData, preferredContact: value })
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, preferredContact: value as Customer['preferredContact'] })
                     }
                   >
                     <SelectTrigger>
@@ -695,8 +691,8 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
                   <Label>Source</Label>
                   <Select
                     value={formData.source}
-                    onValueChange={(value: Customer['source']) =>
-                      setFormData({ ...formData, source: value })
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, source: value as Customer['source'] })
                     }
                   >
                     <SelectTrigger>

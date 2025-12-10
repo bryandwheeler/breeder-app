@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import { PedigreeTree } from './PedigreeTree';
 
 export function ExportPedigree({ dogId }: { dogId: string }) {
   const exportPDF = async () => {

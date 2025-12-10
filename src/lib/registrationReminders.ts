@@ -11,7 +11,7 @@ export function generateRegistrationReminders(
   const reminders: Reminder[] = [];
 
   puppies.forEach((puppy) => {
-    const reg = puppy.registration;
+    const reg = puppy.registrations?.[0];
 
     // Skip if no registration or no deadline set
     if (!reg || !reg.registrationDeadline || reg.registrationType === 'none') {
@@ -88,7 +88,7 @@ export function getOverdueRegistrations(puppies: Puppy[]): Puppy[] {
   const today = new Date();
 
   return puppies.filter((puppy) => {
-    const reg = puppy.registration;
+    const reg = puppy.registrations?.[0];
 
     if (!reg || !reg.registrationDeadline || reg.registrationType === 'none') {
       return false;
@@ -115,7 +115,7 @@ export function getUpcomingRegistrations(
 
   return puppies
     .filter((puppy) => {
-      const reg = puppy.registration;
+      const reg = puppy.registrations?.[0];
 
       if (!reg || !reg.registrationDeadline || reg.registrationType === 'none') {
         return false;
@@ -134,7 +134,7 @@ export function getUpcomingRegistrations(
     .map((puppy) => ({
       puppy,
       daysUntilDeadline: differenceInDays(
-        parseISO(puppy.registration!.registrationDeadline!),
+        parseISO(puppy.registrations?.[0]!.registrationDeadline!),
         today
       ),
     }))
@@ -148,7 +148,7 @@ export function createRegistrationDeadlineReminder(
   puppy: Puppy,
   litterId: string
 ): Reminder | null {
-  const reg = puppy.registration;
+  const reg = puppy.registrations?.[0];
 
   if (!reg || !reg.registrationDeadline || reg.registrationType === 'none') {
     return null;
@@ -176,7 +176,7 @@ export function createRegistrationDeadlineReminder(
 export function getRegistrationSummary(puppies: Puppy[]) {
   const total = puppies.length;
   const withRegistration = puppies.filter(
-    (p) => p.registration && p.registration.registrationType !== 'none'
+    (p) => p.registrations?.[0] && p.registrations?.[0].registrationType !== 'none'
   ).length;
 
   const statusCounts = {
@@ -188,7 +188,7 @@ export function getRegistrationSummary(puppies: Puppy[]) {
   };
 
   puppies.forEach((puppy) => {
-    const status = puppy.registration?.status || 'not_started';
+    const status = puppy.registrations?.[0]?.status || 'not_started';
     if (status in statusCounts) {
       statusCounts[status as keyof typeof statusCounts]++;
     }

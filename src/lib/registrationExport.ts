@@ -16,7 +16,7 @@ export function exportRegistrationToCSV(data: RegistrationExportData): void {
 
   // Filter puppies that need registration
   const puppiesForRegistration = puppies.filter(
-    (p) => p.registration && p.registration.registrationType !== 'none'
+    (p) => p.registrations?.[0] && p.registrations?.[0].registrationType !== 'none'
   );
 
   if (puppiesForRegistration.length === 0) {
@@ -50,7 +50,7 @@ export function exportRegistrationToCSV(data: RegistrationExportData): void {
 
   // Build CSV rows
   const rows = puppiesForRegistration.map((puppy) => {
-    const reg = puppy.registration!;
+    const reg = puppy.registrations?.[0]!;
 
     return [
       puppy.name || puppy.tempName || '',
@@ -60,9 +60,9 @@ export function exportRegistrationToCSV(data: RegistrationExportData): void {
       puppy.microchip || '',
       format(new Date(litter.dateOfBirth), 'MM/dd/yyyy'),
       dam.name,
-      dam.registration?.registrationNumber || '',
+      dam.registrations?.[0]?.registrationNumber || '',
       sire.name,
-      sire.registration?.registrationNumber || '',
+      sire.registrations?.[0]?.registrationNumber || '',
       reg.registry,
       reg.registrationType === 'limited' ? 'Limited' : 'Full',
       reg.status,
@@ -111,8 +111,8 @@ export function exportRegistrationSummary(data: RegistrationExportData): void {
   reportContent += `==================\n`;
   reportContent += `Litter Name: ${litter.litterName || 'N/A'}\n`;
   reportContent += `Date of Birth: ${format(new Date(litter.dateOfBirth), 'MMMM d, yyyy')}\n`;
-  reportContent += `Dam: ${dam.name}${dam.registration?.registrationNumber ? ` (${dam.registration.registrationNumber})` : ''}\n`;
-  reportContent += `Sire: ${sire.name}${sire.registration?.registrationNumber ? ` (${sire.registration.registrationNumber})` : ''}\n`;
+  reportContent += `Dam: ${dam.name}${dam.registrations?.[0]?.registrationNumber ? ` (${dam.registrations?.[0].registrationNumber})` : ''}\n`;
+  reportContent += `Sire: ${sire.name}${sire.registrations?.[0]?.registrationNumber ? ` (${sire.registrations?.[0].registrationNumber})` : ''}\n`;
   reportContent += `\n`;
 
   if (litter.litterRegistration) {
@@ -131,11 +131,11 @@ export function exportRegistrationSummary(data: RegistrationExportData): void {
 
   // Group by status
   const statusGroups = {
-    'Not Started': puppies.filter((p) => !p.registration || p.registration.status === 'not_started'),
-    'Pending': puppies.filter((p) => p.registration?.status === 'pending'),
-    'Submitted': puppies.filter((p) => p.registration?.status === 'submitted'),
-    'Approved': puppies.filter((p) => p.registration?.status === 'approved'),
-    'Issued': puppies.filter((p) => p.registration?.status === 'issued'),
+    'Not Started': puppies.filter((p) => !p.registrations?.[0] || p.registrations?.[0].status === 'not_started'),
+    'Pending': puppies.filter((p) => p.registrations?.[0]?.status === 'pending'),
+    'Submitted': puppies.filter((p) => p.registrations?.[0]?.status === 'submitted'),
+    'Approved': puppies.filter((p) => p.registrations?.[0]?.status === 'approved'),
+    'Issued': puppies.filter((p) => p.registrations?.[0]?.status === 'issued'),
   };
 
   Object.entries(statusGroups).forEach(([status, puppyList]) => {
@@ -144,7 +144,7 @@ export function exportRegistrationSummary(data: RegistrationExportData): void {
       reportContent += `-`.repeat(status.length + 5) + `\n`;
 
       puppyList.forEach((puppy) => {
-        const reg = puppy.registration;
+        const reg = puppy.registrations?.[0];
         reportContent += `  • ${puppy.name || puppy.tempName}\n`;
         reportContent += `    Sex: ${puppy.sex === 'male' ? 'Male' : 'Female'}, Color: ${puppy.color}\n`;
 
@@ -171,14 +171,14 @@ export function exportRegistrationSummary(data: RegistrationExportData): void {
   const now = new Date();
   const upcomingDeadlines = puppies
     .filter((p) => {
-      if (!p.registration?.registrationDeadline) return false;
-      const deadline = new Date(p.registration.registrationDeadline);
+      if (!p.registrations?.[0]?.registrationDeadline) return false;
+      const deadline = new Date(p.registrations?.[0].registrationDeadline);
       const daysUntil = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       return daysUntil >= 0 && daysUntil <= 30;
     })
     .sort((a, b) => {
-      const dateA = new Date(a.registration!.registrationDeadline!);
-      const dateB = new Date(b.registration!.registrationDeadline!);
+      const dateA = new Date(a.registrations![0].registrationDeadline!);
+      const dateB = new Date(b.registrations![0].registrationDeadline!);
       return dateA.getTime() - dateB.getTime();
     });
 
@@ -187,7 +187,7 @@ export function exportRegistrationSummary(data: RegistrationExportData): void {
     reportContent += `UPCOMING DEADLINES (Next 30 Days)\n`;
     reportContent += `=================================\n`;
     upcomingDeadlines.forEach((puppy) => {
-      const deadline = new Date(puppy.registration!.registrationDeadline!);
+      const deadline = new Date(puppy.registrations?.[0]!.registrationDeadline!);
       const daysUntil = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
       reportContent += `  • ${puppy.name || puppy.tempName}: ${format(deadline, 'MM/dd/yyyy')}`;
@@ -222,7 +222,7 @@ export function exportAKCFormat(data: RegistrationExportData): void {
   const { litter, dam, sire, puppies } = data;
 
   const akcPuppies = puppies.filter(
-    (p) => p.registration?.registry === 'AKC' && p.registration.registrationType !== 'none'
+    (p) => p.registrations?.[0]?.registry === 'AKC' && p.registrations?.[0].registrationType !== 'none'
   );
 
   if (akcPuppies.length === 0) {
@@ -248,7 +248,7 @@ export function exportAKCFormat(data: RegistrationExportData): void {
   ];
 
   const rows = akcPuppies.map((puppy) => {
-    const reg = puppy.registration!;
+    const reg = puppy.registrations?.[0]!;
 
     return [
       puppy.name || '',

@@ -39,7 +39,6 @@ import { EmailTemplate, TemplateCategory, COMMON_VARIABLES } from '@/types/email
 
 export function EmailTemplatesManager() {
   const { currentUser } = useAuth();
-  const { profile } = useBreederStore();
   const {
     templates,
     loading,
@@ -386,7 +385,7 @@ export function EmailTemplatesManager() {
               {editingTemplate ? 'Edit Template' : 'Create Template'}
             </DialogTitle>
             <DialogDescription>
-              Use variables like {{customer_name}} to personalize your emails
+              Use variables like {'{'}customer_name{'}'} to personalize your emails
             </DialogDescription>
           </DialogHeader>
 
@@ -488,8 +487,8 @@ export function EmailTemplatesManager() {
                 rows={12}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Example: Hi {{customer_first_name}}, thank you for contacting{' '}
-                {{kennel_name}}!
+                Example: Hi {'{'}customer_first_name{'}'}, thank you for contacting{' '}
+                {'{'}kennel_name{'}'}!
               </p>
             </div>
           </div>

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Puppy, Buyer, ShotRecord, WeightEntry, BreedingRights, CoOwnership, Registration, RegistrationDocument } from '@/types/dog';
+import { Puppy, Buyer, ShotRecord, WeightEntry, BreedingRights, CoOwnership, Registration } from '@/types/dog';
 import { X, Upload, Plus, Trash2 } from 'lucide-react';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -734,15 +734,15 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: 
               <div>
                 <Label htmlFor='registry'>Registry</Label>
                 <Select
-                  value={formData.registration?.registry || 'AKC'}
+                  value={formData.registrations?.[0]?.registry || 'AKC'}
                   onValueChange={(value) => setFormData({
                     ...formData,
-                    registration: {
-                      ...formData.registration,
+                    registrations: [{
+                      ...formData.registrations?.[0],
                       registry: value as 'AKC' | 'CKC' | 'UKC' | 'FCI' | 'Other',
-                      registrationType: formData.registration?.registrationType || 'none',
-                      status: formData.registration?.status || 'not_started'
-                    } as Registration
+                      registrationType: formData.registrations?.[0]?.registrationType || 'none',
+                      status: formData.registrations?.[0]?.status || 'not_started'
+                    } as Registration]
                   })}
                 >
                   <SelectTrigger>
@@ -761,15 +761,15 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: 
               <div>
                 <Label htmlFor='registrationType'>Registration Type</Label>
                 <Select
-                  value={formData.registration?.registrationType || 'none'}
+                  value={formData.registrations?.[0]?.registrationType || 'none'}
                   onValueChange={(value) => setFormData({
                     ...formData,
-                    registration: {
-                      ...formData.registration,
-                      registry: formData.registration?.registry || 'AKC',
+                    registrations: [{
+                      ...formData.registrations?.[0],
+                      registry: formData.registrations?.[0]?.registry || 'AKC',
                       registrationType: value as 'none' | 'limited' | 'full',
-                      status: formData.registration?.status || 'not_started'
-                    } as Registration
+                      status: formData.registrations?.[0]?.status || 'not_started'
+                    } as Registration]
                   })}
                 >
                   <SelectTrigger>
@@ -784,21 +784,21 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: 
               </div>
             </div>
 
-            {formData.registration?.registrationType !== 'none' && (
+            {formData.registrations?.[0]?.registrationType !== 'none' && (
               <>
                 <div className='grid grid-cols-2 gap-4'>
                   <div>
                     <Label htmlFor='registrationStatus'>Status</Label>
                     <Select
-                      value={formData.registration?.status || 'not_started'}
+                      value={formData.registrations?.[0]?.status || 'not_started'}
                       onValueChange={(value) => setFormData({
                         ...formData,
-                        registration: {
-                          ...formData.registration,
-                          registry: formData.registration?.registry || 'AKC',
-                          registrationType: formData.registration?.registrationType || 'limited',
+                        registrations: [{
+                          ...formData.registrations?.[0],
+                          registry: formData.registrations?.[0]?.registry || 'AKC',
+                          registrationType: formData.registrations?.[0]?.registrationType || 'limited',
                           status: value as 'not_started' | 'pending' | 'submitted' | 'approved' | 'issued'
-                        } as Registration
+                        } as Registration]
                       })}
                     >
                       <SelectTrigger>
@@ -818,16 +818,16 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: 
                     <Label htmlFor='registrationNumber'>Registration Number</Label>
                     <Input
                       id='registrationNumber'
-                      value={formData.registration?.registrationNumber || ''}
+                      value={formData.registrations?.[0]?.registrationNumber || ''}
                       onChange={(e) => setFormData({
                         ...formData,
-                        registration: {
-                          ...formData.registration,
-                          registry: formData.registration?.registry || 'AKC',
-                          registrationType: formData.registration?.registrationType || 'limited',
-                          status: formData.registration?.status || 'not_started',
+                        registrations: [{
+                          ...formData.registrations?.[0],
+                          registry: formData.registrations?.[0]?.registry || 'AKC',
+                          registrationType: formData.registrations?.[0]?.registrationType || 'limited',
+                          status: formData.registrations?.[0]?.status || 'not_started',
                           registrationNumber: e.target.value
-                        } as Registration
+                        } as Registration]
                       })}
                       placeholder='e.g., WS12345678'
                     />
@@ -838,16 +838,16 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: 
                   <Label htmlFor='registeredName'>Registered Name</Label>
                   <Input
                     id='registeredName'
-                    value={formData.registration?.registeredName || ''}
+                    value={formData.registrations?.[0]?.registeredName || ''}
                     onChange={(e) => setFormData({
                       ...formData,
-                      registration: {
-                        ...formData.registration,
-                        registry: formData.registration?.registry || 'AKC',
-                        registrationType: formData.registration?.registrationType || 'limited',
-                        status: formData.registration?.status || 'not_started',
+                      registrations: [{
+                        ...formData.registrations?.[0],
+                        registry: formData.registrations?.[0]?.registry || 'AKC',
+                        registrationType: formData.registrations?.[0]?.registrationType || 'limited',
+                        status: formData.registrations?.[0]?.status || 'not_started',
                         registeredName: e.target.value
-                      } as Registration
+                      } as Registration]
                     })}
                     placeholder='e.g., Kennel Name Amazing Puppy'
                   />
@@ -859,16 +859,16 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: 
                     <Input
                       id='applicationDate'
                       type='date'
-                      value={formData.registration?.applicationDate || ''}
+                      value={formData.registrations?.[0]?.applicationDate || ''}
                       onChange={(e) => setFormData({
                         ...formData,
-                        registration: {
-                          ...formData.registration,
-                          registry: formData.registration?.registry || 'AKC',
-                          registrationType: formData.registration?.registrationType || 'limited',
-                          status: formData.registration?.status || 'not_started',
+                        registrations: [{
+                          ...formData.registrations?.[0],
+                          registry: formData.registrations?.[0]?.registry || 'AKC',
+                          registrationType: formData.registrations?.[0]?.registrationType || 'limited',
+                          status: formData.registrations?.[0]?.status || 'not_started',
                           applicationDate: e.target.value
-                        } as Registration
+                        } as Registration]
                       })}
                     />
                   </div>
@@ -878,16 +878,16 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: 
                     <Input
                       id='submissionDate'
                       type='date'
-                      value={formData.registration?.submissionDate || ''}
+                      value={formData.registrations?.[0]?.submissionDate || ''}
                       onChange={(e) => setFormData({
                         ...formData,
-                        registration: {
-                          ...formData.registration,
-                          registry: formData.registration?.registry || 'AKC',
-                          registrationType: formData.registration?.registrationType || 'limited',
-                          status: formData.registration?.status || 'not_started',
+                        registrations: [{
+                          ...formData.registrations?.[0],
+                          registry: formData.registrations?.[0]?.registry || 'AKC',
+                          registrationType: formData.registrations?.[0]?.registrationType || 'limited',
+                          status: formData.registrations?.[0]?.status || 'not_started',
                           submissionDate: e.target.value
-                        } as Registration
+                        } as Registration]
                       })}
                     />
                   </div>
@@ -897,16 +897,16 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: 
                     <Input
                       id='registrationDeadline'
                       type='date'
-                      value={formData.registration?.registrationDeadline || ''}
+                      value={formData.registrations?.[0]?.registrationDeadline || ''}
                       onChange={(e) => setFormData({
                         ...formData,
-                        registration: {
-                          ...formData.registration,
-                          registry: formData.registration?.registry || 'AKC',
-                          registrationType: formData.registration?.registrationType || 'limited',
-                          status: formData.registration?.status || 'not_started',
+                        registrations: [{
+                          ...formData.registrations?.[0],
+                          registry: formData.registrations?.[0]?.registry || 'AKC',
+                          registrationType: formData.registrations?.[0]?.registrationType || 'limited',
+                          status: formData.registrations?.[0]?.status || 'not_started',
                           registrationDeadline: e.target.value
-                        } as Registration
+                        } as Registration]
                       })}
                     />
                   </div>
@@ -916,16 +916,16 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: 
                   <Label htmlFor='registrationNotes'>Registration Notes</Label>
                   <Textarea
                     id='registrationNotes'
-                    value={formData.registration?.notes || ''}
+                    value={formData.registrations?.[0]?.notes || ''}
                     onChange={(e) => setFormData({
                       ...formData,
-                      registration: {
-                        ...formData.registration,
-                        registry: formData.registration?.registry || 'AKC',
-                        registrationType: formData.registration?.registrationType || 'limited',
-                        status: formData.registration?.status || 'not_started',
+                      registrations: [{
+                        ...formData.registrations?.[0],
+                        registry: formData.registrations?.[0]?.registry || 'AKC',
+                        registrationType: formData.registrations?.[0]?.registrationType || 'limited',
+                        status: formData.registrations?.[0]?.status || 'not_started',
                         notes: e.target.value
-                      } as Registration
+                      } as Registration]
                     })}
                     placeholder='Notes about registration process, documents needed, etc.'
                     rows={2}
@@ -1116,7 +1116,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: 
                         value={entry.unit}
                         onValueChange={(value) => {
                           const updated = [...formData.weightHistory];
-                          updated[i] = { ...updated[i], unit: value as 'lbs' | 'kg' | 'oz' | 'g' };
+                          updated[i] = { ...updated[i], unit: value as 'lbs' | 'kg' };
                           setFormData({ ...formData, weightHistory: updated });
                         }}
                       >
@@ -1124,9 +1124,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: 
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value='oz'>oz</SelectItem>
                           <SelectItem value='lbs'>lbs</SelectItem>
-                          <SelectItem value='g'>g</SelectItem>
                           <SelectItem value='kg'>kg</SelectItem>
                         </SelectContent>
                       </Select>

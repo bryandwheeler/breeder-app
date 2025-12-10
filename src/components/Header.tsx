@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { Plus, LogOut, Download, Mail, Menu, User } from 'lucide-react';
+import { LogOut, Download, Mail, Menu, User } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/tooltip';
 
 interface HeaderProps {
-  onAddDog: () => void;
+  onAddDog?: () => void;
   onEmailSettings: () => void;
   dogs: Dog[];
   litters: Litter[];
@@ -36,7 +36,6 @@ interface HeaderProps {
 }
 
 export function Header({
-  onAddDog,
   onEmailSettings,
   dogs,
   litters,
