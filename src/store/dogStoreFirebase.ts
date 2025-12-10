@@ -10,11 +10,13 @@ import {
   where,
   onSnapshot,
   serverTimestamp,
+  getDocs,
+  getDoc,
 } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { Dog, NewDog, Litter } from '@/types/dog';
 import { differenceInDays } from 'date-fns';
-import { getDocs } from 'firebase/firestore';
+import { loadAllDogSubcollections, loadAllLitterSubcollections } from '@/lib/subcollections';
 
 // Update user profile with current counts of dogs and litters
 async function updateUserCounters(uid: string) {
@@ -208,15 +210,52 @@ export const useDogStore = create<Store>()((set, get) => ({
 
     const unsubscribeDogs = onSnapshot(
       dogsQuery,
-      (snapshot) => {
-        const dogs: Dog[] = snapshot.docs.map(
-          (doc) =>
-            ({
-              id: doc.id,
-              ...doc.data(),
-            } as Dog)
+      async (snapshot) => {
+        // Load subcollections for each dog with fallback to nested arrays
+        const dogsWithSubcollections = await Promise.all(
+          snapshot.docs.map(async (docSnap) => {
+            const dogData = docSnap.data() as Dog;
+            const dogId = docSnap.id;
+
+            try {
+              // Try to load from subcollections first
+              const subcollections = await loadAllDogSubcollections(dogId);
+
+              // Use subcollection data if available, otherwise fallback to nested arrays
+              return {
+                id: dogId,
+                ...dogData,
+                healthTests: subcollections.healthTests.length > 0
+                  ? subcollections.healthTests
+                  : dogData.healthTests || [],
+                shotRecords: subcollections.shotRecords.length > 0
+                  ? subcollections.shotRecords
+                  : dogData.shotRecords || [],
+                vetVisits: subcollections.vetVisits.length > 0
+                  ? subcollections.vetVisits
+                  : dogData.vetVisits || [],
+                weightHistory: subcollections.weightHistory.length > 0
+                  ? subcollections.weightHistory
+                  : dogData.weightHistory || [],
+                medications: subcollections.medications.length > 0
+                  ? subcollections.medications
+                  : dogData.medications || [],
+                dewormings: subcollections.dewormings.length > 0
+                  ? subcollections.dewormings
+                  : dogData.dewormings || [],
+              } as Dog;
+            } catch (error) {
+              console.error(`[dogStore] Failed to load subcollections for dog ${dogId}:`, error);
+              // Fallback to nested arrays if subcollection load fails
+              return {
+                id: dogId,
+                ...dogData,
+              } as Dog;
+            }
+          })
         );
-        set({ dogs, loading: false });
+
+        set({ dogs: dogsWithSubcollections, loading: false });
       },
       (error) => {
         console.error('[dogStore] Dogs snapshot error:', error);
@@ -233,15 +272,43 @@ export const useDogStore = create<Store>()((set, get) => ({
 
     const unsubscribeLitters = onSnapshot(
       littersQuery,
-      (snapshot) => {
-        const litters: Litter[] = snapshot.docs.map((doc) => {
-          const data = doc.data() as Omit<Litter, 'id'>;
-          const litter = { id: doc.id, ...data } as Litter;
-          // Auto-calculate status based on dates
-          litter.status = calculateLitterStatus(litter);
-          return litter;
-        });
-        set({ litters });
+      async (snapshot) => {
+        // Load subcollections for each litter with fallback to nested arrays
+        const littersWithSubcollections = await Promise.all(
+          snapshot.docs.map(async (docSnap) => {
+            const litterData = docSnap.data() as Litter;
+            const litterId = docSnap.id;
+
+            try {
+              // Try to load from subcollections first
+              const subcollections = await loadAllLitterSubcollections(litterId);
+
+              // Use subcollection data if available, otherwise fallback to nested arrays
+              const litter: Litter = {
+                id: litterId,
+                ...litterData,
+                puppies: subcollections.puppies.length > 0
+                  ? subcollections.puppies
+                  : litterData.puppies || [],
+                expenses: subcollections.expenses.length > 0
+                  ? subcollections.expenses
+                  : litterData.expenses || [],
+              };
+
+              // Auto-calculate status based on dates
+              litter.status = calculateLitterStatus(litter);
+              return litter;
+            } catch (error) {
+              console.error(`[dogStore] Failed to load subcollections for litter ${litterId}:`, error);
+              // Fallback to nested arrays if subcollection load fails
+              const litter = { id: litterId, ...litterData } as Litter;
+              litter.status = calculateLitterStatus(litter);
+              return litter;
+            }
+          })
+        );
+
+        set({ litters: littersWithSubcollections });
       },
       (error) => {
         console.error('[dogStore] Litters snapshot error:', error);

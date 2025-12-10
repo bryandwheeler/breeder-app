@@ -1,0 +1,143 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "dogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "sex", "order": "ASCENDING" },
+        { "fieldPath": "isDeceased", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "dogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "breed", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "dogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "isDeceased", "order": "ASCENDING" },
+        { "fieldPath": "name", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "litters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "litters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "dateOfBirth", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "litters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "damId", "order": "ASCENDING" },
+        { "fieldPath": "dateOfBirth", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "litters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sireId", "order": "ASCENDING" },
+        { "fieldPath": "dateOfBirth", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "puppies",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "puppies",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "litterId", "order": "ASCENDING" },
+        { "fieldPath": "sex", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "puppies",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "buyerId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "heat_cycles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "dogId", "order": "ASCENDING" },
+        { "fieldPath": "startDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "heat_cycles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "startDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "breeding_records",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "dogId", "order": "ASCENDING" },
+        { "fieldPath": "breedingDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "breeding_records",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "studId", "order": "ASCENDING" },
+        { "fieldPath": "breedingDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "breeding_records",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "breedingDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "stud_jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "stud_jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "studId", "order": "ASCENDING" },
+        { "fieldPath": "scheduledDate", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
