@@ -353,7 +353,7 @@ export function DogProfile() {
               <CardHeader>
                 <div className='flex justify-between items-center'>
                   <CardTitle className='flex items-center gap-2'>
-                    <Calendar className='h-5 w-5 text-pink-600' />
+                    <CalendarIcon className='h-5 w-5 text-pink-600' />
                     Pending Litters
                   </CardTitle>
                 </div>
@@ -828,7 +828,7 @@ export function DogProfile() {
             <CardHeader>
               <div className='flex justify-between items-center'>
                 <CardTitle className='flex items-center gap-2'>
-                  <Calendar className='h-5 w-5' /> DNA Profile & Genetic Testing
+                  <CalendarIcon className='h-5 w-5' /> DNA Profile & Genetic Testing
                 </CardTitle>
                 <Button size='sm' onClick={() => setDnaDialogOpen(true)}>
                   <Edit className='h-4 w-4 mr-1' />{' '}
