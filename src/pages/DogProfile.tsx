@@ -4,7 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
-  Calendar,
+  Calendar as CalendarIcon,
   Syringe,
   Bell,
   Dog as DogIcon,
@@ -15,11 +15,12 @@ import {
   DollarSign,
   Check,
   X,
+  TrendingUp,
 } from 'lucide-react';
 import { PedigreeTree } from '@/components/PedigreeTree';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format, isPast, isFuture, parseISO } from 'date-fns';
+import { format, isPast, isFuture, parseISO, addMonths, addDays, differenceInDays } from 'date-fns';
 import { WeightChart } from '@/components/WeightChart';
 import { WeightTracker } from '@/components/WeightTracker';
 import { HealthTracking } from '@/components/HealthTracking';
@@ -29,7 +30,7 @@ import {
   DnaProfileDisplay,
 } from '@/components/DnaProfileDialog';
 import { DnaProfile, Dog as DogType } from '@/types/dog';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useHeatCycleStore } from '@/store/heatCycleStore';
 import { useStudJobStore } from '@/store/studJobStore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -43,12 +44,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { calculateAge } from '@/lib/utils';
+import { calculateAge, formatCurrency, cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export function DogProfile() {
   const { id } = useParams<{ id: string }>();
   const { dogs, updateDog, litters } = useDogStore();
-  const { subscribeToHeatCycles } = useHeatCycleStore();
+  const { heatCycles, subscribeToHeatCycles } = useHeatCycleStore();
   const { getStudJobsForStud, deleteStudJob, subscribeToStudJobs } = useStudJobStore();
   const [dnaDialogOpen, setDnaDialogOpen] = useState(false);
   const [dogFormOpen, setDogFormOpen] = useState(false);
@@ -158,6 +160,102 @@ export function DogProfile() {
     return total;
   };
 
+  // Breeding Forecast Logic for Females
+  const breedingForecasts = useMemo(() => {
+    if (dog.sex !== 'female') return [];
+
+    const forecasts: any[] = [];
+    const timeframeMonths = 12; // Show next 12 months
+    const endDate = addMonths(new Date(), timeframeMonths);
+
+    // Get heat cycles for this dog
+    const dogHeatCycles = heatCycles
+      .filter((hc) => hc.dogId === dog.id && hc.startDate)
+      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+
+    // Calculate average heat interval
+    let avgInterval = 180; // Default 6 months
+    if (dogHeatCycles.length >= 2) {
+      const intervals: number[] = [];
+      for (let i = 1; i < dogHeatCycles.length; i++) {
+        const prev = parseISO(dogHeatCycles[i - 1].startDate);
+        const curr = parseISO(dogHeatCycles[i].startDate);
+        intervals.push(differenceInDays(curr, prev));
+      }
+      avgInterval = Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length);
+    }
+
+    // Get average litter size
+    const dogLitters = litters.filter(
+      (litter) => litter.damId === dog.id && litter.puppies && litter.puppies.length > 0
+    );
+    const avgLitterSize = dogLitters.length === 0
+      ? 8
+      : Math.round(dogLitters.reduce((sum, litter) => sum + (litter.puppies?.length || 0), 0) / dogLitters.length);
+
+    // Get most recent puppy price
+    const sortedLitters = dogLitters.sort((a, b) => {
+      const dateA = a.dateOfBirth || a.expectedDateOfBirth || '';
+      const dateB = b.dateOfBirth || b.expectedDateOfBirth || '';
+      return dateB.localeCompare(dateA);
+    });
+    let avgPrice = 3000;
+    if (sortedLitters.length > 0) {
+      const puppiesWithPrices = sortedLitters[0].puppies?.filter((p) => p.price && p.price > 0);
+      if (puppiesWithPrices && puppiesWithPrices.length > 0) {
+        avgPrice = Math.round(puppiesWithPrices.reduce((sum, p) => sum + (p.price || 0), 0) / puppiesWithPrices.length);
+      }
+    }
+
+    // Determine next heat date
+    let nextHeatDate: Date;
+    if (dogHeatCycles.length > 0) {
+      const lastHeat = parseISO(dogHeatCycles[dogHeatCycles.length - 1].startDate);
+      nextHeatDate = addDays(lastHeat, avgInterval);
+    } else {
+      nextHeatDate = addDays(new Date(), 30); // Estimate in 30 days if no history
+    }
+
+    // Generate forecasts
+    let currentHeatDate = nextHeatDate;
+    let forecastIndex = 0;
+    const skippedDates = dog.skippedHeatDates || [];
+
+    while (currentHeatDate < endDate) {
+      const heatDateStr = format(currentHeatDate, 'yyyy-MM-dd');
+      const isSkipped = skippedDates.includes(heatDateStr);
+
+      forecasts.push({
+        id: `forecast-${forecastIndex}`,
+        heatDate: currentHeatDate,
+        heatDateStr,
+        matingDate: addDays(currentHeatDate, 7),
+        ultrasoundDate: addDays(currentHeatDate, 35),
+        dueDate: addDays(currentHeatDate, 70),
+        goHomeDate: addDays(currentHeatDate, 126),
+        estimatedPuppies: avgLitterSize,
+        pricePerPuppy: avgPrice,
+        totalIncome: avgLitterSize * avgPrice,
+        isEstimated: dogHeatCycles.length === 0,
+        isSkipped,
+      });
+
+      currentHeatDate = addDays(currentHeatDate, avgInterval);
+      forecastIndex++;
+    }
+
+    return forecasts;
+  }, [dog, heatCycles, litters]);
+
+  const handleToggleSkipHeat = async (heatDateStr: string) => {
+    const skippedDates = dog.skippedHeatDates || [];
+    const newSkippedDates = skippedDates.includes(heatDateStr)
+      ? skippedDates.filter((d) => d !== heatDateStr)
+      : [...skippedDates, heatDateStr];
+
+    await updateDog(dog.id, { skippedHeatDates: newSkippedDates });
+  };
+
   return (
     <div className='space-y-8 pb-20'>
       <div className='flex items-center justify-between'>
@@ -184,6 +282,9 @@ export function DogProfile() {
           <TabsTrigger value='overview'>Overview</TabsTrigger>
           {dog.sex === 'female' && (
             <TabsTrigger value='heat-cycles'>Heat Cycles</TabsTrigger>
+          )}
+          {dog.sex === 'female' && (
+            <TabsTrigger value='breeding-forecast'>Breeding Forecast</TabsTrigger>
           )}
           {dog.sex === 'male' && (
             <TabsTrigger value='stud-jobs'>Stud Jobs ({studJobs.length})</TabsTrigger>
@@ -417,6 +518,21 @@ export function DogProfile() {
                           <strong>Notes:</strong> {dog.guardianHome.notes}
                         </div>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Owner Information (for connected dogs from other kennels) */}
+                {dog.isConnectedDog && dog.originalOwnerKennel && (
+                  <div className='pt-4 border-t space-y-2'>
+                    <h4 className='font-semibold'>Owner Information</h4>
+                    <div className='text-sm bg-blue-50 border-l-2 border-blue-500 pl-3 py-2'>
+                      <div>
+                        <strong>Owner Kennel:</strong> {dog.originalOwnerKennel}
+                      </div>
+                      <div className='text-xs text-muted-foreground mt-1'>
+                        This dog is owned by another kennel and shared through the connection system
+                      </div>
                     </div>
                   </div>
                 )}
@@ -752,6 +868,118 @@ export function DogProfile() {
         {dog.sex === 'female' && (
           <TabsContent value='heat-cycles' className='mt-6'>
             <HeatCycles dogId={dog.id} dogName={dog.name} />
+          </TabsContent>
+        )}
+
+        {/* Breeding Forecast Tab - Females Only */}
+        {dog.sex === 'female' && (
+          <TabsContent value='breeding-forecast' className='mt-6'>
+            <Card>
+              <CardHeader>
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <CardTitle className='flex items-center gap-2'>
+                      <TrendingUp className='h-5 w-5' />
+                      Breeding Forecast - Next 12 Months
+                    </CardTitle>
+                    <p className='text-sm text-muted-foreground mt-1'>
+                      Projected heat cycles and litter dates for {dog.name}. Check boxes to skip heat cycles.
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {breedingForecasts.length === 0 ? (
+                  <p className='text-muted-foreground text-center py-8'>
+                    No heat cycles forecasted in the next 12 months
+                  </p>
+                ) : (
+                  <div className='rounded-md border overflow-x-auto'>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className='w-12'>Breed</TableHead>
+                          <TableHead>Day 1 Heat</TableHead>
+                          <TableHead>Mating Date</TableHead>
+                          <TableHead>Ultrasound</TableHead>
+                          <TableHead>Due Date</TableHead>
+                          <TableHead>Go Home</TableHead>
+                          <TableHead className='text-center'># Puppies</TableHead>
+                          <TableHead className='text-right'>Price/Puppy</TableHead>
+                          <TableHead className='text-right'>Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {breedingForecasts.map((forecast) => (
+                          <TableRow
+                            key={forecast.id}
+                            className={cn(
+                              forecast.isEstimated && 'bg-muted/30',
+                              forecast.isSkipped && 'opacity-50 bg-red-50'
+                            )}
+                          >
+                            <TableCell>
+                              <Checkbox
+                                checked={!forecast.isSkipped}
+                                onCheckedChange={() => handleToggleSkipHeat(forecast.heatDateStr)}
+                                title={forecast.isSkipped ? 'Click to breed this heat' : 'Click to skip this heat'}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                {format(forecast.heatDate, 'M/d/yy')}
+                                {forecast.isEstimated && (
+                                  <Badge variant='secondary' className='ml-2 text-xs'>
+                                    Est.
+                                  </Badge>
+                                )}
+                                {forecast.isSkipped && (
+                                  <Badge variant='destructive' className='ml-2 text-xs'>
+                                    Skipped
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>{format(forecast.matingDate, 'M/d/yy')}</TableCell>
+                            <TableCell>{format(forecast.ultrasoundDate, 'M/d/yy')}</TableCell>
+                            <TableCell>{format(forecast.dueDate, 'M/d/yy')}</TableCell>
+                            <TableCell>{format(forecast.goHomeDate, 'M/d/yy')}</TableCell>
+                            <TableCell className='text-center'>
+                              {forecast.estimatedPuppies}
+                            </TableCell>
+                            <TableCell className='text-right'>
+                              {formatCurrency(forecast.pricePerPuppy)}
+                            </TableCell>
+                            <TableCell className='text-right font-semibold'>
+                              {formatCurrency(forecast.totalIncome)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+
+                {breedingForecasts.length > 0 && (
+                  <div className='mt-4 p-4 bg-muted/50 rounded-lg'>
+                    <div className='text-sm text-muted-foreground space-y-1'>
+                      <p>
+                        <strong>Note:</strong> Forecasts are based on historical heat cycle intervals and litter sizes.
+                      </p>
+                      <p>
+                        • Rows marked "Est." indicate estimated heat cycles (no history available)
+                      </p>
+                      <p>
+                        • Uncheck the box to mark a heat cycle as skipped (it will be excluded from the main forecast)
+                      </p>
+                      <p>
+                        • Dates: Mating (Day 8), Ultrasound (+35 days), Due (+70 days), Go Home (+126 days)
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         )}
 

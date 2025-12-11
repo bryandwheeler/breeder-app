@@ -80,6 +80,7 @@ export function LitterFormDialog({
         pickupReadyDate: litter.pickupReadyDate,
         litterNotes: litter.litterNotes,
         pricing: litter.pricing,
+        ownerInfo: litter.ownerInfo,
       });
     } else {
       setFormData({
@@ -544,6 +545,174 @@ export function LitterFormDialog({
                   placeholder='0.00'
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Owner/Revenue Split Section */}
+          <div className='space-y-4 p-4 border rounded-lg'>
+            <h3 className='font-semibold'>Owner Revenue Split (Optional)</h3>
+            <p className='text-sm text-muted-foreground'>
+              For guardian homes, co-owned dogs, or other revenue sharing arrangements
+            </p>
+
+            <div>
+              <Label htmlFor='ownerName'>Owner Name</Label>
+              <Input
+                id='ownerName'
+                value={formData.ownerInfo?.ownerName || ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    ownerInfo: {
+                      ...formData.ownerInfo,
+                      ownerName: e.target.value,
+                    },
+                  })
+                }
+                placeholder='Name of the owner (if different from breeder)'
+              />
+            </div>
+
+            <div>
+              <Label htmlFor='ownerContact'>Owner Contact</Label>
+              <Input
+                id='ownerContact'
+                value={formData.ownerInfo?.ownerContact || ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    ownerInfo: {
+                      ...formData.ownerInfo,
+                      ownerContact: e.target.value,
+                    },
+                  })
+                }
+                placeholder='Email or phone'
+              />
+            </div>
+
+            <div>
+              <Label htmlFor='revenueSplitType'>Revenue Split Type</Label>
+              <Select
+                value={formData.ownerInfo?.revenueSplitType || ''}
+                onValueChange={(value: 'percentage' | 'fixed_amount') =>
+                  setFormData({
+                    ...formData,
+                    ownerInfo: {
+                      ...formData.ownerInfo,
+                      revenueSplitType: value,
+                    },
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder='Select split type' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='percentage'>Percentage Split</SelectItem>
+                  <SelectItem value='fixed_amount'>Fixed Amount per Puppy</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {formData.ownerInfo?.revenueSplitType === 'percentage' && (
+              <div className='grid grid-cols-2 gap-4'>
+                <div>
+                  <Label htmlFor='ownerPercentage'>Owner %</Label>
+                  <Input
+                    id='ownerPercentage'
+                    type='number'
+                    min='0'
+                    max='100'
+                    value={formData.ownerInfo?.ownerPercentage || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        ownerInfo: {
+                          ...formData.ownerInfo,
+                          ownerPercentage: parseFloat(e.target.value) || undefined,
+                          breederPercentage: 100 - (parseFloat(e.target.value) || 0),
+                        },
+                      })
+                    }
+                    placeholder='0-100'
+                  />
+                </div>
+                <div>
+                  <Label htmlFor='breederPercentage'>Breeder %</Label>
+                  <Input
+                    id='breederPercentage'
+                    type='number'
+                    value={formData.ownerInfo?.breederPercentage || ''}
+                    disabled
+                    placeholder='Auto-calculated'
+                  />
+                </div>
+              </div>
+            )}
+
+            {formData.ownerInfo?.revenueSplitType === 'fixed_amount' && (
+              <div className='grid grid-cols-2 gap-4'>
+                <div>
+                  <Label htmlFor='ownerFixedAmount'>Owner $ per Puppy</Label>
+                  <Input
+                    id='ownerFixedAmount'
+                    type='number'
+                    min='0'
+                    step='100'
+                    value={formData.ownerInfo?.ownerFixedAmount || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        ownerInfo: {
+                          ...formData.ownerInfo,
+                          ownerFixedAmount: parseFloat(e.target.value) || undefined,
+                        },
+                      })
+                    }
+                    placeholder='0.00'
+                  />
+                </div>
+                <div>
+                  <Label htmlFor='breederFixedAmount'>Breeder $ per Puppy</Label>
+                  <Input
+                    id='breederFixedAmount'
+                    type='number'
+                    min='0'
+                    step='100'
+                    value={formData.ownerInfo?.breederFixedAmount || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        ownerInfo: {
+                          ...formData.ownerInfo,
+                          breederFixedAmount: parseFloat(e.target.value) || undefined,
+                        },
+                      })
+                    }
+                    placeholder='0.00'
+                  />
+                </div>
+              </div>
+            )}
+
+            <div>
+              <Label htmlFor='ownerNotes'>Revenue Split Notes</Label>
+              <Textarea
+                id='ownerNotes'
+                value={formData.ownerInfo?.notes || ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    ownerInfo: {
+                      ...formData.ownerInfo,
+                      notes: e.target.value,
+                    },
+                  })
+                }
+                placeholder='Any notes about the revenue split arrangement'
+                rows={2}
+              />
             </div>
           </div>
 

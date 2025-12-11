@@ -137,31 +137,38 @@ export function LitterForecast() {
       // Generate forecasts until we reach the end date
       let currentHeatDate = nextHeatDate;
       let forecastIndex = 0;
+      const skippedDates = dog.skippedHeatDates || [];
 
       while (currentHeatDate < endDate) {
-        const matingDate = addDays(currentHeatDate, 7); // Day 8-14 typically
-        const ultrasoundDate = addDays(matingDate, 28); // ~4 weeks after mating
-        const dueDate = addDays(matingDate, 63); // ~63 days gestation
-        const goHomeDate = addDays(dueDate, 56); // 8 weeks after birth
+        const heatDateStr = format(currentHeatDate, 'yyyy-MM-dd');
+        const isSkipped = skippedDates.includes(heatDateStr);
 
-        const forecastId = `${dog.id}-forecast-${forecastIndex}`;
-        const edited = editingForecast[forecastId] || {};
+        // Only include non-skipped heat cycles in the forecast
+        if (!isSkipped) {
+          const matingDate = addDays(currentHeatDate, 7); // Day 8-14 typically
+          const ultrasoundDate = addDays(matingDate, 28); // ~4 weeks after mating
+          const dueDate = addDays(matingDate, 63); // ~63 days gestation
+          const goHomeDate = addDays(dueDate, 56); // 8 weeks after birth
 
-        forecasts.push({
-          id: forecastId,
-          dogId: dog.id,
-          dogName: dog.name,
-          day1Heat: currentHeatDate,
-          matingDate,
-          ultrasoundDate,
-          dueDate,
-          goHomeDate,
-          estimatedPuppies: edited.estimatedPuppies ?? avgLitterSize,
-          pricePerPuppy: edited.pricePerPuppy ?? avgPrice,
-          totalIncome: (edited.estimatedPuppies ?? avgLitterSize) * (edited.pricePerPuppy ?? avgPrice),
-          isEstimated: dogHeatCycles.length === 0,
-          ...edited,
-        });
+          const forecastId = `${dog.id}-forecast-${forecastIndex}`;
+          const edited = editingForecast[forecastId] || {};
+
+          forecasts.push({
+            id: forecastId,
+            dogId: dog.id,
+            dogName: dog.name,
+            day1Heat: currentHeatDate,
+            matingDate,
+            ultrasoundDate,
+            dueDate,
+            goHomeDate,
+            estimatedPuppies: edited.estimatedPuppies ?? avgLitterSize,
+            pricePerPuppy: edited.pricePerPuppy ?? avgPrice,
+            totalIncome: (edited.estimatedPuppies ?? avgLitterSize) * (edited.pricePerPuppy ?? avgPrice),
+            isEstimated: dogHeatCycles.length === 0,
+            ...edited,
+          });
+        }
 
         currentHeatDate = addDays(currentHeatDate, avgInterval);
         forecastIndex++;

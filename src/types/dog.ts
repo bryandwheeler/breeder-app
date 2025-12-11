@@ -480,6 +480,18 @@ export interface Litter {
 
   // Litter-level registration
   litterRegistration?: LitterRegistration;
+
+  // Owner/Revenue Split (for guardian homes, co-owned dogs, etc.)
+  ownerInfo?: {
+    ownerName?: string; // Name of the owner (if different from breeder)
+    ownerContact?: string; // Contact info for owner
+    revenueSplitType?: 'percentage' | 'fixed_amount'; // How revenue is split
+    ownerPercentage?: number; // Percentage that goes to owner (0-100)
+    ownerFixedAmount?: number; // Fixed dollar amount per puppy that goes to owner
+    breederPercentage?: number; // Percentage that goes to breeder (0-100)
+    breederFixedAmount?: number; // Fixed dollar amount per puppy that goes to breeder
+    notes?: string; // Any notes about the split arrangement
+  };
 }
 
 // Guardian Home Information
@@ -575,6 +587,9 @@ export interface Dog {
   originalOwnerKennel?: string; // Kennel name of actual owner
   sharingPreferences?: DogSharingPreferences; // What data is shared
   lastSyncDate?: string; // When data was last synced from owner
+
+  // Forecast Management
+  skippedHeatDates?: string[]; // Array of ISO date strings for heat cycles to skip in forecast
 
   notes?: string;
 }
