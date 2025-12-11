@@ -118,7 +118,15 @@ export function DogList({
   const { dogs, deleteDog, updateDog, litters } = useDogStore();
   const { getBreedingRecordsForDog } = useHeatCycleStore();
   const [programFilters, setProgramFilters] = useState<ProgramStatus[]>([]);
-  const [breedingStatusFilters, setBreedingStatusFilters] = useState<BreedingStatus[]>([]);
+  // Default: all breeding statuses EXCEPT retired
+  const [breedingStatusFilters, setBreedingStatusFilters] = useState<BreedingStatus[]>([
+    'future-stud',
+    'future-dam',
+    'active-stud',
+    'active-dam',
+    'pet',
+    'guardian',
+  ]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dogToDelete, setDogToDelete] = useState<Dog | null>(null);
   const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>(() => {
@@ -424,11 +432,6 @@ export function DogList({
       // Filter by breeding status
       if (breedingStatusFilters.length > 0) {
         if (!dog.breedingStatus || !breedingStatusFilters.includes(dog.breedingStatus as BreedingStatus)) {
-          return false;
-        }
-      } else {
-        // Default behavior: exclude retired dogs when no filters are selected
-        if (dog.breedingStatus === 'retired') {
           return false;
         }
       }
