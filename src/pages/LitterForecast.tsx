@@ -40,6 +40,7 @@ export function LitterForecast() {
   const { heatCycles } = useHeatCycleStore();
   const [timeframeMonths, setTimeframeMonths] = useState(12);
   const [editingForecast, setEditingForecast] = useState<{ [key: string]: Partial<ForecastedLitter> }>({});
+  const [customHeatIntervals, setCustomHeatIntervals] = useState<{ [dogId: string]: number }>({});
 
   // Get breeding-capable females
   const breedingFemales = dogs.filter(
@@ -116,7 +117,9 @@ export function LitterForecast() {
     const endDate = addMonths(new Date(), timeframeMonths);
 
     breedingFemales.forEach((dog) => {
-      const avgInterval = getAverageHeatInterval(dog.id);
+      const calculatedInterval = getAverageHeatInterval(dog.id);
+      // Use custom interval if set, otherwise use calculated interval
+      const avgInterval = customHeatIntervals[dog.id] ?? calculatedInterval;
       const avgLitterSize = getAverageLitterSize(dog.id);
       const avgPrice = getMostRecentPuppyPrice(dog.id);
 
@@ -179,7 +182,7 @@ export function LitterForecast() {
       if (!a.day1Heat || !b.day1Heat) return 0;
       return a.day1Heat.getTime() - b.day1Heat.getTime();
     });
-  }, [breedingFemales, heatCycles, timeframeMonths, editingForecast]);
+  }, [breedingFemales, heatCycles, timeframeMonths, editingForecast, customHeatIntervals]);
 
   const totalProjectedIncome = forecastedLitters.reduce((sum, f) => sum + f.totalIncome, 0);
   const totalProjectedPuppies = forecastedLitters.reduce((sum, f) => sum + f.estimatedPuppies, 0);
@@ -270,6 +273,91 @@ export function LitterForecast() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Heat Cycle Intervals */}
+      <Card>
+        <CardHeader>
+          <CardTitle className='flex items-center gap-2'>
+            <Edit className='h-5 w-5' />
+            Heat Cycle Intervals
+          </CardTitle>
+          <p className='text-sm text-muted-foreground mt-1'>
+            Average days between heat cycles for each dog. Edit to customize forecasts.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+            {breedingFemales.map((dog) => {
+              const calculatedInterval = getAverageHeatInterval(dog.id);
+              const currentInterval = customHeatIntervals[dog.id] ?? calculatedInterval;
+              const dogHeatCycles = heatCycles.filter(
+                (hc) => hc.dogId === dog.id && hc.startDate
+              );
+              const isCalculated = dogHeatCycles.length >= 2;
+
+              return (
+                <div key={dog.id} className='border rounded-lg p-4 space-y-2'>
+                  <div className='flex items-center justify-between'>
+                    <div className='font-semibold'>{dog.name}</div>
+                    {isCalculated ? (
+                      <Badge variant='secondary' className='text-xs'>
+                        Calculated
+                      </Badge>
+                    ) : (
+                      <Badge variant='outline' className='text-xs'>
+                        Default
+                      </Badge>
+                    )}
+                  </div>
+                  <div className='flex items-center gap-2'>
+                    <Input
+                      type='number'
+                      value={currentInterval}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 180;
+                        setCustomHeatIntervals((prev) => ({
+                          ...prev,
+                          [dog.id]: value,
+                        }));
+                      }}
+                      className='w-20'
+                      min={90}
+                      max={365}
+                    />
+                    <span className='text-sm text-muted-foreground'>days</span>
+                    {customHeatIntervals[dog.id] && customHeatIntervals[dog.id] !== calculatedInterval && (
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        className='h-7 px-2'
+                        onClick={() => {
+                          setCustomHeatIntervals((prev) => {
+                            const updated = { ...prev };
+                            delete updated[dog.id];
+                            return updated;
+                          });
+                        }}
+                      >
+                        Reset
+                      </Button>
+                    )}
+                  </div>
+                  {isCalculated && (
+                    <p className='text-xs text-muted-foreground'>
+                      Based on {dogHeatCycles.length} heat cycles
+                    </p>
+                  )}
+                  {!isCalculated && (
+                    <p className='text-xs text-muted-foreground'>
+                      Default: 180 days (6 months)
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Forecast Table */}
       <Card>
