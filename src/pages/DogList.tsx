@@ -426,6 +426,11 @@ export function DogList({
         if (!dog.breedingStatus || !breedingStatusFilters.includes(dog.breedingStatus as BreedingStatus)) {
           return false;
         }
+      } else {
+        // Default behavior: exclude retired dogs when no filters are selected
+        if (dog.breedingStatus === 'retired') {
+          return false;
+        }
       }
 
       return true;
