@@ -31,21 +31,40 @@ interface TaskState {
 
   // Default template actions (admin only)
   subscribeToDefaultTemplates: () => () => void;
-  createDefaultTemplate: (template: Omit<DefaultTaskTemplate, 'id' | 'updatedAt'>) => Promise<void>;
-  updateDefaultTemplate: (id: string, updates: Partial<DefaultTaskTemplate>) => Promise<void>;
+  createDefaultTemplate: (
+    template: Omit<DefaultTaskTemplate, 'id' | 'updatedAt'>
+  ) => Promise<void>;
+  updateDefaultTemplate: (
+    id: string,
+    updates: Partial<DefaultTaskTemplate>
+  ) => Promise<void>;
   deleteDefaultTemplate: (id: string) => Promise<void>;
 
   // Breeder template actions
   subscribeToBreederTemplates: (breederId: string) => () => void;
   initializeBreederTemplates: (breederId: string) => Promise<void>;
-  createBreederTemplate: (template: Omit<BreederTaskTemplate, 'id' | 'updatedAt'>) => Promise<void>;
-  updateBreederTemplate: (id: string, updates: Partial<BreederTaskTemplate>) => Promise<void>;
+  createBreederTemplate: (
+    template: Omit<BreederTaskTemplate, 'id' | 'updatedAt'>
+  ) => Promise<void>;
+  updateBreederTemplate: (
+    id: string,
+    updates: Partial<BreederTaskTemplate>
+  ) => Promise<void>;
   deleteBreederTemplate: (id: string) => Promise<void>;
 
   // Litter task actions
+  subscribeToBreederTasks: (breederId: string) => () => void;
   subscribeToLitterTasks: (litterId: string) => () => void;
-  generateLitterTasks: (litterId: string, breederId: string, birthDate: string) => Promise<void>;
-  updateTaskStatus: (taskId: string, status: TaskStatus, notes?: string) => Promise<void>;
+  generateLitterTasks: (
+    litterId: string,
+    breederId: string,
+    birthDate: string
+  ) => Promise<void>;
+  updateTaskStatus: (
+    taskId: string,
+    status: TaskStatus,
+    notes?: string
+  ) => Promise<void>;
   deleteTasksForLitter: (litterId: string) => Promise<void>;
   getTaskStats: (litterId: string) => TaskStats;
 }
@@ -81,7 +100,12 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
   createDefaultTemplate: async (template) => {
     try {
-      const templatesRef = collection(db, 'taskTemplates', 'defaults', 'templates');
+      const templatesRef = collection(
+        db,
+        'taskTemplates',
+        'defaults',
+        'templates'
+      );
       const newDocRef = doc(templatesRef);
       await setDoc(newDocRef, {
         ...template,
@@ -143,7 +167,12 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   initializeBreederTemplates: async (breederId: string) => {
     try {
       // Check if breeder already has templates
-      const breederTemplatesRef = collection(db, 'taskTemplates', 'breeders', breederId);
+      const breederTemplatesRef = collection(
+        db,
+        'taskTemplates',
+        'breeders',
+        breederId
+      );
       const existingTemplates = await getDocs(breederTemplatesRef);
 
       if (existingTemplates.empty) {
@@ -178,7 +207,12 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
   createBreederTemplate: async (template) => {
     try {
-      const templatesRef = collection(db, 'taskTemplates', 'breeders', template.breederId);
+      const templatesRef = collection(
+        db,
+        'taskTemplates',
+        'breeders',
+        template.breederId
+      );
       const newDocRef = doc(templatesRef);
       await setDoc(newDocRef, {
         ...template,
@@ -193,7 +227,9 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
   updateBreederTemplate: async (id, updates) => {
     try {
-      const breederId = updates.breederId || get().breederTemplates.find(t => t.id === id)?.breederId;
+      const breederId =
+        updates.breederId ||
+        get().breederTemplates.find((t) => t.id === id)?.breederId;
       if (!breederId) throw new Error('Breeder ID not found');
 
       const templateRef = doc(db, 'taskTemplates', 'breeders', breederId, id);
@@ -209,15 +245,45 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
   deleteBreederTemplate: async (id) => {
     try {
-      const template = get().breederTemplates.find(t => t.id === id);
+      const template = get().breederTemplates.find((t) => t.id === id);
       if (!template) throw new Error('Template not found');
 
-      const templateRef = doc(db, 'taskTemplates', 'breeders', template.breederId, id);
+      const templateRef = doc(
+        db,
+        'taskTemplates',
+        'breeders',
+        template.breederId,
+        id
+      );
       await deleteDoc(templateRef);
     } catch (error) {
       console.error('Error deleting breeder template:', error);
       throw error;
     }
+  },
+
+  subscribeToBreederTasks: (breederId: string) => {
+    const q = query(
+      collection(db, 'litterTasks'),
+      where('breederId', '==', breederId),
+      orderBy('dueDate')
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const tasks: LitterTask[] = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as LitterTask[];
+        set({ litterTasks: tasks });
+      },
+      (error) => {
+        console.error('Error subscribing to breeder tasks:', error);
+      }
+    );
+
+    return unsubscribe;
   },
 
   subscribeToLitterTasks: (litterId: string) => {
@@ -244,10 +310,14 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     return unsubscribe;
   },
 
-  generateLitterTasks: async (litterId: string, breederId: string, birthDate: string) => {
+  generateLitterTasks: async (
+    litterId: string,
+    breederId: string,
+    birthDate: string
+  ) => {
     try {
       const birthDateObj = new Date(birthDate);
-      const templates = get().breederTemplates.filter(t => t.isActive);
+      const templates = get().breederTemplates.filter((t) => t.isActive);
       const batch = writeBatch(db);
 
       templates.forEach((template) => {
@@ -261,7 +331,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           // Week-based task (convert week to days)
           const weekNumber = template.dayOrWeek;
           dueDate = new Date(birthDateObj);
-          dueDate.setDate(dueDate.getDate() + (weekNumber * 7));
+          dueDate.setDate(dueDate.getDate() + weekNumber * 7);
         }
 
         const taskRef = doc(collection(db, 'litterTasks'));
@@ -288,7 +358,11 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     }
   },
 
-  updateTaskStatus: async (taskId: string, status: TaskStatus, notes?: string) => {
+  updateTaskStatus: async (
+    taskId: string,
+    status: TaskStatus,
+    notes?: string
+  ) => {
     try {
       const taskRef = doc(db, 'litterTasks', taskId);
       const updates: any = {
@@ -312,7 +386,10 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
   deleteTasksForLitter: async (litterId: string) => {
     try {
-      const q = query(collection(db, 'litterTasks'), where('litterId', '==', litterId));
+      const q = query(
+        collection(db, 'litterTasks'),
+        where('litterId', '==', litterId)
+      );
       const snapshot = await getDocs(q);
       const batch = writeBatch(db);
 
@@ -328,11 +405,11 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   },
 
   getTaskStats: (litterId: string): TaskStats => {
-    const tasks = get().litterTasks.filter(t => t.litterId === litterId);
+    const tasks = get().litterTasks.filter((t) => t.litterId === litterId);
     const total = tasks.length;
-    const completed = tasks.filter(t => t.status === 'completed').length;
-    const pending = tasks.filter(t => t.status === 'pending').length;
-    const skipped = tasks.filter(t => t.status === 'skipped').length;
+    const completed = tasks.filter((t) => t.status === 'completed').length;
+    const pending = tasks.filter((t) => t.status === 'pending').length;
+    const skipped = tasks.filter((t) => t.status === 'skipped').length;
 
     return {
       total,

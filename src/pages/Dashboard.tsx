@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDogStore } from '@/store/dogStoreFirebase';
 import { useWaitlistStore } from '@/store/waitlistStore';
@@ -31,13 +31,27 @@ import {
   Flame,
   ArrowRight,
 } from 'lucide-react';
-import { differenceInDays, addDays, format, parseISO } from 'date-fns';
+import {
+  differenceInDays,
+  addDays,
+  format,
+  parseISO,
+  startOfDay,
+  endOfDay,
+  isBefore,
+  isAfter,
+} from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
 } from '@/components/ui/tooltip';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { useTaskStore } from '@/store/taskStore';
+import { useAuth } from '@/contexts/AuthContext';
+import { ListChecks } from 'lucide-react';
 
 type PreviewType =
   | 'dogs'
@@ -54,8 +68,18 @@ export function Dashboard() {
   const { waitlist } = useWaitlistStore();
   const { customers } = useCrmStore();
   const { getHeatCyclesForDog } = useHeatCycleStore();
+  const { currentUser } = useAuth();
+  const { litterTasks, subscribeToBreederTasks, updateTaskStatus } =
+    useTaskStore();
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewType, setPreviewType] = useState<PreviewType | null>(null);
+  const [showCompletedTasks, setShowCompletedTasks] = useState(false);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const unsubscribe = subscribeToBreederTasks(currentUser.uid);
+    return unsubscribe;
+  }, [currentUser, subscribeToBreederTasks]);
 
   // Calculate statistics and detailed data
   const stats = useMemo(() => {
@@ -166,6 +190,107 @@ export function Dashboard() {
       .sort((a, b) => (a.daysUntil || 0) - (b.daysUntil || 0))
       .slice(0, 5);
   }, [litters, dogs]);
+
+  const littersById = useMemo(() => {
+    const map = new Map<string, (typeof litters)[0]>();
+    litters.forEach((litter) => {
+      map.set(litter.id, litter);
+    });
+    return map;
+  }, [litters]);
+
+  const {
+    overdueTasks,
+    todaysTasks,
+    upcomingWeekTasksByDate,
+    overdueCount,
+    todayCount,
+    upcomingWeekCount,
+  } = useMemo(() => {
+    const today = new Date();
+    const startToday = startOfDay(today);
+    const endToday = endOfDay(today);
+    const weekEnd = endOfDay(addDays(startToday, 6));
+
+    const overdue: typeof litterTasks = [];
+    const todayList: typeof litterTasks = [];
+    const upcomingWeek: typeof litterTasks = [];
+
+    litterTasks.forEach((task) => {
+      const due = new Date(task.dueDate);
+
+      if (isBefore(due, startToday)) {
+        overdue.push(task);
+      } else if (!isAfter(due, endToday)) {
+        todayList.push(task);
+      } else if (!isAfter(due, weekEnd)) {
+        upcomingWeek.push(task);
+      }
+    });
+
+    const groupedByDate = new Map<
+      string,
+      { label: string; tasks: typeof litterTasks }
+    >();
+
+    upcomingWeek.forEach((task) => {
+      const due = new Date(task.dueDate);
+      const key = format(due, 'yyyy-MM-dd');
+      const label = format(due, 'EEE MMM d');
+      if (!groupedByDate.has(key)) {
+        groupedByDate.set(key, { label, tasks: [] });
+      }
+      groupedByDate.get(key)!.tasks.push(task);
+    });
+
+    const upcomingWeekTasksByDate = Array.from(groupedByDate.entries())
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([, value]) => value);
+
+    const overdueCount = overdue.filter((t) => t.status === 'pending').length;
+    const todayCount = todayList.filter((t) => t.status === 'pending').length;
+    const upcomingWeekCount = upcomingWeek.filter(
+      (t) => t.status === 'pending'
+    ).length;
+
+    return {
+      overdueTasks: overdue,
+      todaysTasks: todayList,
+      upcomingWeekTasksByDate,
+      overdueCount,
+      todayCount,
+      upcomingWeekCount,
+    };
+  }, [litterTasks]);
+
+  const visibleOverdueTasks = useMemo(
+    () =>
+      showCompletedTasks
+        ? overdueTasks
+        : overdueTasks.filter((t) => t.status === 'pending'),
+    [showCompletedTasks, overdueTasks]
+  );
+
+  const visibleTodaysTasks = useMemo(
+    () =>
+      showCompletedTasks
+        ? todaysTasks
+        : todaysTasks.filter((t) => t.status === 'pending'),
+    [showCompletedTasks, todaysTasks]
+  );
+
+  const visibleUpcomingWeekGroups = useMemo(
+    () =>
+      upcomingWeekTasksByDate
+        .map((group) => {
+          const tasks = showCompletedTasks
+            ? group.tasks
+            : group.tasks.filter((t) => t.status === 'pending');
+          return { ...group, tasks };
+        })
+        .filter((group) => group.tasks.length > 0),
+    [showCompletedTasks, upcomingWeekTasksByDate]
+  );
 
   const handleCardClick = (type: PreviewType, route?: string) => {
     setPreviewType(type);
@@ -456,6 +581,246 @@ export function Dashboard() {
   return (
     <div className='space-y-4 sm:space-y-6'>
       <h1 className='text-2xl sm:text-3xl font-bold'>Dashboard</h1>
+
+      <div className='flex items-center justify-between gap-2'>
+        <p className='text-sm text-muted-foreground'>
+          Quick view of what&apos;s due today and this week.
+        </p>
+        <div className='flex items-center gap-2'>
+          <span className='text-xs text-muted-foreground'>Show completed</span>
+          <Switch
+            checked={showCompletedTasks}
+            onCheckedChange={(value) => setShowCompletedTasks(value === true)}
+          />
+        </div>
+      </div>
+
+      {/* Task Checklists */}
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+        <Card>
+          <CardHeader className='bg-gradient-to-r from-sky-600 to-sky-700 text-white'>
+            <CardTitle className='flex items-center justify-between gap-2'>
+              <span className='flex items-center gap-2'>
+                <ListChecks className='h-5 w-5' />
+                Today&apos;s Checklist
+              </span>
+              <span className='text-sm font-normal'>
+                {overdueCount} overdue · {todayCount} today
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className='p-4 space-y-4'>
+            {visibleOverdueTasks.length === 0 &&
+            visibleTodaysTasks.length === 0 ? (
+              <p className='text-sm text-muted-foreground'>
+                No tasks due today.
+              </p>
+            ) : (
+              <div className='space-y-4'>
+                {visibleOverdueTasks.length > 0 && (
+                  <div className='space-y-2'>
+                    <p className='text-xs font-semibold text-destructive uppercase tracking-wide'>
+                      Overdue
+                    </p>
+                    <div className='space-y-2'>
+                      {visibleOverdueTasks.map((task) => {
+                        const litter = littersById.get(task.litterId);
+                        const isCompleted = task.status === 'completed';
+                        return (
+                          <div
+                            key={task.id}
+                            className='flex items-start gap-3 rounded-md border p-2'
+                          >
+                            <Checkbox
+                              className='mt-1'
+                              checked={isCompleted}
+                              onCheckedChange={async (checked) => {
+                                await updateTaskStatus(
+                                  task.id,
+                                  checked === true ? 'completed' : 'pending'
+                                );
+                              }}
+                            />
+                            <div className='flex-1 min-w-0'>
+                              <div className='flex items-center justify-between gap-2'>
+                                <button
+                                  type='button'
+                                  className={cn(
+                                    'text-sm font-medium text-left hover:underline',
+                                    isCompleted &&
+                                      'line-through text-muted-foreground'
+                                  )}
+                                  onClick={() =>
+                                    navigate(`/litters/${task.litterId}`)
+                                  }
+                                >
+                                  {task.title}
+                                </button>
+                                <Badge
+                                  variant='destructive'
+                                  className='whitespace-nowrap'
+                                >
+                                  {format(new Date(task.dueDate), 'MMM d')}
+                                </Badge>
+                              </div>
+                              {litter && (
+                                <p className='text-xs text-muted-foreground truncate'>
+                                  Litter: {litter.litterName || 'Untitled'}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {todaysTasks.length > 0 && (
+                  <div className='space-y-2'>
+                    <p className='text-xs font-semibold text-muted-foreground uppercase tracking-wide'>
+                      Due Today
+                    </p>
+                    <div className='space-y-2'>
+                      {visibleTodaysTasks.map((task) => {
+                        const litter = littersById.get(task.litterId);
+                        const isCompleted = task.status === 'completed';
+                        return (
+                          <div
+                            key={task.id}
+                            className='flex items-start gap-3 rounded-md border p-2'
+                          >
+                            <Checkbox
+                              className='mt-1'
+                              checked={isCompleted}
+                              onCheckedChange={async (checked) => {
+                                await updateTaskStatus(
+                                  task.id,
+                                  checked === true ? 'completed' : 'pending'
+                                );
+                              }}
+                            />
+                            <div className='flex-1 min-w-0'>
+                              <div className='flex items-center justify-between gap-2'>
+                                <button
+                                  type='button'
+                                  className={cn(
+                                    'text-sm font-medium text-left hover:underline',
+                                    isCompleted &&
+                                      'line-through text-muted-foreground'
+                                  )}
+                                  onClick={() =>
+                                    navigate(`/litters/${task.litterId}`)
+                                  }
+                                >
+                                  {task.title}
+                                </button>
+                                <Badge
+                                  variant='secondary'
+                                  className='whitespace-nowrap'
+                                >
+                                  Today
+                                </Badge>
+                              </div>
+                              {litter && (
+                                <p className='text-xs text-muted-foreground truncate'>
+                                  Litter: {litter.litterName || 'Untitled'}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className='bg-gradient-to-r from-indigo-600 to-indigo-700 text-white'>
+            <CardTitle className='flex items-center justify-between gap-2'>
+              <span className='flex items-center gap-2'>
+                <Calendar className='h-5 w-5' />
+                This Week
+              </span>
+              <span className='text-sm font-normal'>
+                {upcomingWeekCount} this week
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className='p-4 space-y-4'>
+            {visibleUpcomingWeekGroups.length === 0 ? (
+              <p className='text-sm text-muted-foreground'>
+                No upcoming tasks in the next 7 days.
+              </p>
+            ) : (
+              <div className='space-y-4'>
+                {visibleUpcomingWeekGroups.map((group) => (
+                  <div key={group.label} className='space-y-2'>
+                    <p className='text-xs font-semibold text-muted-foreground uppercase tracking-wide'>
+                      {group.label}
+                    </p>
+                    <div className='space-y-2'>
+                      {group.tasks.map((task) => {
+                        const litter = littersById.get(task.litterId);
+                        const isCompleted = task.status === 'completed';
+                        return (
+                          <div
+                            key={task.id}
+                            className='flex items-start gap-3 rounded-md border p-2'
+                          >
+                            <Checkbox
+                              className='mt-1'
+                              checked={isCompleted}
+                              onCheckedChange={async (checked) => {
+                                await updateTaskStatus(
+                                  task.id,
+                                  checked === true ? 'completed' : 'pending'
+                                );
+                              }}
+                            />
+                            <div className='flex-1 min-w-0'>
+                              <div className='flex items-center justify-between gap-2'>
+                                <button
+                                  type='button'
+                                  className={cn(
+                                    'text-sm font-medium text-left hover:underline',
+                                    isCompleted &&
+                                      'line-through text-muted-foreground'
+                                  )}
+                                  onClick={() =>
+                                    navigate(`/litters/${task.litterId}`)
+                                  }
+                                >
+                                  {task.title}
+                                </button>
+                                <Badge
+                                  variant='outline'
+                                  className='whitespace-nowrap'
+                                >
+                                  {format(new Date(task.dueDate), 'MMM d')}
+                                </Badge>
+                              </div>
+                              {litter && (
+                                <p className='text-xs text-muted-foreground truncate'>
+                                  Litter: {litter.litterName || 'Untitled'}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Statistics Cards */}
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>

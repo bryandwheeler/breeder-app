@@ -66,5 +66,16 @@ service cloud.firestore {
     match /breeding_records/{recordId} {
       allow read, write: if isAuthenticated() && isOwner(resource.data.userId);
     }
+
+    // Litter care and workflow tasks - scoped to breeder
+    match /litterTasks/{taskId} {
+      // Breeder can read their own litter tasks
+      allow read, update, delete: if isAuthenticated() &&
+        isOwner(resource.data.breederId);
+
+      // Creating tasks (e.g., from templates) must set breederId to the caller
+      allow create: if isAuthenticated() &&
+        isOwner(request.resource.data.breederId);
+    }
   }
 }

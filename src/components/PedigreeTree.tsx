@@ -216,169 +216,77 @@ export function PedigreeTree({ dogId }: { dogId: string }) {
           </p>
         </div>
 
-        {/* Pedigree Grid Layout */}
-        <div className='grid grid-cols-4 gap-x-16 relative'>
-          {/* SVG for connecting lines - positioned absolutely */}
-          <svg
-            viewBox='0 0 1200 800'
-            width='100%'
-            height='100%'
-            className='absolute inset-0 w-full h-full pointer-events-none'
-            style={{ zIndex: 0 }}
-          >
-            <defs>
-              <marker
-                id='arrow'
-                markerWidth='10'
-                markerHeight='10'
-                refX='5'
-                refY='3'
-                orient='auto'
-                markerUnits='strokeWidth'
-              >
-                <path d='M0,0 L0,6 L9,3 z' fill='#9ca3af' />
-              </marker>
-            </defs>
-            {/* Card positions: Generation 0 (subject): (150,400)
-                Generation 1 (parents): (350,200) and (350,600)
-                Generation 2 (grandparents): (550,100), (550,300), (550,500), (550,700)
-                Generation 3 (great-grandparents): (750,50), (750,150), (750,250), (750,350), (750,450), (750,550), (750,650), (750,750)
-                Card width: 160px, so lines should start/end at card edge (center +/- 80px)
-            */}
-            {/* Subject to Sire (curve from right edge of subject to left edge of sire) */}
-            <path
-              d='M 230 400 C 290 320, 320 260, 370 240'
-              stroke='#9ca3af'
-              strokeWidth='2'
-              fill='none'
-            />
-            {/* Subject to Dam (curve from right edge of subject to left edge of dam) */}
-            <path
-              d='M 230 400 C 290 480, 320 540, 370 560'
-              stroke='#9ca3af'
-              strokeWidth='2'
-              fill='none'
-            />
-            {/* Sire to Grandparents */}
-            <path
-              d='M 430 240 C 490 180, 520 140, 570 140'
-              stroke='#9ca3af'
-              strokeWidth='2'
-              fill='none'
-            />
-            <path
-              d='M 430 240 C 490 300, 520 340, 570 340'
-              stroke='#9ca3af'
-              strokeWidth='2'
-              fill='none'
-            />
-            {/* Dam to Grandparents */}
-            <path
-              d='M 430 560 C 490 500, 520 540, 570 540'
-              stroke='#9ca3af'
-              strokeWidth='2'
-              fill='none'
-            />
-            <path
-              d='M 430 560 C 490 620, 520 740, 570 740'
-              stroke='#9ca3af'
-              strokeWidth='2'
-              fill='none'
-            />
-            {/* Grandparents to Great-grandparents */}
-            <path
-              d='M 630 140 C 690 90, 720 70, 770 90'
-              stroke='#9ca3af'
-              strokeWidth='2'
-              fill='none'
-            />
-            <path
-              d='M 630 140 C 690 190, 720 210, 770 190'
-              stroke='#9ca3af'
-              strokeWidth='2'
-              fill='none'
-            />
-            <path
-              d='M 630 340 C 690 290, 720 270, 770 290'
-              stroke='#9ca3af'
-              strokeWidth='2'
-              fill='none'
-            />
-            <path
-              d='M 630 340 C 690 390, 720 410, 770 390'
-              stroke='#9ca3af'
-              strokeWidth='2'
-              fill='none'
-            />
-            <path
-              d='M 630 540 C 690 490, 720 470, 770 490'
-              stroke='#9ca3af'
-              strokeWidth='2'
-              fill='none'
-            />
-            <path
-              d='M 630 540 C 690 590, 720 610, 770 590'
-              stroke='#9ca3af'
-              strokeWidth='2'
-              fill='none'
-            />
-            <path
-              d='M 630 740 C 690 690, 720 670, 770 690'
-              stroke='#9ca3af'
-              strokeWidth='2'
-              fill='none'
-            />
-            <path
-              d='M 630 740 C 690 790, 720 810, 770 790'
-              stroke='#9ca3af'
-              strokeWidth='2'
-              fill='none'
-            />
-          </svg>
-
-          {/* Generation 0 - Subject (centered vertically) */}
-          <div
-            className='flex items-center justify-center'
-            style={{ gridRow: 'span 8', position: 'relative', zIndex: 1 }}
-          >
-            <PedigreeCard dog={rootDog} />
-          </div>
-
-          {/* Generation 1 - Parents */}
-          <div
-            className='flex flex-col justify-center gap-y-96'
-            style={{ gridRow: 'span 8', position: 'relative', zIndex: 1 }}
-          >
-            <PedigreeCard dog={sire} />
-            <PedigreeCard dog={dam} />
-          </div>
-
-          {/* Generation 2 - Grandparents */}
-          <div
-            className='flex flex-col justify-center gap-y-40'
-            style={{ gridRow: 'span 8', position: 'relative', zIndex: 1 }}
-          >
-            <PedigreeCard dog={paternalGrandsire} />
-            <PedigreeCard dog={paternalGranddam} />
-            <PedigreeCard dog={maternalGrandsire} />
-            <PedigreeCard dog={maternalGranddam} />
-          </div>
-
-          {/* Generation 3 - Great-grandparents */}
-          <div
-            className='flex flex-col justify-start gap-y-20 pt-2'
-            style={{ gridRow: 'span 8', position: 'relative', zIndex: 1 }}
-          >
-            <PedigreeCard dog={paternalGGS_S} />
-            <PedigreeCard dog={paternalGGS_D} />
-            <PedigreeCard dog={paternalGGD_S} />
-            <PedigreeCard dog={paternalGGD_D} />
-            <PedigreeCard dog={maternalGGS_S} />
-            <PedigreeCard dog={maternalGGS_D} />
-            <PedigreeCard dog={maternalGGD_S} />
-            <PedigreeCard dog={maternalGGD_D} />
-          </div>
-        </div>
+        {/* Pedigree Table Layout */}
+        <table className='border-separate' style={{ borderSpacing: '16px 0' }}>
+          <tbody>
+            {/* Row 1: Paternal Great-Grandsire Sire */}
+            <tr style={{ height: '150px' }}>
+              <td rowSpan={8} className='align-middle pr-4'><PedigreeCard dog={rootDog} /></td>
+              <td rowSpan={8} className='relative w-12'>
+                <div className='absolute left-0 top-1/2 w-full h-0.5 bg-gray-400' />
+              </td>
+              <td rowSpan={4} className='align-middle px-2'><PedigreeCard dog={sire} /></td>
+              <td rowSpan={4} className='relative w-12'>
+                <div className='absolute left-0 top-1/2 w-full h-0.5 bg-gray-400' />
+                <div className='absolute left-0 top-1/4 bottom-1/4 w-0.5 bg-gray-400' />
+              </td>
+              <td rowSpan={2} className='align-middle px-2'><PedigreeCard dog={paternalGrandsire} /></td>
+              <td rowSpan={2} className='relative w-12'>
+                <div className='absolute left-0 top-1/2 w-full h-0.5 bg-gray-400' />
+                <div className='absolute left-0 top-1/4 bottom-1/4 w-0.5 bg-gray-400' />
+              </td>
+              <td className='align-middle px-2'><PedigreeCard dog={paternalGGS_S} /></td>
+            </tr>
+            {/* Row 2: Paternal Great-Grandsire Dam */}
+            <tr style={{ height: '150px' }}>
+              <td className='align-middle px-2'><PedigreeCard dog={paternalGGS_D} /></td>
+            </tr>
+            {/* Row 3: Paternal Great-Granddam Sire */}
+            <tr style={{ height: '150px' }}>
+              <td rowSpan={2} className='align-middle px-2'><PedigreeCard dog={paternalGranddam} /></td>
+              <td rowSpan={2} className='relative w-12'>
+                <div className='absolute left-0 top-1/2 w-full h-0.5 bg-gray-400' />
+                <div className='absolute left-0 top-1/4 bottom-1/4 w-0.5 bg-gray-400' />
+              </td>
+              <td className='align-middle px-2'><PedigreeCard dog={paternalGGD_S} /></td>
+            </tr>
+            {/* Row 4: Paternal Great-Granddam Dam */}
+            <tr style={{ height: '150px' }}>
+              <td className='align-middle px-2'><PedigreeCard dog={paternalGGD_D} /></td>
+            </tr>
+            {/* Row 5: Maternal Great-Grandsire Sire */}
+            <tr style={{ height: '150px' }}>
+              <td rowSpan={4} className='align-middle px-2'><PedigreeCard dog={dam} /></td>
+              <td rowSpan={4} className='relative w-12'>
+                <div className='absolute left-0 top-1/2 w-full h-0.5 bg-gray-400' />
+                <div className='absolute left-0 top-1/4 bottom-1/4 w-0.5 bg-gray-400' />
+              </td>
+              <td rowSpan={2} className='align-middle px-2'><PedigreeCard dog={maternalGrandsire} /></td>
+              <td rowSpan={2} className='relative w-12'>
+                <div className='absolute left-0 top-1/2 w-full h-0.5 bg-gray-400' />
+                <div className='absolute left-0 top-1/4 bottom-1/4 w-0.5 bg-gray-400' />
+              </td>
+              <td className='align-middle px-2'><PedigreeCard dog={maternalGGS_S} /></td>
+            </tr>
+            {/* Row 6: Maternal Great-Grandsire Dam */}
+            <tr style={{ height: '150px' }}>
+              <td className='align-middle px-2'><PedigreeCard dog={maternalGGS_D} /></td>
+            </tr>
+            {/* Row 7: Maternal Great-Granddam Sire */}
+            <tr style={{ height: '150px' }}>
+              <td rowSpan={2} className='align-middle px-2'><PedigreeCard dog={maternalGranddam} /></td>
+              <td rowSpan={2} className='relative w-12'>
+                <div className='absolute left-0 top-1/2 w-full h-0.5 bg-gray-400' />
+                <div className='absolute left-0 top-1/4 bottom-1/4 w-0.5 bg-gray-400' />
+              </td>
+              <td className='align-middle px-2'><PedigreeCard dog={maternalGGD_S} /></td>
+            </tr>
+            {/* Row 8: Maternal Great-Granddam Dam */}
+            <tr style={{ height: '150px' }}>
+              <td className='align-middle px-2'><PedigreeCard dog={maternalGGD_D} /></td>
+            </tr>
+          </tbody>
+        </table>
 
         {/* Legend */}
         <div className='mt-8 pt-6 border-t flex gap-6 text-sm'>

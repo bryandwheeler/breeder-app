@@ -250,6 +250,21 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
+    // Litter care and workflow tasks - scoped to breeder
+    match /litterTasks/{taskId} {
+      // Breeder (or admin) can read their own litter tasks
+      allow read: if isAuthenticated() &&
+        (resource.data.breederId == request.auth.uid || isAdmin());
+
+      // Creating tasks (e.g., from templates) must set breederId to the caller
+      allow create: if isAuthenticated() &&
+        request.resource.data.breederId == request.auth.uid;
+
+      // Updating or deleting tasks is allowed for the owning breeder or admin
+      allow update, delete: if isAuthenticated() &&
+        (resource.data.breederId == request.auth.uid || isAdmin());
+    }
+
     // Audit logs - any authenticated user can write logs, only admins can read
     match /audit_logs/{logId} {
       // Allow any authenticated user to create audit log entries

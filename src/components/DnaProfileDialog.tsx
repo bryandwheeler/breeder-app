@@ -580,7 +580,7 @@ export function DnaProfileDialog({ open, setOpen, dnaProfile, onSave }: DnaProfi
 }
 
 // Display component for showing DNA profile data
-export function DnaProfileDisplay({ profile }: { profile: DnaProfile }) {
+export function DnaProfileDisplay({ dnaProfile }: { dnaProfile: DnaProfile }) {
   const getResultBadge = (result?: string) => {
     if (!result || result === 'not_tested') return null;
     switch (result) {
@@ -598,29 +598,29 @@ export function DnaProfileDisplay({ profile }: { profile: DnaProfile }) {
     }
   };
 
-  const hasCoatColorData = profile.coatColor && Object.values(profile.coatColor).some(v => v);
-  const hasCoatTypeData = profile.coatType && Object.values(profile.coatType).some(v => v);
-  const hasHealthData = profile.healthConditions && Object.keys(profile.healthConditions).length > 0;
-  const hasTraitData = profile.performanceTraits && Object.values(profile.performanceTraits).some(v => v);
-  const hasBodyData = profile.bodyFeatures && Object.values(profile.bodyFeatures).some(v => v);
+  const hasCoatColorData = dnaProfile.coatColor && Object.values(dnaProfile.coatColor).some(v => v);
+  const hasCoatTypeData = dnaProfile.coatType && Object.values(dnaProfile.coatType).some(v => v);
+  const hasHealthData = dnaProfile.healthConditions && Object.keys(dnaProfile.healthConditions).length > 0;
+  const hasTraitData = dnaProfile.performanceTraits && Object.values(dnaProfile.performanceTraits).some(v => v);
+  const hasBodyData = dnaProfile.bodyFeatures && Object.values(dnaProfile.bodyFeatures).some(v => v);
 
   return (
     <div className="space-y-6">
       {/* Provider Info */}
-      {(profile.provider || profile.testDate || profile.profileId) && (
+      {(dnaProfile.provider || dnaProfile.testDate || dnaProfile.profileId) && (
         <div className="flex gap-4 text-sm">
-          {profile.provider && <div><strong>Provider:</strong> {profile.provider}</div>}
-          {profile.testDate && <div><strong>Test Date:</strong> {profile.testDate}</div>}
-          {profile.profileId && <div><strong>Profile ID:</strong> {profile.profileId}</div>}
+          {dnaProfile.provider && <div><strong>Provider:</strong> {dnaProfile.provider}</div>}
+          {dnaProfile.testDate && <div><strong>Test Date:</strong> {dnaProfile.testDate}</div>}
+          {dnaProfile.profileId && <div><strong>Profile ID:</strong> {dnaProfile.profileId}</div>}
         </div>
       )}
 
       {/* Breed Composition */}
-      {profile.breedComposition && profile.breedComposition.length > 0 && (
+      {dnaProfile.breedComposition && dnaProfile.breedComposition.length > 0 && (
         <div>
           <h4 className="font-semibold mb-2">Breed Composition</h4>
           <div className="space-y-1">
-            {profile.breedComposition.map((breed, i) => (
+            {dnaProfile.breedComposition.map((breed, i) => (
               <div key={i} className="flex justify-between text-sm">
                 <span>{breed.breed}</span>
                 <Badge variant="outline">{breed.percentage}%</Badge>
@@ -635,16 +635,16 @@ export function DnaProfileDisplay({ profile }: { profile: DnaProfile }) {
         <div>
           <h4 className="font-semibold mb-2">Coat Color Genetics</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-            {profile.coatColor?.E && <div><strong>E Locus:</strong> {profile.coatColor.E}</div>}
-            {profile.coatColor?.K && <div><strong>K Locus:</strong> {profile.coatColor.K}</div>}
-            {profile.coatColor?.A && <div><strong>A Locus:</strong> {profile.coatColor.A}</div>}
-            {profile.coatColor?.B && <div><strong>B Locus:</strong> {profile.coatColor.B}</div>}
-            {profile.coatColor?.D && <div><strong>D Locus:</strong> {profile.coatColor.D}</div>}
-            {profile.coatColor?.Em && <div><strong>Em Locus:</strong> {profile.coatColor.Em}</div>}
-            {profile.coatColor?.S && <div><strong>S Locus:</strong> {profile.coatColor.S}</div>}
-            {profile.coatColor?.M && <div><strong>M Locus:</strong> {profile.coatColor.M}</div>}
-            {profile.coatColor?.H && <div><strong>H Locus:</strong> {profile.coatColor.H}</div>}
-            {profile.coatColor?.T && <div><strong>T Locus:</strong> {profile.coatColor.T}</div>}
+            {dnaProfile.coatColor?.E && <div><strong>E Locus:</strong> {dnaProfile.coatColor.E}</div>}
+            {dnaProfile.coatColor?.K && <div><strong>K Locus:</strong> {dnaProfile.coatColor.K}</div>}
+            {dnaProfile.coatColor?.A && <div><strong>A Locus:</strong> {dnaProfile.coatColor.A}</div>}
+            {dnaProfile.coatColor?.B && <div><strong>B Locus:</strong> {dnaProfile.coatColor.B}</div>}
+            {dnaProfile.coatColor?.D && <div><strong>D Locus:</strong> {dnaProfile.coatColor.D}</div>}
+            {dnaProfile.coatColor?.Em && <div><strong>Em Locus:</strong> {dnaProfile.coatColor.Em}</div>}
+            {dnaProfile.coatColor?.S && <div><strong>S Locus:</strong> {dnaProfile.coatColor.S}</div>}
+            {dnaProfile.coatColor?.M && <div><strong>M Locus:</strong> {dnaProfile.coatColor.M}</div>}
+            {dnaProfile.coatColor?.H && <div><strong>H Locus:</strong> {dnaProfile.coatColor.H}</div>}
+            {dnaProfile.coatColor?.T && <div><strong>T Locus:</strong> {dnaProfile.coatColor.T}</div>}
           </div>
         </div>
       )}
@@ -654,11 +654,11 @@ export function DnaProfileDisplay({ profile }: { profile: DnaProfile }) {
         <div>
           <h4 className="font-semibold mb-2">Coat Type & Texture</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-            {profile.coatType?.L && <div><strong>Length:</strong> {profile.coatType.L}</div>}
-            {profile.coatType?.R && <div><strong>Curl:</strong> {profile.coatType.R}</div>}
-            {profile.coatType?.I && <div><strong>Furnishings:</strong> {profile.coatType.I}</div>}
-            {profile.coatType?.SD && <div><strong>Shedding:</strong> {profile.coatType.SD}</div>}
-            {profile.coatType?.IC && <div><strong>Improper Coat:</strong> {profile.coatType.IC}</div>}
+            {dnaProfile.coatType?.L && <div><strong>Length:</strong> {dnaProfile.coatType.L}</div>}
+            {dnaProfile.coatType?.R && <div><strong>Curl:</strong> {dnaProfile.coatType.R}</div>}
+            {dnaProfile.coatType?.I && <div><strong>Furnishings:</strong> {dnaProfile.coatType.I}</div>}
+            {dnaProfile.coatType?.SD && <div><strong>Shedding:</strong> {dnaProfile.coatType.SD}</div>}
+            {dnaProfile.coatType?.IC && <div><strong>Improper Coat:</strong> {dnaProfile.coatType.IC}</div>}
           </div>
         </div>
       )}
@@ -668,7 +668,7 @@ export function DnaProfileDisplay({ profile }: { profile: DnaProfile }) {
         <div>
           <h4 className="font-semibold mb-2">Genetic Health Conditions</h4>
           <div className="space-y-1">
-            {Object.entries(profile.healthConditions || {}).map(([condition, result]) => (
+            {Object.entries(dnaProfile.healthConditions || {}).map(([condition, result]) => (
               result !== 'not_tested' && (
                 <div key={condition} className="flex justify-between items-center text-sm">
                   <span>{condition}</span>
@@ -685,15 +685,15 @@ export function DnaProfileDisplay({ profile }: { profile: DnaProfile }) {
         <div>
           <h4 className="font-semibold mb-2">Performance & Behavior Traits</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-            {profile.performanceTraits?.athleticism && <div><strong>Athleticism:</strong> {profile.performanceTraits.athleticism}</div>}
-            {profile.performanceTraits?.appetite && <div><strong>Appetite:</strong> {profile.performanceTraits.appetite}</div>}
-            {profile.performanceTraits?.biddability && <div><strong>Biddability:</strong> {profile.performanceTraits.biddability}</div>}
-            {profile.performanceTraits?.boldness && <div><strong>Boldness:</strong> {profile.performanceTraits.boldness}</div>}
-            {profile.performanceTraits?.calmness && <div><strong>Calmness:</strong> {profile.performanceTraits.calmness}</div>}
-            {profile.performanceTraits?.dogSociability && <div><strong>Dog Sociability:</strong> {profile.performanceTraits.dogSociability}</div>}
-            {profile.performanceTraits?.humanSociability && <div><strong>Human Sociability:</strong> {profile.performanceTraits.humanSociability}</div>}
-            {profile.performanceTraits?.predatoryBehavior && <div><strong>Predatory:</strong> {profile.performanceTraits.predatoryBehavior}</div>}
-            {profile.performanceTraits?.wanderlust && <div><strong>Wanderlust:</strong> {profile.performanceTraits.wanderlust}</div>}
+            {dnaProfile.performanceTraits?.athleticism && <div><strong>Athleticism:</strong> {dnaProfile.performanceTraits.athleticism}</div>}
+            {dnaProfile.performanceTraits?.appetite && <div><strong>Appetite:</strong> {dnaProfile.performanceTraits.appetite}</div>}
+            {dnaProfile.performanceTraits?.biddability && <div><strong>Biddability:</strong> {dnaProfile.performanceTraits.biddability}</div>}
+            {dnaProfile.performanceTraits?.boldness && <div><strong>Boldness:</strong> {dnaProfile.performanceTraits.boldness}</div>}
+            {dnaProfile.performanceTraits?.calmness && <div><strong>Calmness:</strong> {dnaProfile.performanceTraits.calmness}</div>}
+            {dnaProfile.performanceTraits?.dogSociability && <div><strong>Dog Sociability:</strong> {dnaProfile.performanceTraits.dogSociability}</div>}
+            {dnaProfile.performanceTraits?.humanSociability && <div><strong>Human Sociability:</strong> {dnaProfile.performanceTraits.humanSociability}</div>}
+            {dnaProfile.performanceTraits?.predatoryBehavior && <div><strong>Predatory:</strong> {dnaProfile.performanceTraits.predatoryBehavior}</div>}
+            {dnaProfile.performanceTraits?.wanderlust && <div><strong>Wanderlust:</strong> {dnaProfile.performanceTraits.wanderlust}</div>}
           </div>
         </div>
       )}
@@ -703,47 +703,47 @@ export function DnaProfileDisplay({ profile }: { profile: DnaProfile }) {
         <div>
           <h4 className="font-semibold mb-2">Body Features</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-            {profile.bodyFeatures?.tailLength && <div><strong>Tail:</strong> {profile.bodyFeatures.tailLength}</div>}
-            {profile.bodyFeatures?.earType && <div><strong>Ears:</strong> {profile.bodyFeatures.earType}</div>}
-            {profile.bodyFeatures?.muzzleLength && <div><strong>Muzzle:</strong> {profile.bodyFeatures.muzzleLength}</div>}
-            {profile.bodyFeatures?.legLength && <div><strong>Legs:</strong> {profile.bodyFeatures.legLength}</div>}
-            {profile.bodyFeatures?.bodySize && <div><strong>Size:</strong> {profile.bodyFeatures.bodySize}</div>}
-            {profile.bodyFeatures?.backType && <div><strong>Back:</strong> {profile.bodyFeatures.backType}</div>}
+            {dnaProfile.bodyFeatures?.tailLength && <div><strong>Tail:</strong> {dnaProfile.bodyFeatures.tailLength}</div>}
+            {dnaProfile.bodyFeatures?.earType && <div><strong>Ears:</strong> {dnaProfile.bodyFeatures.earType}</div>}
+            {dnaProfile.bodyFeatures?.muzzleLength && <div><strong>Muzzle:</strong> {dnaProfile.bodyFeatures.muzzleLength}</div>}
+            {dnaProfile.bodyFeatures?.legLength && <div><strong>Legs:</strong> {dnaProfile.bodyFeatures.legLength}</div>}
+            {dnaProfile.bodyFeatures?.bodySize && <div><strong>Size:</strong> {dnaProfile.bodyFeatures.bodySize}</div>}
+            {dnaProfile.bodyFeatures?.backType && <div><strong>Back:</strong> {dnaProfile.bodyFeatures.backType}</div>}
           </div>
         </div>
       )}
 
       {/* Medical */}
-      {profile.medical && (
+      {dnaProfile.medical && (
         <div>
           <h4 className="font-semibold mb-2">Medical Information</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-            {profile.medical.bloodType && <div><strong>Blood Type:</strong> {profile.medical.bloodType}</div>}
-            {profile.medical.mdr1 && profile.medical.mdr1 !== 'not_tested' && (
+            {dnaProfile.medical.bloodType && <div><strong>Blood Type:</strong> {dnaProfile.medical.bloodType}</div>}
+            {dnaProfile.medical.mdr1 && dnaProfile.medical.mdr1 !== 'not_tested' && (
               <div className="flex gap-2 items-center">
-                <strong>MDR1:</strong> {getResultBadge(profile.medical.mdr1)}
+                <strong>MDR1:</strong> {getResultBadge(dnaProfile.medical.mdr1)}
               </div>
             )}
-            {profile.medical.dmGenotype && <div><strong>DM Genotype:</strong> {profile.medical.dmGenotype}</div>}
+            {dnaProfile.medical.dmGenotype && <div><strong>DM Genotype:</strong> {dnaProfile.medical.dmGenotype}</div>}
           </div>
         </div>
       )}
 
       {/* COI */}
-      {profile.coi && (
+      {dnaProfile.coi && (
         <div>
           <h4 className="font-semibold mb-2">Coefficient of Inbreeding</h4>
           <div className="text-sm">
-            <strong>{profile.coi}%</strong>
+            <strong>{dnaProfile.coi}%</strong>
           </div>
         </div>
       )}
 
       {/* Notes */}
-      {profile.notes && (
+      {dnaProfile.notes && (
         <div>
           <h4 className="font-semibold mb-2">Notes</h4>
-          <p className="text-sm text-muted-foreground">{profile.notes}</p>
+          <p className="text-sm text-muted-foreground">{dnaProfile.notes}</p>
         </div>
       )}
     </div>

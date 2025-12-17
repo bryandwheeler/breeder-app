@@ -137,6 +137,22 @@
         { "fieldPath": "studId", "order": "ASCENDING" },
         { "fieldPath": "scheduledDate", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "litterTasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "breederId", "order": "ASCENDING" },
+        { "fieldPath": "dueDate", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "litterTasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "litterId", "order": "ASCENDING" },
+        { "fieldPath": "dueDate", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

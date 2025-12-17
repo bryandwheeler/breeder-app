@@ -591,6 +591,10 @@ export interface Dog {
   // Forecast Management
   skippedHeatDates?: string[]; // Array of ISO date strings for heat cycles to skip in forecast
 
+  // Market/Sale Information
+  marketStatus?: 'available' | 'reserved' | 'sold' | 'not_for_sale';
+  salePrice?: number;
+
   notes?: string;
 }
 
@@ -1111,6 +1115,20 @@ export interface CommunicationNote {
 }
 
 // CRM - Customer Relationship Management
+export type ContactRole =
+  | 'prospect'
+  | 'customer'
+  | 'stud_job_customer'
+  | 'vet'
+  | 'breeder'
+  | 'groomer'
+  | 'boarding'
+  | 'trainer'
+  | 'transport'
+  | 'walker'
+  | 'owner'
+  | 'guardian';
+
 export interface Customer {
   id: string;
   userId: string; // Breeder's user ID
@@ -1135,6 +1153,9 @@ export interface Customer {
     | 'stud_client' // Client who uses your stud services
     | 'referral_source';
   status: 'active' | 'inactive' | 'archived';
+
+  // Contact roles (one contact can play multiple roles, e.g. buyer + guardian + vet)
+  contactRoles?: ContactRole[];
 
   // Tags & Segmentation
   tags?: string[]; // e.g., "VIP", "repeat buyer", "influencer", "vet", etc.
@@ -1168,6 +1189,16 @@ export interface Customer {
   // Social Media
   facebook?: string;
   instagram?: string;
+
+  // Instagram Messaging Integration
+  instagramSenderId?: string; // Instagram-scoped user ID (IGSID) for DM integration
+  instagramUsername?: string; // Actual Instagram handle
+  instagramProfilePicture?: string;
+
+  // Messaging & Conversations
+  conversationIds?: string[]; // References to Conversation records from messaging system
+  lastMessageAt?: string; // Last time we received or sent a message
+  unreadMessageCount?: number; // Count of unread messages across all channels
 
   // Notes & History
   notes?: string;

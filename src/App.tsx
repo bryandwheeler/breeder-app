@@ -24,6 +24,8 @@ import { BuyerPortal } from '@/pages/BuyerPortal';
 import { HealthRecords } from '@/pages/HealthRecords';
 import { StudJobsPage } from '@/pages/StudJobsPage';
 import { LitterForecast } from '@/pages/LitterForecast';
+import { BreedingPlanner } from '@/pages/BreedingPlanner';
+import { CustomerAnalytics } from '@/pages/CustomerAnalytics';
 import { Help } from '@/pages/Help';
 import { Login } from '@/pages/Login';
 import { Signup } from '@/pages/Signup';
@@ -32,6 +34,8 @@ import { AdminSettings } from '@/pages/AdminSettings';
 import { AdminCustomers } from '@/pages/AdminCustomers';
 import { GmailCallback } from '@/pages/auth/GmailCallback';
 import { OutlookCallback } from '@/pages/auth/OutlookCallback';
+import { MessagingInbox } from '@/pages/MessagingInbox';
+import { InstagramCallback } from '@/pages/InstagramCallback';
 import { DogFormDialog } from '@/components/DogFormDialog';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -209,6 +213,10 @@ function AppContent() {
                 path='/auth/outlook/callback'
                 element={<OutlookCallback />}
               />
+              <Route
+                path='/auth/instagram/callback'
+                element={<InstagramCallback />}
+              />
 
               {/* Public routes */}
               <Route path='/website/:userId' element={<PublicWebsite />} />
@@ -322,6 +330,14 @@ function AppContent() {
                 }
               />
               <Route
+                path='/breeding-planner'
+                element={
+                  <ProtectedRoute>
+                    <BreedingPlanner />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path='/inquiries'
                 element={
                   <ProtectedRoute>
@@ -350,6 +366,22 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <Customers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/customer-analytics'
+                element={
+                  <ProtectedRoute>
+                    <CustomerAnalytics />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/messaging'
+                element={
+                  <ProtectedRoute>
+                    <MessagingInbox />
                   </ProtectedRoute>
                 }
               />

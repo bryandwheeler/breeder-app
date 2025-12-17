@@ -20,6 +20,7 @@ import {
   HelpCircle,
   Briefcase,
   TrendingUp,
+  Calculator,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
@@ -58,6 +59,7 @@ const breederNavigation: NavGroup[] = [
     items: [
       { name: 'Health Records', path: '/health', icon: FileText },
       { name: 'Pedigrees', path: '/pedigrees', icon: Users },
+      { name: 'Breeding Planner', path: '/breeding-planner', icon: Calculator },
       { name: 'Stud Jobs', path: '/stud-jobs', icon: Briefcase },
     ],
   },
@@ -65,7 +67,12 @@ const breederNavigation: NavGroup[] = [
     title: 'Business',
     items: [
       { name: 'Litter Forecast', path: '/forecast', icon: TrendingUp },
-      { name: 'Customers', path: '/customers', icon: Users },
+      { name: 'Contacts', path: '/customers', icon: Users },
+      {
+        name: 'Customer Analytics',
+        path: '/customer-analytics',
+        icon: BarChart3,
+      },
       { name: 'Waitlist', path: '/waitlist', icon: ListOrdered },
       { name: 'Inquiries', path: '/inquiries', icon: MessageSquare },
       { name: 'Connections', path: '/connections', icon: GitFork },
@@ -91,7 +98,7 @@ const adminNavigation: NavGroup[] = [
     title: 'Administration',
     items: [
       { name: 'Admin Dashboard', path: '/admin', icon: LayoutDashboard },
-      { name: 'Customers', path: '/admin/customers', icon: Users },
+      { name: 'Contacts', path: '/admin/customers', icon: Users },
       { name: 'Admin Settings', path: '/admin/settings', icon: Settings },
     ],
   },

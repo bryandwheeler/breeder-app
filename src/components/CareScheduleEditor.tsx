@@ -5,10 +5,43 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCareTemplateStore, CareTemplate, DailyRoutineTemplate } from '@/store/careTemplateStore';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { ToastAction } from '@/components/ui/toast';
+import { useToast } from '@/hooks/use-toast';
+import {
+  useCareTemplateStore,
+  CareTemplate,
+  DailyRoutineTemplate,
+} from '@/store/careTemplateStore';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Trash2, GripVertical, RotateCcw, Save, Sun, Moon } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  GripVertical,
+  RotateCcw,
+  Save,
+  Sun,
+  Moon,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -39,13 +72,10 @@ function SortableTaskItem({
   onUpdate: (index: number, updates: Partial<CareTemplate>) => void;
   onRemove: (index: number) => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: task.index.toString() });
+  const [expanded, setExpanded] = useState(false);
+
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: task.index.toString() });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -53,50 +83,119 @@ function SortableTaskItem({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className='flex gap-3 items-start p-3 border rounded-lg bg-muted/30'>
-      <div {...attributes} {...listeners} className='pt-2 cursor-move opacity-50 hover:opacity-100'>
-        <GripVertical className='h-5 w-5' />
-      </div>
-      <div className='flex-1 space-y-2'>
-        <div className='grid grid-cols-2 gap-3'>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className='border rounded-lg bg-muted/30'
+    >
+      <div className='flex items-start gap-3 p-3'>
+        <div
+          {...attributes}
+          {...listeners}
+          className='pt-1 cursor-move opacity-50 hover:opacity-100'
+        >
+          <GripVertical className='h-5 w-5' />
+        </div>
+
+        <div className='flex-1 grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 items-center'>
           <div>
-            <Label className='text-xs'>Task Name</Label>
+            <Label className='text-[10px] uppercase tracking-wide text-muted-foreground'>
+              Task
+            </Label>
             <Input
               value={task.name}
               onChange={(e) => onUpdate(task.index, { name: e.target.value })}
               placeholder='e.g., First vaccination'
+              className='h-8 text-xs'
             />
           </div>
-          <div>
-            <Label className='text-xs'>Week Due</Label>
+          <div className='w-24'>
+            <Label className='text-[10px] uppercase tracking-wide text-muted-foreground'>
+              Week
+            </Label>
             <Input
               type='number'
               min='0'
               max='12'
               value={task.weekDue}
-              onChange={(e) => onUpdate(task.index, { weekDue: parseInt(e.target.value) || 0 })}
+              onChange={(e) =>
+                onUpdate(task.index, { weekDue: parseInt(e.target.value) || 0 })
+              }
+              className='h-8 text-xs'
             />
           </div>
+          <div className='flex items-center justify-end gap-2'>
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon'
+              onClick={() => setExpanded((prev) => !prev)}
+              className='h-8 w-8'
+            >
+              {expanded ? (
+                <ChevronUp className='h-4 w-4' />
+              ) : (
+                <ChevronDown className='h-4 w-4' />
+              )}
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  className='text-destructive hover:text-destructive h-8 w-8'
+                >
+                  <Trash2 className='h-4 w-4' />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete task?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will remove this weekly care task from your template.
+                    This change isn&apos;t saved to future litters until you
+                    click &quot;Save Schedule&quot;.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onRemove(task.index)}>
+                    Delete task
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
-        <div>
+      </div>
+
+      {!expanded && task.description && (
+        <div className='px-3 pb-3 pt-0'>
+          <button
+            type='button'
+            className='w-full text-left text-[11px] text-muted-foreground truncate hover:text-foreground'
+            onClick={() => setExpanded(true)}
+          >
+            {task.description}
+          </button>
+        </div>
+      )}
+
+      {expanded && (
+        <div className='px-3 pb-3 pt-0'>
           <Label className='text-xs'>Description (optional)</Label>
           <Textarea
             value={task.description || ''}
-            onChange={(e) => onUpdate(task.index, { description: e.target.value })}
+            onChange={(e) =>
+              onUpdate(task.index, { description: e.target.value })
+            }
             placeholder='Additional details about this task'
             rows={2}
+            className='mt-1 text-xs'
           />
         </div>
-      </div>
-      <Button
-        type='button'
-        variant='ghost'
-        size='icon'
-        onClick={() => onRemove(task.index)}
-        className='text-destructive hover:text-destructive'
-      >
-        <Trash2 className='h-4 w-4' />
-      </Button>
+      )}
     </div>
   );
 }
@@ -113,13 +212,10 @@ function SortableDailyRoutineItem({
   onUpdate: (index: number, updates: Partial<DailyRoutineTemplate>) => void;
   onRemove: (index: number) => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: routine.index.toString() });
+  const [expanded, setExpanded] = useState(false);
+
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: routine.index.toString() });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -127,29 +223,45 @@ function SortableDailyRoutineItem({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className='flex gap-3 items-start p-3 border rounded-lg bg-muted/30'>
-      <div {...attributes} {...listeners} className='pt-2 cursor-move opacity-50 hover:opacity-100'>
-        <GripVertical className='h-5 w-5' />
-      </div>
-      <div className='flex-1 space-y-2'>
-        <div className='grid grid-cols-3 gap-3'>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className='border rounded-lg bg-muted/30'
+    >
+      <div className='flex items-start gap-3 p-3'>
+        <div
+          {...attributes}
+          {...listeners}
+          className='pt-1 cursor-move opacity-50 hover:opacity-100'
+        >
+          <GripVertical className='h-5 w-5' />
+        </div>
+
+        <div className='flex-1 grid grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-3 items-center'>
           <div>
-            <Label className='text-xs'>Routine Name</Label>
+            <Label className='text-[10px] uppercase tracking-wide text-muted-foreground'>
+              Routine
+            </Label>
             <Input
               value={routine.name}
-              onChange={(e) => onUpdate(routine.index, { name: e.target.value })}
+              onChange={(e) =>
+                onUpdate(routine.index, { name: e.target.value })
+              }
               placeholder='e.g., Feed puppies'
+              className='h-8 text-xs'
             />
           </div>
-          <div>
-            <Label className='text-xs'>Time of Day</Label>
+          <div className='w-28'>
+            <Label className='text-[10px] uppercase tracking-wide text-muted-foreground'>
+              Time
+            </Label>
             <Select
               value={routine.timeOfDay}
               onValueChange={(value: 'morning' | 'evening' | 'both') =>
                 onUpdate(routine.index, { timeOfDay: value })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className='h-8 text-xs'>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -159,59 +271,176 @@ function SortableDailyRoutineItem({
               </SelectContent>
             </Select>
           </div>
-          <div className='grid grid-cols-2 gap-2'>
-            <div>
-              <Label className='text-xs'>Start Week</Label>
-              <Input
-                type='number'
-                min='0'
-                max='12'
-                value={routine.weekStart}
-                onChange={(e) => onUpdate(routine.index, { weekStart: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-            <div>
-              <Label className='text-xs'>End Week</Label>
-              <Input
-                type='number'
-                min='0'
-                max='12'
-                value={routine.weekEnd || ''}
-                onChange={(e) => onUpdate(routine.index, { weekEnd: e.target.value ? parseInt(e.target.value) : undefined })}
-                placeholder='∞'
-              />
-            </div>
+          <div className='w-20'>
+            <Label className='text-[10px] uppercase tracking-wide text-muted-foreground'>
+              Start wk
+            </Label>
+            <Input
+              type='number'
+              min='0'
+              max='12'
+              value={routine.weekStart}
+              onChange={(e) =>
+                onUpdate(routine.index, {
+                  weekStart: parseInt(e.target.value) || 0,
+                })
+              }
+              className='h-8 text-xs'
+            />
+          </div>
+          <div className='w-20'>
+            <Label className='text-[10px] uppercase tracking-wide text-muted-foreground'>
+              End wk
+            </Label>
+            <Input
+              type='number'
+              min='0'
+              max='12'
+              value={routine.weekEnd || ''}
+              onChange={(e) =>
+                onUpdate(routine.index, {
+                  weekEnd: e.target.value
+                    ? parseInt(e.target.value)
+                    : undefined,
+                })
+              }
+              placeholder='∞'
+              className='h-8 text-xs'
+            />
+          </div>
+          <div className='flex items-center justify-end gap-2'>
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon'
+              onClick={() => setExpanded((prev) => !prev)}
+              className='h-8 w-8'
+            >
+              {expanded ? (
+                <ChevronUp className='h-4 w-4' />
+              ) : (
+                <ChevronDown className='h-4 w-4' />
+              )}
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  className='text-destructive hover:text-destructive h-8 w-8'
+                >
+                  <Trash2 className='h-4 w-4' />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete routine?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will remove this daily routine from your template. This
+                    change isn&apos;t saved to future litters until you click
+                    &quot;Save Schedule&quot;.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onRemove(routine.index)}>
+                    Delete routine
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
-        <div>
+      </div>
+
+      {!expanded && routine.description && (
+        <div className='px-3 pb-3 pt-0'>
+          <button
+            type='button'
+            className='w-full text-left text-[11px] text-muted-foreground truncate hover:text-foreground'
+            onClick={() => setExpanded(true)}
+          >
+            {routine.description}
+          </button>
+        </div>
+      )}
+
+      {expanded && (
+        <div className='px-3 pb-3 pt-0'>
           <Label className='text-xs'>Description (optional)</Label>
           <Textarea
             value={routine.description || ''}
-            onChange={(e) => onUpdate(routine.index, { description: e.target.value })}
+            onChange={(e) =>
+              onUpdate(routine.index, { description: e.target.value })
+            }
             placeholder='Additional details about this routine'
             rows={2}
+            className='mt-1 text-xs'
           />
         </div>
-      </div>
-      <Button
-        type='button'
-        variant='ghost'
-        size='icon'
-        onClick={() => onRemove(routine.index)}
-        className='text-destructive hover:text-destructive'
-      >
-        <Trash2 className='h-4 w-4' />
-      </Button>
+      )}
     </div>
   );
 }
 
 export function CareScheduleEditor() {
   const { currentUser } = useAuth();
-  const { templates, dailyRoutines, loading, loadTemplates, saveTemplates, resetToDefaults } = useCareTemplateStore();
-  const [editableTemplates, setEditableTemplates] = useState<CareTemplate[]>([]);
-  const [editableDailyRoutines, setEditableDailyRoutines] = useState<DailyRoutineTemplate[]>([]);
+  const {
+    templates,
+    dailyRoutines,
+    loading,
+    loadTemplates,
+    saveTemplates,
+    resetToDefaults,
+  } = useCareTemplateStore();
+  const [editableTemplates, setEditableTemplates] = useState<CareTemplate[]>(
+    []
+  );
+  const [editableDailyRoutines, setEditableDailyRoutines] = useState<
+    DailyRoutineTemplate[]
+  >([]);
   const [hasChanges, setHasChanges] = useState(false);
+  const { toast } = useToast();
+
+  type DeletedItem =
+    | { kind: 'weekly'; item: CareTemplate; index: number }
+    | { kind: 'daily'; item: DailyRoutineTemplate; index: number };
+
+  const restoreDeleted = (deleted: DeletedItem) => {
+    if (deleted.kind === 'weekly') {
+      setEditableTemplates((prev) => {
+        const insertIndex = Math.min(deleted.index, prev.length);
+        const updated = [...prev];
+        updated.splice(insertIndex, 0, deleted.item);
+        return updated;
+      });
+    } else {
+      setEditableDailyRoutines((prev) => {
+        const insertIndex = Math.min(deleted.index, prev.length);
+        const updated = [...prev];
+        updated.splice(insertIndex, 0, deleted.item);
+        // Recompute order after reinserting
+        return updated.map((item, idx) => ({ ...item, order: idx + 1 }));
+      });
+    }
+    setHasChanges(true);
+  };
+
+  const showUndoToast = (deleted: DeletedItem) => {
+    toast({
+      title: deleted.kind === 'weekly' ? 'Task deleted' : 'Routine deleted',
+      description: 'You can undo this change before saving the schedule.',
+      action: (
+        <ToastAction
+          altText='Undo delete'
+          onClick={() => restoreDeleted(deleted)}
+        >
+          Undo
+        </ToastAction>
+      ),
+    });
+  };
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -234,18 +463,27 @@ export function CareScheduleEditor() {
   }, [templates, dailyRoutines]);
 
   const handleAddTask = () => {
+    const maxWeek =
+      editableTemplates.length > 0
+        ? Math.max(...editableTemplates.map((t) => t.weekDue ?? 0))
+        : 0;
     const newTask: CareTemplate = {
       name: '',
       description: '',
-      weekDue: 0,
+      weekDue: maxWeek,
     };
     setEditableTemplates([...editableTemplates, newTask]);
     setHasChanges(true);
   };
 
   const handleRemoveTask = (index: number) => {
-    setEditableTemplates(editableTemplates.filter((_, i) => i !== index));
+    const item = editableTemplates[index];
+    if (!item) return;
+
+    const updated = editableTemplates.filter((_, i) => i !== index);
+    setEditableTemplates(updated);
     setHasChanges(true);
+    showUndoToast({ kind: 'weekly', item, index });
   };
 
   const handleUpdateTask = (index: number, updates: Partial<CareTemplate>) => {
@@ -255,11 +493,11 @@ export function CareScheduleEditor() {
     setHasChanges(true);
   };
 
-  const handleAddDailyRoutine = () => {
+  const handleAddDailyRoutine = (timeOfDay: 'morning' | 'evening') => {
     const newRoutine: DailyRoutineTemplate = {
       name: '',
       description: '',
-      timeOfDay: 'morning',
+      timeOfDay,
       weekStart: 0,
       order: editableDailyRoutines.length + 1,
     };
@@ -268,11 +506,23 @@ export function CareScheduleEditor() {
   };
 
   const handleRemoveDailyRoutine = (index: number) => {
-    setEditableDailyRoutines(editableDailyRoutines.filter((_, i) => i !== index));
+    const item = editableDailyRoutines[index];
+    if (!item) return;
+
+    const filtered = editableDailyRoutines.filter((_, i) => i !== index);
+    const updated = filtered.map((routine, idx) => ({
+      ...routine,
+      order: idx + 1,
+    }));
+    setEditableDailyRoutines(updated);
     setHasChanges(true);
+    showUndoToast({ kind: 'daily', item, index });
   };
 
-  const handleUpdateDailyRoutine = (index: number, updates: Partial<DailyRoutineTemplate>) => {
+  const handleUpdateDailyRoutine = (
+    index: number,
+    updates: Partial<DailyRoutineTemplate>
+  ) => {
     const updated = [...editableDailyRoutines];
     updated[index] = { ...updated[index], ...updates };
     setEditableDailyRoutines(updated);
@@ -317,11 +567,17 @@ export function CareScheduleEditor() {
     if (!currentUser) return;
 
     // Filter out empty tasks
-    const validTemplates = editableTemplates.filter((t) => t.name.trim() !== '');
-    const validDailyRoutines = editableDailyRoutines.filter((r) => r.name.trim() !== '');
+    const validTemplates = editableTemplates.filter(
+      (t) => t.name.trim() !== ''
+    );
+    const validDailyRoutines = editableDailyRoutines.filter(
+      (r) => r.name.trim() !== ''
+    );
 
     // Sort tasks by week
-    const sortedTemplates = validTemplates.sort((a, b) => a.weekDue - b.weekDue);
+    const sortedTemplates = validTemplates.sort(
+      (a, b) => a.weekDue - b.weekDue
+    );
 
     // Sort daily routines by order
     const sortedRoutines = validDailyRoutines.sort((a, b) => a.order - b.order);
@@ -339,7 +595,11 @@ export function CareScheduleEditor() {
   };
 
   const handleResetToDefaults = () => {
-    if (confirm('Are you sure you want to reset to the default care schedule? This will discard all your custom changes.')) {
+    if (
+      confirm(
+        'Are you sure you want to reset to the default care schedule? This will discard all your custom changes.'
+      )
+    ) {
       resetToDefaults();
       setHasChanges(true);
     }
@@ -376,7 +636,8 @@ export function CareScheduleEditor() {
         <div>
           <h3 className='text-lg font-semibold'>Litter Care Schedule</h3>
           <p className='text-sm text-muted-foreground'>
-            Customize the default care tasks and daily routines for new litters. Drag to reorder tasks.
+            Customize the default care tasks and daily routines for new litters.
+            Drag to reorder tasks.
           </p>
         </div>
         <div className='flex gap-2'>
@@ -384,7 +645,11 @@ export function CareScheduleEditor() {
             <RotateCcw className='h-4 w-4 mr-2' />
             Reset to Defaults
           </Button>
-          <Button onClick={handleSave} disabled={!hasChanges || loading} size='sm'>
+          <Button
+            onClick={handleSave}
+            disabled={!hasChanges || loading}
+            size='sm'
+          >
             <Save className='h-4 w-4 mr-2' />
             Save Schedule
           </Button>
@@ -399,7 +664,11 @@ export function CareScheduleEditor() {
 
         {/* Weekly Tasks Tab */}
         <TabsContent value='weekly' className='space-y-6'>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleTaskDragEnd}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleTaskDragEnd}
+          >
             <div className='space-y-6'>
               {weeks.map((week) => (
                 <Card key={week} className='p-4'>
@@ -409,7 +678,10 @@ export function CareScheduleEditor() {
                     </div>
                     Week {week} {week === 0 && '(Birth)'}
                   </h4>
-                  <SortableContext items={tasksByWeek[week].map((t) => t.index.toString())} strategy={verticalListSortingStrategy}>
+                  <SortableContext
+                    items={tasksByWeek[week].map((t) => t.index.toString())}
+                    strategy={verticalListSortingStrategy}
+                  >
                     <div className='space-y-3'>
                       {tasksByWeek[week].map((task) => (
                         <SortableTaskItem
@@ -435,14 +707,21 @@ export function CareScheduleEditor() {
 
         {/* Daily Routines Tab */}
         <TabsContent value='daily' className='space-y-6'>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleRoutineDragEnd}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleRoutineDragEnd}
+          >
             {/* Morning Routines */}
             <Card className='p-4'>
               <h4 className='font-semibold mb-4 flex items-center gap-2'>
                 <Sun className='h-5 w-5 text-amber-500' />
                 Morning Routines
               </h4>
-              <SortableContext items={morningRoutines.map((r) => r.index.toString())} strategy={verticalListSortingStrategy}>
+              <SortableContext
+                items={morningRoutines.map((r) => r.index.toString())}
+                strategy={verticalListSortingStrategy}
+              >
                 <div className='space-y-3'>
                   {morningRoutines.length > 0 ? (
                     morningRoutines.map((routine) => (
@@ -459,6 +738,16 @@ export function CareScheduleEditor() {
                       No morning routines yet. Add one below.
                     </p>
                   )}
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    className='w-full mt-1'
+                    onClick={() => handleAddDailyRoutine('morning')}
+                  >
+                    <Plus className='h-4 w-4 mr-2' />
+                    Add Morning Routine
+                  </Button>
                 </div>
               </SortableContext>
             </Card>
@@ -469,7 +758,10 @@ export function CareScheduleEditor() {
                 <Moon className='h-5 w-5 text-blue-500' />
                 Evening Routines
               </h4>
-              <SortableContext items={eveningRoutines.map((r) => r.index.toString())} strategy={verticalListSortingStrategy}>
+              <SortableContext
+                items={eveningRoutines.map((r) => r.index.toString())}
+                strategy={verticalListSortingStrategy}
+              >
                 <div className='space-y-3'>
                   {eveningRoutines.length > 0 ? (
                     eveningRoutines.map((routine) => (
@@ -486,22 +778,28 @@ export function CareScheduleEditor() {
                       No evening routines yet. Add one below.
                     </p>
                   )}
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    className='w-full mt-1'
+                    onClick={() => handleAddDailyRoutine('evening')}
+                  >
+                    <Plus className='h-4 w-4 mr-2' />
+                    Add Evening Routine
+                  </Button>
                 </div>
               </SortableContext>
             </Card>
           </DndContext>
-
-          <Button onClick={handleAddDailyRoutine} variant='outline' className='w-full'>
-            <Plus className='h-4 w-4 mr-2' />
-            Add New Daily Routine
-          </Button>
         </TabsContent>
       </Tabs>
 
       {hasChanges && (
         <div className='p-4 bg-yellow-50 border border-yellow-200 rounded-lg'>
           <p className='text-sm text-yellow-800'>
-            You have unsaved changes. Click "Save Schedule" to apply your changes to future litters.
+            You have unsaved changes. Click "Save Schedule" to apply your
+            changes to future litters.
           </p>
         </div>
       )}

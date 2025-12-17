@@ -1,7 +1,7 @@
-// CRM - Customer database management
+// CRM - Contact management
 import { useState, useMemo } from 'react';
 import { useCrmStore } from '@/store/crmStore';
-import { Customer } from '@/types/dog';
+import { Customer, ContactRole } from '@/types/dog';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -57,7 +57,7 @@ export function Customers() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('active');
   const [tagFilter, setTagFilter] = useState<string>('all');
 
@@ -82,8 +82,11 @@ export function Customers() {
         if (!matchesName && !matchesEmail && !matchesPhone) return false;
       }
 
-      // Type filter
-      if (typeFilter !== 'all' && customer.type !== typeFilter) return false;
+      // Contact role filter
+      if (roleFilter !== 'all') {
+        const roles = getContactRoles(customer);
+        if (!roles.includes(roleFilter as ContactRole)) return false;
+      }
 
       // Status filter
       if (statusFilter !== 'all' && customer.status !== statusFilter)
@@ -95,7 +98,7 @@ export function Customers() {
 
       return true;
     });
-  }, [customers, searchTerm, typeFilter, statusFilter, tagFilter]);
+  }, [customers, searchTerm, roleFilter, statusFilter, tagFilter]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -125,25 +128,60 @@ export function Customers() {
     };
   }, [customers]);
 
-  const getTypeColor = (type: Customer['type']) => {
-    switch (type) {
+  const getContactRoles = (customer: Customer): ContactRole[] => {
+    const roles = new Set<ContactRole>();
+
+    // Prefer explicitly stored roles when present
+    (customer.contactRoles || []).forEach((role) => roles.add(role));
+
+    // Backfill roles from legacy customer.type for older records
+    switch (customer.type) {
       case 'prospect':
-        return 'bg-yellow-500';
       case 'waitlist':
-        return 'bg-blue-500';
-      case 'buyer':
-        return 'bg-green-500';
-      case 'past_buyer':
-        return 'bg-purple-500';
-      case 'guardian':
-        return 'bg-cyan-500';
-      case 'stud_client':
-        return 'bg-pink-500';
       case 'referral_source':
-        return 'bg-orange-500';
+        roles.add('prospect');
+        break;
+      case 'buyer':
+      case 'past_buyer':
+        roles.add('customer');
+        break;
+      case 'guardian':
+        roles.add('customer');
+        roles.add('guardian');
+        break;
+      case 'stud_client':
+        roles.add('customer');
+        roles.add('stud_job_customer');
+        break;
       default:
-        return 'bg-gray-500';
+        break;
     }
+
+    // Infer service-provider roles from tags
+    (customer.tags || []).forEach((tag) => {
+      const normalized = tag.toLowerCase();
+      if (normalized === 'vet' || normalized === 'veterinarian') {
+        roles.add('vet');
+      } else if (normalized === 'breeder') {
+        roles.add('breeder');
+      } else if (normalized === 'groomer') {
+        roles.add('groomer');
+      } else if (normalized === 'boarding' || normalized === 'boarder') {
+        roles.add('boarding');
+      } else if (normalized === 'trainer') {
+        roles.add('trainer');
+      } else if (normalized === 'transport') {
+        roles.add('transport');
+      } else if (normalized === 'walker' || normalized === 'dog_walker') {
+        roles.add('walker');
+      } else if (normalized === 'owner') {
+        roles.add('owner');
+      } else if (normalized === 'guardian') {
+        roles.add('guardian');
+      }
+    });
+
+    return Array.from(roles);
   };
 
   const getStatusColor = (status: Customer['status']) => {
@@ -174,14 +212,14 @@ export function Customers() {
       {/* Header */}
       <div className='flex items-center justify-between'>
         <div>
-          <h1 className='text-3xl font-bold'>Customer Database</h1>
+          <h1 className='text-3xl font-bold'>Contacts</h1>
           <p className='text-muted-foreground'>
-            Manage all customer relationships and interactions
+            Manage all people and businesses connected to your breeding program
           </p>
         </div>
         <Button onClick={() => setAddDialogOpen(true)}>
           <UserPlus className='h-4 w-4 mr-2' />
-          Add Customer
+          Add Contact
         </Button>
       </div>
 
@@ -190,7 +228,7 @@ export function Customers() {
         <Card className='p-4'>
           <div className='flex items-center gap-2 text-muted-foreground mb-1'>
             <User className='h-4 w-4' />
-            <div className='text-sm'>Total Customers</div>
+            <div className='text-sm'>Total Contacts</div>
           </div>
           <div className='text-2xl font-bold'>{stats.total}</div>
         </Card>
@@ -250,19 +288,26 @@ export function Customers() {
           </div>
 
           <div className='flex gap-2'>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className='w-[160px]'>
-                <SelectValue placeholder='Type' />
+                <SelectValue placeholder='Contact Type' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='all'>All Types</SelectItem>
+                <SelectItem value='all'>All Contact Types</SelectItem>
                 <SelectItem value='prospect'>Prospect</SelectItem>
-                <SelectItem value='waitlist'>Waitlist</SelectItem>
-                <SelectItem value='buyer'>Buyer</SelectItem>
-                <SelectItem value='past_buyer'>Past Buyer</SelectItem>
+                <SelectItem value='customer'>Customer</SelectItem>
+                <SelectItem value='stud_job_customer'>
+                  Stud Job Customer
+                </SelectItem>
+                <SelectItem value='vet'>Vet</SelectItem>
+                <SelectItem value='breeder'>Breeder</SelectItem>
+                <SelectItem value='groomer'>Groomer</SelectItem>
+                <SelectItem value='boarding'>Boarding</SelectItem>
+                <SelectItem value='trainer'>Trainer</SelectItem>
+                <SelectItem value='transport'>Transport</SelectItem>
+                <SelectItem value='walker'>Walker</SelectItem>
+                <SelectItem value='owner'>Owner</SelectItem>
                 <SelectItem value='guardian'>Guardian</SelectItem>
-                <SelectItem value='stud_client'>Stud Client</SelectItem>
-                <SelectItem value='referral_source'>Referral Source</SelectItem>
               </SelectContent>
             </Select>
 
@@ -303,8 +348,8 @@ export function Customers() {
           <User className='h-12 w-12 text-muted-foreground mx-auto mb-4' />
           <p className='text-muted-foreground'>
             {customers.length === 0
-              ? 'No customers yet. Add your first customer to get started!'
-              : 'No customers match your filters.'}
+              ? 'No contacts yet. Add your first contact to get started!'
+              : 'No contacts match your filters.'}
           </p>
         </Card>
       ) : (
@@ -312,8 +357,8 @@ export function Customers() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Type</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Roles</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Purchases</TableHead>
@@ -335,9 +380,23 @@ export function Customers() {
                   </TableCell>
 
                   <TableCell>
-                    <Badge className={getTypeColor(customer.type)}>
-                      {customer.type.replace('_', ' ')}
-                    </Badge>
+                    <div className='flex flex-wrap gap-1'>
+                      {getContactRoles(customer).length > 0 ? (
+                        getContactRoles(customer).map((role) => (
+                          <Badge
+                            key={role}
+                            variant='outline'
+                            className='text-xs capitalize'
+                          >
+                            {role.replace('_', ' ')}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className='text-xs text-muted-foreground'>
+                          Unclassified
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
 
                   <TableCell>

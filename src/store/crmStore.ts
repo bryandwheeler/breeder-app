@@ -20,6 +20,7 @@ import {
   Purchase,
   Referral,
   CustomerSegment,
+  ContactRole,
 } from '@/types/dog';
 
 interface Store {
@@ -119,6 +120,57 @@ export const useCrmStore = create<Store>()((set, get) => ({
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in');
 
+    const inferredRoles: ContactRole[] = [];
+
+    // Infer basic roles from legacy type if explicit contactRoles not provided
+    switch (customer.type) {
+      case 'prospect':
+      case 'waitlist':
+      case 'referral_source':
+        inferredRoles.push('prospect');
+        break;
+      case 'buyer':
+      case 'past_buyer':
+        inferredRoles.push('customer');
+        break;
+      case 'guardian':
+        inferredRoles.push('customer', 'guardian');
+        break;
+      case 'stud_client':
+        inferredRoles.push('customer', 'stud_job_customer');
+        break;
+      default:
+        break;
+    }
+
+    // Infer from tags if present
+    (customer.tags || []).forEach((tag) => {
+      const normalized = tag.toLowerCase();
+      if (normalized === 'vet' || normalized === 'veterinarian') {
+        inferredRoles.push('vet');
+      } else if (normalized === 'breeder') {
+        inferredRoles.push('breeder');
+      } else if (normalized === 'groomer') {
+        inferredRoles.push('groomer');
+      } else if (normalized === 'boarding' || normalized === 'boarder') {
+        inferredRoles.push('boarding');
+      } else if (normalized === 'trainer') {
+        inferredRoles.push('trainer');
+      } else if (normalized === 'transport') {
+        inferredRoles.push('transport');
+      } else if (normalized === 'walker' || normalized === 'dog_walker') {
+        inferredRoles.push('walker');
+      } else if (normalized === 'owner') {
+        inferredRoles.push('owner');
+      } else if (normalized === 'guardian') {
+        inferredRoles.push('guardian');
+      }
+    });
+
+    const uniqueRoles = Array.from(
+      new Set([...(customer.contactRoles || []), ...inferredRoles])
+    );
+
     const newCustomer: any = {
       name: customer.name,
       email: customer.email,
@@ -145,6 +197,7 @@ export const useCrmStore = create<Store>()((set, get) => ({
       interactions: [],
       purchases: [],
       tags: customer.tags || [],
+      contactRoles: uniqueRoles,
       notes: customer.notes || '',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),

@@ -118,15 +118,10 @@ export function DogList({
   const { dogs, deleteDog, updateDog, litters } = useDogStore();
   const { getBreedingRecordsForDog } = useHeatCycleStore();
   const [programFilters, setProgramFilters] = useState<ProgramStatus[]>([]);
-  // Default: all breeding statuses EXCEPT retired
-  const [breedingStatusFilters, setBreedingStatusFilters] = useState<BreedingStatus[]>([
-    'future-stud',
-    'future-dam',
-    'active-stud',
-    'active-dam',
-    'pet',
-    'guardian',
-  ]);
+  // Default: no breeding status filters (show all)
+  const [breedingStatusFilters, setBreedingStatusFilters] = useState<BreedingStatus[]>([]);
+  // New state: show retired dogs (default false)
+  const [showRetired, setShowRetired] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dogToDelete, setDogToDelete] = useState<Dog | null>(null);
   const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>(() => {
@@ -421,6 +416,11 @@ export function DogList({
   // Filter and sort dogs
   const filteredDogs = dogs
     .filter((dog) => {
+      // Filter out retired dogs unless showRetired is checked
+      if (!showRetired && dog.breedingStatus === 'retired') {
+        return false;
+      }
+
       // Filter by program status
       if (programFilters.length > 0) {
         const dogProgram = (dog.programStatus || 'owned') as ProgramStatus;
@@ -560,6 +560,21 @@ export function DogList({
                   </div>
                 </PopoverContent>
               </Popover>
+            </div>
+
+            {/* Show Retired Checkbox */}
+            <div className='flex items-center gap-2'>
+              <Checkbox
+                id='show-retired'
+                checked={showRetired}
+                onCheckedChange={(checked) => setShowRetired(checked as boolean)}
+              />
+              <label
+                htmlFor='show-retired'
+                className='text-sm font-medium cursor-pointer'
+              >
+                Show Retired
+              </label>
             </div>
           </div>
 

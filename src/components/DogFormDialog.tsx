@@ -71,6 +71,8 @@ const formSchema = z.object({
   microchip: z.string().optional(),
   sireId: z.string().optional(),
   damId: z.string().optional(),
+  marketStatus: z.enum(['available', 'reserved', 'sold', 'not_for_sale']).optional(),
+  salePrice: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -224,6 +226,8 @@ function DogFormContent({
       microchip: dog?.microchip || '',
       sireId: dog?.sireId || '',
       damId: dog?.damId || '',
+      marketStatus: dog?.marketStatus || undefined,
+      salePrice: dog?.salePrice?.toString() || '',
       notes: dog?.notes || '',
     },
   });
@@ -231,6 +235,7 @@ function DogFormContent({
   const onSubmit = (values: FormValues) => {
     const dogData: Partial<Dog> = {
       ...values,
+      salePrice: values.salePrice ? parseFloat(values.salePrice) : undefined,
       photos,
       shotRecords,
       healthTests,
@@ -817,6 +822,80 @@ function DogFormContent({
                       <Input type='date' {...field} />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+              <FormField
+                control={form.control}
+                name='color'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Collar Color</FormLabel>
+                    <FormControl>
+                      <Input placeholder='e.g., Red, Blue, Green' {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='microchip'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Microchip #</FormLabel>
+                    <FormControl>
+                      <Input placeholder='Microchip number' {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+              <FormField
+                control={form.control}
+                name='marketStatus'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Market Status</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value || ''}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder='Select status...' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value='available'>Available</SelectItem>
+                        <SelectItem value='reserved'>Reserved</SelectItem>
+                        <SelectItem value='sold'>Sold</SelectItem>
+                        <SelectItem value='not_for_sale'>Not for Sale</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='salePrice'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sale Price</FormLabel>
+                    <FormControl>
+                      <Input
+                        type='number'
+                        step='0.01'
+                        placeholder='0.00'
+                        {...field}
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />

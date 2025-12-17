@@ -46,6 +46,12 @@ import {
 } from '@/components/ui/table';
 import { calculateAge, formatCurrency, cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 export function DogProfile() {
   const { id } = useParams<{ id: string }>();
@@ -79,90 +85,9 @@ export function DogProfile() {
     };
   }, [subscribeToHeatCycles, subscribeToStudJobs]);
 
-  if (!dog) {
-    return (
-      <div className='container mx-auto py-20 text-center'>
-        <h1 className='text-3xl font-bold mb-4'>Dog not found</h1>
-        <Link to='/'>
-          <Button>
-            <ArrowLeft className='mr-2 h-4 w-4' /> Back to Dogs
-          </Button>
-        </Link>
-      </div>
-    );
-  }
-
-  const sire = dogs.find((d) => d.id === dog.sireId);
-  const dam = dogs.find((d) => d.id === dog.damId);
-
-  const upcomingReminders =
-    dog.reminders?.filter((r) => isFuture(new Date(r.date))) || [];
-  const overdueShots =
-    dog.shotRecords?.filter((s) => s.dueDate && isPast(new Date(s.dueDate))) ||
-    [];
-
-  const handleSaveDnaProfile = async (profile: DnaProfile) => {
-    await updateDog(dog.id, { dnaProfile: profile });
-    setDnaDialogOpen(false);
-  };
-
-  const handleEditDog = () => {
-    setEditingDog(dog);
-    setDogFormOpen(true);
-  };
-
-  const handleEditStudJob = (job: any) => {
-    setEditingStudJob(job);
-    setStudJobDialogOpen(true);
-  };
-
-  const handleAddNewStudJob = () => {
-    setEditingStudJob(null);
-    setStudJobDialogOpen(true);
-  };
-
-  const handleDeleteStudJob = async (jobId: string) => {
-    if (confirm('Are you sure you want to delete this stud job?')) {
-      await deleteStudJob(jobId);
-    }
-  };
-
-  const studJobs = dog ? getStudJobsForStud(dog.id) : [];
-
-  const getStatusBadge = (status: 'pending' | 'confirmed' | 'completed' | 'cancelled') => {
-    const variants: Record<typeof status, 'default' | 'secondary' | 'outline' | 'destructive'> = {
-      pending: 'outline',
-      confirmed: 'default',
-      completed: 'secondary',
-      cancelled: 'destructive',
-    };
-
-    return (
-      <Badge variant={variants[status]}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
-  };
-
-  const calculateTotalFees = (job: any) => {
-    let total = job.studFee || 0;
-
-    // Add additional breeding fees
-    if (job.additionalBreedingFee && job.breedings?.length > 1) {
-      total += job.additionalBreedingFee * (job.breedings.length - 1);
-    }
-
-    // Add add-on fees
-    if (job.addOns) {
-      total += job.addOns.reduce((sum: number, addon: any) => sum + addon.cost, 0);
-    }
-
-    return total;
-  };
-
-  // Breeding Forecast Logic for Females
+  // Breeding Forecast Logic for Females - Must be before early return!
   const breedingForecasts = useMemo(() => {
-    if (dog.sex !== 'female') return [];
+    if (!dog || dog.sex !== 'female') return [];
 
     const forecasts: any[] = [];
     const timeframeMonths = 12; // Show next 12 months
@@ -247,6 +172,88 @@ export function DogProfile() {
     return forecasts;
   }, [dog, heatCycles, litters]);
 
+  // Early return if dog not found - must be after all hooks
+  if (!dog) {
+    return (
+      <div className='container mx-auto py-20 text-center'>
+        <h1 className='text-3xl font-bold mb-4'>Dog not found</h1>
+        <Link to='/'>
+          <Button>
+            <ArrowLeft className='mr-2 h-4 w-4' /> Back to Dogs
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  const sire = dogs.find((d) => d.id === dog.sireId);
+  const dam = dogs.find((d) => d.id === dog.damId);
+
+  const upcomingReminders =
+    dog.reminders?.filter((r) => isFuture(new Date(r.date))) || [];
+  const overdueShots =
+    dog.shotRecords?.filter((s) => s.dueDate && isPast(new Date(s.dueDate))) ||
+    [];
+
+  const handleSaveDnaProfile = async (profile: DnaProfile) => {
+    await updateDog(dog.id, { dnaProfile: profile });
+    setDnaDialogOpen(false);
+  };
+
+  const handleEditDog = () => {
+    setEditingDog(dog);
+    setDogFormOpen(true);
+  };
+
+  const handleEditStudJob = (job: any) => {
+    setEditingStudJob(job);
+    setStudJobDialogOpen(true);
+  };
+
+  const handleAddNewStudJob = () => {
+    setEditingStudJob(null);
+    setStudJobDialogOpen(true);
+  };
+
+  const handleDeleteStudJob = async (jobId: string) => {
+    if (confirm('Are you sure you want to delete this stud job?')) {
+      await deleteStudJob(jobId);
+    }
+  };
+
+  const studJobs = getStudJobsForStud(dog.id);
+
+  const getStatusBadge = (status: 'pending' | 'confirmed' | 'completed' | 'cancelled') => {
+    const variants: Record<typeof status, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+      pending: 'outline',
+      confirmed: 'default',
+      completed: 'secondary',
+      cancelled: 'destructive',
+    };
+
+    return (
+      <Badge variant={variants[status]}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </Badge>
+    );
+  };
+
+  const calculateTotalFees = (job: any) => {
+    let total = job.studFee || 0;
+
+    // Add additional breeding fees
+    if (job.additionalBreedingFee && job.breedings?.length > 1) {
+      total += job.additionalBreedingFee * (job.breedings.length - 1);
+    }
+
+    // Add add-on fees
+    if (job.addOns) {
+      total += job.addOns.reduce((sum: number, addon: any) => sum + addon.cost, 0);
+    }
+
+    return total;
+  };
+
   const handleToggleSkipHeat = async (heatDateStr: string) => {
     const skippedDates = dog.skippedHeatDates || [];
     const newSkippedDates = skippedDates.includes(heatDateStr)
@@ -291,7 +298,361 @@ export function DogProfile() {
           )}
         </TabsList>
 
-        <TabsContent value='overview' className='space-y-8 mt-6'>
+        <TabsContent value='overview' className='space-y-6 mt-6'>
+          {/* Comprehensive Details Card */}
+          <Card>
+            <CardHeader>
+              <div className='flex justify-between items-center'>
+                <CardTitle>Details</CardTitle>
+                <Button size='sm' variant='outline' onClick={handleEditDog}>
+                  <Edit className='h-4 w-4 mr-1' /> Edit Details
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className='space-y-6'>
+              {/* Photo Gallery Thumbnails */}
+              {dog.photos && dog.photos.length > 0 && (
+                <div className='flex gap-2 overflow-x-auto pb-2'>
+                  {dog.photos.slice(0, 5).map((photo, i) => (
+                    <img
+                      key={i}
+                      src={photo}
+                      alt={`${dog.name} ${i + 1}`}
+                      className='w-16 h-16 rounded-lg object-cover border-2 border-gray-200 hover:border-primary cursor-pointer transition'
+                    />
+                  ))}
+                  {dog.photos.length > 5 && (
+                    <div className='w-16 h-16 rounded-lg bg-muted flex items-center justify-center text-xs font-semibold'>
+                      +{dog.photos.length - 5}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Status Badges */}
+              <div className='flex flex-wrap gap-2'>
+                {dog.breedingStatus && (
+                  <Badge variant='default' className='text-sm px-3 py-1'>
+                    {dog.breedingStatus === 'active-dam' && 'Active Breeding Dog'}
+                    {dog.breedingStatus === 'active-stud' && 'Active Breeding Dog'}
+                    {dog.breedingStatus === 'future-dam' && 'Future Dam'}
+                    {dog.breedingStatus === 'future-stud' && 'Future Stud'}
+                    {dog.breedingStatus === 'retired' && 'Retired'}
+                    {dog.breedingStatus === 'pet' && 'Pet'}
+                    {dog.breedingStatus === 'guardian' && 'Guardian'}
+                  </Badge>
+                )}
+                {dog.programStatus === 'guardian' && (
+                  <Badge variant='secondary' className='text-sm px-3 py-1'>Guardian</Badge>
+                )}
+                {dog.programStatus === 'external_stud' && (
+                  <Badge variant='secondary' className='text-sm px-3 py-1'>External Stud</Badge>
+                )}
+                {dog.isConnectedDog && (
+                  <Badge variant='outline' className='text-sm px-3 py-1'>Connected Dog</Badge>
+                )}
+              </div>
+
+              {/* Primary Details Section */}
+              <div>
+                <h3 className='font-semibold text-lg mb-3 border-b pb-2'>Primary Details</h3>
+                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Name *</div>
+                    <div className='font-medium'>{dog.name}</div>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Call Name</div>
+                    <div className='font-medium'>{dog.callName || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Type *</div>
+                    <div className='font-medium'>
+                      {dog.breedingStatus === 'active-dam' && 'Active Breeding Dog'}
+                      {dog.breedingStatus === 'active-stud' && 'Active Breeding Dog'}
+                      {dog.breedingStatus === 'future-dam' && 'Future Dam'}
+                      {dog.breedingStatus === 'future-stud' && 'Future Stud'}
+                      {dog.breedingStatus === 'retired' && 'Retired'}
+                      {dog.breedingStatus === 'pet' && 'Pet'}
+                      {dog.breedingStatus === 'guardian' && 'Guardian'}
+                      {!dog.breedingStatus && 'N/A'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Sex *</div>
+                    <div className='font-medium'>{dog.sex === 'female' ? 'Female' : 'Male'}</div>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Date of Birth</div>
+                    <div className='font-medium'>{dog.dateOfBirth}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Details Section */}
+              <div>
+                <div className='flex justify-between items-center mb-3 border-b pb-2'>
+                  <h3 className='font-semibold text-lg'>Additional Details</h3>
+                  <Button size='sm' variant='ghost' onClick={handleEditDog}>
+                    <Edit className='h-3 w-3 mr-1' /> Edit All
+                  </Button>
+                </div>
+                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Breed</div>
+                    <button
+                      onClick={handleEditDog}
+                      className='font-medium hover:text-primary hover:underline text-left w-full'
+                    >
+                      {dog.breed || 'Click to add'}
+                    </button>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Collar Color</div>
+                    <button
+                      onClick={handleEditDog}
+                      className='font-medium hover:text-primary hover:underline text-left w-full'
+                    >
+                      {dog.color || 'Click to add'}
+                    </button>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Market Status</div>
+                    <button
+                      onClick={handleEditDog}
+                      className='font-medium hover:text-primary hover:underline text-left w-full'
+                    >
+                      {dog.marketStatus
+                        ? dog.marketStatus === 'not_for_sale'
+                          ? 'Not for Sale'
+                          : dog.marketStatus.charAt(0).toUpperCase() + dog.marketStatus.slice(1)
+                        : 'Click to add'}
+                    </button>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Sale Price</div>
+                    <button
+                      onClick={handleEditDog}
+                      className='font-medium hover:text-primary hover:underline text-left w-full'
+                    >
+                      {dog.salePrice ? `$${dog.salePrice.toLocaleString()}` : 'Click to add'}
+                    </button>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Fertility</div>
+                    <button
+                      onClick={handleEditDog}
+                      className='font-medium hover:text-primary hover:underline text-left w-full'
+                    >
+                      {dog.breedingStatus === 'retired' ? 'Retired' : dog.breedingStatus ? 'Active' : 'Click to set'}
+                    </button>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Size / Generation</div>
+                    <button
+                      onClick={handleEditDog}
+                      className='font-medium hover:text-primary hover:underline text-left w-full'
+                    >
+                      {dog.breedGeneration || 'Click to add'}
+                    </button>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Current Weight</div>
+                    <button
+                      onClick={handleEditDog}
+                      className='font-medium hover:text-primary hover:underline text-left w-full'
+                    >
+                      {dog.weightHistory && dog.weightHistory.length > 0
+                        ? `${dog.weightHistory[dog.weightHistory.length - 1].weight} ${dog.weightHistory[dog.weightHistory.length - 1].unit}`
+                        : 'Click to add'}
+                    </button>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Color</div>
+                    <button
+                      onClick={handleEditDog}
+                      className='font-medium hover:text-primary hover:underline text-left w-full'
+                    >
+                      {dog.color || 'Click to add'}
+                    </button>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Color Genes</div>
+                    <div className='font-medium text-muted-foreground'>
+                      {dog.dnaProfile?.coatColor
+                        ? Object.entries(dog.dnaProfile.coatColor)
+                            .map(([key, value]) => `${key}: ${value}`)
+                            .join(', ')
+                        : 'N/A'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Coat Type</div>
+                    <div className='font-medium text-muted-foreground'>
+                      {dog.dnaProfile?.coatType
+                        ? Object.entries(dog.dnaProfile.coatType)
+                            .map(([key, value]) => `${key}: ${value}`)
+                            .join(', ')
+                        : 'N/A'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Microchip</div>
+                    <button
+                      onClick={handleEditDog}
+                      className='font-medium hover:text-primary hover:underline text-left w-full'
+                    >
+                      {dog.microchip || 'Click to add'}
+                    </button>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Registration #1</div>
+                    <button
+                      onClick={handleEditDog}
+                      className='font-medium hover:text-primary hover:underline text-left w-full'
+                    >
+                      {dog.registrations && dog.registrations.length > 0
+                        ? dog.registrations[0].registrationNumber
+                        : 'Click to add'}
+                    </button>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Registration #2</div>
+                    <button
+                      onClick={handleEditDog}
+                      className='font-medium hover:text-primary hover:underline text-left w-full'
+                    >
+                      {dog.registrations && dog.registrations.length > 1
+                        ? dog.registrations[1].registrationNumber
+                        : 'Click to add'}
+                    </button>
+                  </div>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-1'>Notes</div>
+                    <button
+                      onClick={handleEditDog}
+                      className='font-medium hover:text-primary hover:underline text-left w-full'
+                    >
+                      {dog.notes ? (dog.notes.length > 30 ? dog.notes.substring(0, 30) + '...' : dog.notes) : 'Click to add'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Relationships Section */}
+              <div>
+                <h3 className='font-semibold text-lg mb-3 border-b pb-2'>Relationships</h3>
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1'>
+                      <span className='text-blue-600'>♂</span> Sire - Father
+                    </div>
+                    {sire ? (
+                      <Link
+                        to={`/dogs/${sire.id}`}
+                        className='flex items-center gap-2 p-2 border rounded-lg hover:bg-accent transition'
+                      >
+                        {sire.photos && sire.photos.length > 0 ? (
+                          <img
+                            src={sire.photos[0]}
+                            alt={sire.name}
+                            className='w-10 h-10 rounded-full object-cover'
+                          />
+                        ) : (
+                          <div className='w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center'>
+                            <DogIcon className='h-5 w-5 text-blue-600' />
+                          </div>
+                        )}
+                        <div className='flex-1'>
+                          <div className='font-medium'>{sire.name}</div>
+                        </div>
+                      </Link>
+                    ) : dog.externalSire ? (
+                      <div className='flex items-center gap-2 p-2 border rounded-lg'>
+                        <div className='w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center'>
+                          <DogIcon className='h-5 w-5 text-blue-600' />
+                        </div>
+                        <div className='flex-1'>
+                          <div className='font-medium'>{dog.externalSire.name}</div>
+                          {dog.externalSire.kennelName && (
+                            <div className='text-xs text-muted-foreground'>
+                              {dog.externalSire.kennelName}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className='text-sm text-muted-foreground p-2'>No sire information</div>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className='text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1'>
+                      <span className='text-pink-600'>♀</span> Dam - Mother
+                    </div>
+                    {dam ? (
+                      <Link
+                        to={`/dogs/${dam.id}`}
+                        className='flex items-center gap-2 p-2 border rounded-lg hover:bg-accent transition'
+                      >
+                        {dam.photos && dam.photos.length > 0 ? (
+                          <img
+                            src={dam.photos[0]}
+                            alt={dam.name}
+                            className='w-10 h-10 rounded-full object-cover'
+                          />
+                        ) : (
+                          <div className='w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center'>
+                            <DogIcon className='h-5 w-5 text-pink-600' />
+                          </div>
+                        )}
+                        <div className='flex-1'>
+                          <div className='font-medium'>{dam.name}</div>
+                        </div>
+                      </Link>
+                    ) : dog.externalDam ? (
+                      <div className='flex items-center gap-2 p-2 border rounded-lg'>
+                        <div className='w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center'>
+                          <DogIcon className='h-5 w-5 text-pink-600' />
+                        </div>
+                        <div className='flex-1'>
+                          <div className='font-medium'>{dog.externalDam.name}</div>
+                          {dog.externalDam.kennelName && (
+                            <div className='text-xs text-muted-foreground'>
+                              {dog.externalDam.kennelName}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className='text-sm text-muted-foreground p-2'>No dam information</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Guardian Home - if applicable */}
+                {dog.programStatus === 'guardian' && dog.guardianHome && (
+                  <div className='mt-4'>
+                    <div className='text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1'>
+                      <span className='text-green-600'>👤</span> Owner - Primary Contact
+                    </div>
+                    <div className='flex items-center gap-2 p-2 border rounded-lg bg-green-50/50'>
+                      <div className='w-10 h-10 rounded-full bg-green-100 flex items-center justify-center'>
+                        <span className='text-lg'>👤</span>
+                      </div>
+                      <div className='flex-1'>
+                        <div className='font-medium'>{dog.guardianHome.guardianName}</div>
+                        {dog.guardianHome.email && (
+                          <div className='text-xs text-muted-foreground'>{dog.guardianHome.email}</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Active Litters - Show for females with active litters */}
           {dog.sex === 'female' && activeLitters.length > 0 && (
             <Card className='border-blue-200 bg-blue-50/50'>
@@ -397,469 +758,254 @@ export function DogProfile() {
             </Card>
           )}
 
-          {/* Photo Gallery */}
-          {dog.photos && dog.photos.length > 0 && (
-            <Card>
-              <CardHeader>
-                <div className='flex justify-between items-center'>
-                  <CardTitle>Photos</CardTitle>
-                  <Button size='sm' variant='outline' onClick={handleEditDog}>
-                    <Edit className='h-4 w-4 mr-1' /> Edit
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
-                  {dog.photos.map((photo, i) => (
-                    <img
-                      key={i}
-                      src={photo}
-                      alt={`${dog.name} ${i + 1}`}
-                      className='w-full h-64 object-cover rounded-lg shadow-md hover:scale-105 transition'
-                    />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Detailed Information Accordion */}
+          <Card>
+            <CardHeader>
+              <div className='flex justify-between items-center'>
+                <CardTitle>Detailed Information</CardTitle>
+                <Button size='sm' variant='outline' onClick={handleEditDog}>
+                  <Edit className='h-4 w-4 mr-1' /> Edit Details
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="multiple" className="w-full">
+                {/* Photos Section */}
+                {dog.photos && dog.photos.length > 0 && (
+                  <AccordionItem value="photos">
+                    <AccordionTrigger>
+                      <span className='font-semibold'>Photos ({dog.photos.length})</span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+                        {dog.photos.map((photo, i) => (
+                          <img
+                            key={i}
+                            src={photo}
+                            alt={`${dog.name} ${i + 1}`}
+                            className='w-full h-48 object-cover rounded-lg shadow-md hover:scale-105 transition'
+                          />
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
 
-          {/* Info Grid */}
-          <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-            <Card>
-              <CardHeader>
-                <div className='flex justify-between items-center'>
-                  <CardTitle>Basic Information</CardTitle>
-                  <Button size='sm' variant='outline' onClick={handleEditDog}>
-                    <Edit className='h-4 w-4 mr-1' /> Edit
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className='space-y-3'>
-                <div className='grid grid-cols-2 gap-4'>
-                  <div>
-                    <strong>Call Name:</strong> {dog.callName || '-'}
-                  </div>
-                  <div>
-                    <strong>Sex:</strong>{' '}
-                    {dog.sex === 'female' ? '♀ Female' : '♂ Male'}
-                  </div>
-                  <div>
-                    <strong>Breed:</strong> {dog.breed}
-                    {dog.breedGeneration && (
-                      <span className='text-sm text-muted-foreground ml-2'>
-                        ({dog.breedGeneration})
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <strong>DOB:</strong> {dog.dateOfBirth}
-                    <div className='text-sm text-muted-foreground'>
-                      Age: {calculateAge(dog.dateOfBirth)}
+                {/* Additional Information */}
+                <AccordionItem value="additional-info">
+                  <AccordionTrigger>
+                    <span className='font-semibold'>Additional Information</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className='grid grid-cols-2 gap-4 text-sm'>
+                      <div>
+                        <div className='text-muted-foreground'>Microchip</div>
+                        <div className='font-medium'>{dog.microchip || '-'}</div>
+                      </div>
+                      <div>
+                        <div className='text-muted-foreground'>Program Status</div>
+                        <div className='font-medium'>
+                          {dog.programStatus === 'owned' && 'Owned by Program'}
+                          {dog.programStatus === 'guardian' && 'Guardian Home'}
+                          {dog.programStatus === 'external_stud' && 'External Stud'}
+                          {dog.programStatus === 'co-owned' && 'Co-Owned'}
+                          {!dog.programStatus && 'Owned by Program'}
+                        </div>
+                      </div>
+                      {dog.notes && (
+                        <div className='col-span-2'>
+                          <div className='text-muted-foreground'>Notes</div>
+                          <div className='font-medium'>{dog.notes}</div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <div>
-                    <strong>Color:</strong> {dog.color || '-'}
-                  </div>
-                  <div>
-                    <strong>Microchip:</strong> {dog.microchip || '-'}
-                  </div>
-                  <div className='col-span-2'>
-                    <strong>Program Status:</strong>{' '}
-                    {dog.programStatus === 'owned' && 'Owned by Program'}
-                    {dog.programStatus === 'guardian' && 'Guardian Home'}
-                    {dog.programStatus === 'external_stud' && 'External Stud'}
-                    {dog.programStatus === 'co-owned' && 'Co-Owned'}
-                    {dog.programStatus === 'retired' && (
-                      <Badge variant='secondary'>Retired</Badge>
-                    )}
-                    {!dog.programStatus && 'Owned by Program'}
-                  </div>
-                </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Guardian Home Information */}
                 {dog.programStatus === 'guardian' && dog.guardianHome && (
-                  <div className='pt-4 border-t space-y-2'>
-                    <h4 className='font-semibold'>Guardian Home Information</h4>
-                    <div className='grid grid-cols-2 gap-3 text-sm'>
-                      <div>
-                        <strong>Guardian:</strong>{' '}
-                        {dog.guardianHome.guardianName}
-                      </div>
-                      {dog.guardianHome.email && (
+                  <AccordionItem value="guardian-info">
+                    <AccordionTrigger>
+                      <span className='font-semibold'>Guardian Home Information</span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className='grid grid-cols-2 gap-4 text-sm'>
                         <div>
-                          <strong>Email:</strong> {dog.guardianHome.email}
+                          <div className='text-muted-foreground'>Guardian Name</div>
+                          <div className='font-medium'>{dog.guardianHome.guardianName}</div>
                         </div>
-                      )}
-                      {dog.guardianHome.phone && (
-                        <div>
-                          <strong>Phone:</strong> {dog.guardianHome.phone}
-                        </div>
-                      )}
-                      <div>
-                        <strong>Contract Date:</strong>{' '}
-                        {dog.guardianHome.contractDate}
-                      </div>
-                      <div className='col-span-2'>
-                        <strong>Contract Progress:</strong>{' '}
-                        {dog.guardianHome.littersCompleted} of{' '}
-                        {dog.guardianHome.littersAllowed} litters completed
-                        {dog.guardianHome.littersCompleted >=
-                          dog.guardianHome.littersAllowed && (
-                          <Badge variant='default' className='ml-2'>
-                            Contract Complete
-                          </Badge>
-                        )}
-                      </div>
-                      {dog.guardianHome.address && (
-                        <div className='col-span-2'>
-                          <strong>Address:</strong> {dog.guardianHome.address}
-                        </div>
-                      )}
-                      {dog.guardianHome.notes && (
-                        <div className='col-span-2'>
-                          <strong>Notes:</strong> {dog.guardianHome.notes}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Owner Information (for connected dogs from other kennels) */}
-                {dog.isConnectedDog && dog.originalOwnerKennel && (
-                  <div className='pt-4 border-t space-y-2'>
-                    <h4 className='font-semibold'>Owner Information</h4>
-                    <div className='text-sm bg-blue-50 border-l-2 border-blue-500 pl-3 py-2'>
-                      <div>
-                        <strong>Owner Kennel:</strong> {dog.originalOwnerKennel}
-                      </div>
-                      <div className='text-xs text-muted-foreground mt-1'>
-                        This dog is owned by another kennel and shared through the connection system
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Breeding Status Section */}
-                {dog.breedingStatus && (
-                  <div className='pt-4 border-t space-y-2'>
-                    <h4 className='font-semibold'>Breeding Status</h4>
-                    <div className='space-y-2 text-sm'>
-                      <div>
-                        <strong>Status:</strong>{' '}
-                        {dog.breedingStatus === 'future-stud' && (
-                          <Badge variant='secondary'>Future Stud</Badge>
-                        )}
-                        {dog.breedingStatus === 'future-dam' && (
-                          <Badge variant='secondary'>Future Dam</Badge>
-                        )}
-                        {dog.breedingStatus === 'active-stud' && (
-                          <Badge variant='default' className='bg-blue-500'>Active Stud</Badge>
-                        )}
-                        {dog.breedingStatus === 'active-dam' && (
-                          <Badge variant='default' className='bg-blue-500'>Active Dam</Badge>
-                        )}
-                        {dog.breedingStatus === 'retired' && (
-                          <Badge variant='outline'>Retired</Badge>
-                        )}
-                        {dog.breedingStatus === 'pet' && (
-                          <Badge variant='secondary'>Pet Quality</Badge>
-                        )}
-                        {dog.breedingStatus === 'guardian' && (
-                          <Badge variant='secondary'>Guardian Program</Badge>
-                        )}
-                      </div>
-
-                      {/* Pending Requirements for Future Studs/Dams */}
-                      {(dog.breedingStatus === 'future-stud' || dog.breedingStatus === 'future-dam') &&
-                       (dog.agePending || dog.healthTestsPending) && (
-                        <div className='pl-4 space-y-1'>
-                          <p className='font-medium text-muted-foreground'>Pending Requirements:</p>
-                          {dog.agePending && (
-                            <div className='flex items-center gap-2'>
-                              <Badge variant='outline' className='text-xs'>Age Pending</Badge>
-                              <span className='text-xs text-muted-foreground'>
-                                Not yet old enough for breeding
-                              </span>
-                            </div>
-                          )}
-                          {dog.healthTestsPending && (
-                            <div className='flex items-center gap-2'>
-                              <Badge variant='outline' className='text-xs'>Health Tests Pending</Badge>
-                              <span className='text-xs text-muted-foreground'>
-                                Required health tests not complete
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Spayed/Neutered Information */}
-                {dog.spayedNeutered && (
-                  <div className='pt-4 border-t space-y-2'>
-                    <h4 className='font-semibold'>Spayed/Neutered</h4>
-                    <div className='space-y-2 text-sm'>
-                      {dog.spayNeuterDate && (
-                        <div>
-                          <strong>Date:</strong>{' '}
-                          {new Date(dog.spayNeuterDate).toLocaleDateString()}
-                        </div>
-                      )}
-                      {dog.spayNeuterNotes && (
-                        <div>
-                          <strong>Notes:</strong> {dog.spayNeuterNotes}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Parents Section */}
-                <div className='pt-4 border-t space-y-2'>
-                  <h4 className='font-semibold'>Parents</h4>
-                  <div className='grid grid-cols-2 gap-3 text-sm'>
-                    <div>
-                      <strong>Sire:</strong>{' '}
-                      {sire ? (
-                        <Link
-                          to={`/dogs/${sire.id}`}
-                          className='text-primary hover:underline'
-                        >
-                          {sire.name}
-                        </Link>
-                      ) : dog.externalSire ? (
-                        <span>
-                          {dog.externalSire.name}
-                          {dog.externalSire.kennelName && (
-                            <span className='text-muted-foreground'>
-                              {' '}({dog.externalSire.kennelName})
-                            </span>
-                          )}
-                        </span>
-                      ) : (
-                        <span className='text-muted-foreground'>Unknown</span>
-                      )}
-                    </div>
-                    <div>
-                      <strong>Dam:</strong>{' '}
-                      {dam ? (
-                        <Link
-                          to={`/dogs/${dam.id}`}
-                          className='text-primary hover:underline'
-                        >
-                          {dam.name}
-                        </Link>
-                      ) : dog.externalDam ? (
-                        <span>
-                          {dog.externalDam.name}
-                          {dog.externalDam.kennelName && (
-                            <span className='text-muted-foreground'>
-                              {' '}({dog.externalDam.kennelName})
-                            </span>
-                          )}
-                        </span>
-                      ) : (
-                        <span className='text-muted-foreground'>Unknown</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Registration Section */}
-                <div className='pt-4 border-t space-y-2'>
-                  <div className='flex items-center justify-between'>
-                    <h4 className='font-semibold'>Registry Information</h4>
-                    <Button
-                      size='sm'
-                      variant='ghost'
-                      onClick={handleEditDog}
-                      className='h-7 text-xs'
-                    >
-                      <Edit className='h-3 w-3 mr-1' /> Edit
-                    </Button>
-                  </div>
-                  {dog.registrations && dog.registrations.length > 0 ? (
-                    <div className='space-y-2'>
-                      {dog.registrations.map((reg) => (
-                        <div key={reg.id} className='text-sm border-l-2 border-primary pl-3 py-1'>
+                        {dog.guardianHome.email && (
                           <div>
-                            <strong>{reg.registry}:</strong> {reg.registrationNumber}
+                            <div className='text-muted-foreground'>Email</div>
+                            <div className='font-medium'>{dog.guardianHome.email}</div>
                           </div>
-                          {reg.registeredName && reg.registeredName !== dog.name && (
-                            <div className='text-muted-foreground'>
-                              Registered as: {reg.registeredName}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className='text-sm text-muted-foreground'>
-                      No registration information on file
-                    </div>
-                  )}
-                </div>
-
-                {dog.notes && (
-                  <div className='pt-4 border-t'>
-                    <strong>Notes:</strong> {dog.notes}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Upcoming Reminders */}
-            <Card>
-              <CardHeader>
-                <CardTitle className='flex items-center gap-2'>
-                  <Bell className='h-5 w-5' /> Upcoming Reminders
-                  {upcomingReminders.length > 0 && (
-                    <Badge variant='default'>{upcomingReminders.length}</Badge>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {upcomingReminders.length === 0 ? (
-                  <p className='text-muted-foreground'>No upcoming reminders</p>
-                ) : (
-                  <div className='space-y-2'>
-                    {upcomingReminders.map((r) => (
-                      <div
-                        key={r.id}
-                        className='flex items-center justify-between p-2 bg-muted/50 rounded'
-                      >
+                        )}
+                        {dog.guardianHome.phone && (
+                          <div>
+                            <div className='text-muted-foreground'>Phone</div>
+                            <div className='font-medium'>{dog.guardianHome.phone}</div>
+                          </div>
+                        )}
                         <div>
-                          <div className='font-medium'>{r.title}</div>
-                          {r.notes && (
-                            <div className='text-sm text-muted-foreground'>
-                              {r.notes}
-                            </div>
-                          )}
+                          <div className='text-muted-foreground'>Contract Date</div>
+                          <div className='font-medium'>{dog.guardianHome.contractDate}</div>
                         </div>
-                        <div className='text-sm'>
-                          {format(new Date(r.date), 'PPP')}
+                        <div className='col-span-2'>
+                          <div className='text-muted-foreground'>Contract Progress</div>
+                          <div className='font-medium'>
+                            {dog.guardianHome.littersCompleted} of {dog.guardianHome.littersAllowed} litters completed
+                            {dog.guardianHome.littersCompleted >= dog.guardianHome.littersAllowed && (
+                              <Badge variant='default' className='ml-2'>Contract Complete</Badge>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Weight Tracking */}
-          <div className='flex justify-between items-center mb-4'>
-            <h2 className='text-2xl font-bold'>Weight History</h2>
-            <WeightTracker
-              dogId={dog.id}
-              currentUnit={
-                dog.weightHistory?.[dog.weightHistory.length - 1]?.unit
-              }
-            />
-          </div>
-          <WeightChart
-            weightHistory={dog.weightHistory || []}
-            dogName={dog.name}
-            dogId={dog.id}
-          />
-
-          {/* Enhanced Health Tracking */}
-          <div className='mt-8'>
-            <h2 className='text-2xl font-bold mb-4'>Health Records</h2>
-            <HealthTracking
-              dogId={dog.id}
-              medications={dog.medications || []}
-              dewormings={dog.dewormings || []}
-              vetVisits={dog.vetVisits || []}
-            />
-          </div>
-
-          {/* Shot Records */}
-          <Card>
-            <CardHeader>
-              <div className='flex justify-between items-center'>
-                <CardTitle className='flex items-center gap-2'>
-                  <Syringe className='h-5 w-5' /> Vaccination & Shot Records
-                </CardTitle>
-                <Button size='sm' variant='outline' onClick={handleEditDog}>
-                  <Edit className='h-4 w-4 mr-1' /> Edit
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {dog.shotRecords?.length === 0 ? (
-                <p className='text-muted-foreground'>No shot records entered</p>
-              ) : (
-                <div className='grid gap-3'>
-                  {dog.shotRecords?.map((shot) => (
-                    <div
-                      key={shot.id}
-                      className='flex items-center justify-between p-3 border rounded-lg'
-                    >
-                      <div>
-                        <div className='font-medium'>{shot.vaccine}</div>
-                        <div className='text-sm text-muted-foreground'>
-                          Given: {format(new Date(shot.dateGiven), 'PPP')}
-                        </div>
-                        {shot.notes && (
-                          <div className='text-sm italic'>{shot.notes}</div>
+                        {dog.guardianHome.address && (
+                          <div className='col-span-2'>
+                            <div className='text-muted-foreground'>Address</div>
+                            <div className='font-medium'>{dog.guardianHome.address}</div>
+                          </div>
+                        )}
+                        {dog.guardianHome.notes && (
+                          <div className='col-span-2'>
+                            <div className='text-muted-foreground'>Notes</div>
+                            <div className='font-medium'>{dog.guardianHome.notes}</div>
+                          </div>
                         )}
                       </div>
-                      {shot.dueDate && (
-                        <Badge
-                          variant={
-                            isPast(new Date(shot.dueDate))
-                              ? 'destructive'
-                              : 'secondary'
-                          }
-                        >
-                          Due: {format(new Date(shot.dueDate), 'PPP')}
-                        </Badge>
-                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+
+                {/* Parents & Pedigree */}
+                <AccordionItem value="parents">
+                  <AccordionTrigger>
+                    <span className='font-semibold'>Parents & Pedigree</span>
+                  </AccordionTrigger>
+                  <AccordionContent className='space-y-4'>
+                    <div className='grid grid-cols-2 gap-4 text-sm'>
+                      <div>
+                        <div className='text-muted-foreground'>Sire</div>
+                        <div className='font-medium'>
+                          {sire ? (
+                            <Link to={`/dogs/${sire.id}`} className='text-primary hover:underline'>
+                              {sire.name}
+                            </Link>
+                          ) : dog.externalSire ? (
+                            <span>
+                              {dog.externalSire.name}
+                              {dog.externalSire.kennelName && (
+                                <span className='text-muted-foreground text-xs ml-1'>
+                                  ({dog.externalSire.kennelName})
+                                </span>
+                              )}
+                            </span>
+                          ) : (
+                            <span className='text-muted-foreground'>Unknown</span>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <div className='text-muted-foreground'>Dam</div>
+                        <div className='font-medium'>
+                          {dam ? (
+                            <Link to={`/dogs/${dam.id}`} className='text-primary hover:underline'>
+                              {dam.name}
+                            </Link>
+                          ) : dog.externalDam ? (
+                            <span>
+                              {dog.externalDam.name}
+                              {dog.externalDam.kennelName && (
+                                <span className='text-muted-foreground text-xs ml-1'>
+                                  ({dog.externalDam.kennelName})
+                                </span>
+                              )}
+                            </span>
+                          ) : (
+                            <span className='text-muted-foreground'>Unknown</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    <div className='pt-4'>
+                      <PedigreeTree dogId={dog.id} />
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
 
-          {/* DNA Profile */}
-          <Card>
-            <CardHeader>
-              <div className='flex justify-between items-center'>
-                <CardTitle className='flex items-center gap-2'>
-                  <CalendarIcon className='h-5 w-5' /> DNA Profile & Genetic Testing
-                </CardTitle>
-                <Button size='sm' onClick={() => setDnaDialogOpen(true)}>
-                  <Edit className='h-4 w-4 mr-1' />{' '}
-                  {dog.dnaProfile ? 'Edit' : 'Add'} DNA Profile
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {dog.dnaProfile ? (
-                <DnaProfileDisplay profile={dog.dnaProfile} />
-              ) : (
-                <p className='text-muted-foreground'>
-                  No DNA test results recorded. Add results from services like
-                  Embark Vet, Wisdom Panel, or UC Davis VGL.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+                {/* Registration Information */}
+                <AccordionItem value="registration">
+                  <AccordionTrigger>
+                    <span className='font-semibold'>
+                      Registry Information
+                      {dog.registrations && dog.registrations.length > 0 && (
+                        <span className='ml-2 text-xs text-muted-foreground'>
+                          ({dog.registrations.length})
+                        </span>
+                      )}
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {dog.registrations && dog.registrations.length > 0 ? (
+                      <div className='space-y-3'>
+                        {dog.registrations.map((reg) => (
+                          <div key={reg.id} className='text-sm border-l-2 border-primary pl-3 py-2'>
+                            <div className='font-semibold'>{reg.registry}</div>
+                            <div className='text-muted-foreground'>#{reg.registrationNumber}</div>
+                            {reg.registeredName && reg.registeredName !== dog.name && (
+                              <div className='text-xs text-muted-foreground mt-1'>
+                                Registered as: {reg.registeredName}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className='text-sm text-muted-foreground'>
+                        No registration information on file
+                      </div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
 
-          {/* Pedigree Tree */}
-          <Card>
-            <CardHeader>
-              <div className='flex justify-between items-center'>
-                <CardTitle>5-Generation Pedigree</CardTitle>
-                <Button size='sm' variant='outline' onClick={handleEditDog}>
-                  <Edit className='h-4 w-4 mr-1' /> Edit
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <PedigreeTree dogId={dog.id} />
+                {/* DNA Profile */}
+                <AccordionItem value="dna">
+                  <AccordionTrigger>
+                    <span className='font-semibold'>DNA Profile & Genetic Testing</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {dog.dnaProfile ? (
+                      <DnaProfileDisplay dnaProfile={dog.dnaProfile} />
+                    ) : (
+                      <div className='text-sm text-muted-foreground'>
+                        No DNA profile on file.{' '}
+                        <button
+                          onClick={() => setDnaDialogOpen(true)}
+                          className='text-primary hover:underline'
+                        >
+                          Add DNA Profile
+                        </button>
+                      </div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Health & Weight Tracking */}
+                <AccordionItem value="health">
+                  <AccordionTrigger>
+                    <span className='font-semibold'>Health & Weight Tracking</span>
+                  </AccordionTrigger>
+                  <AccordionContent className='space-y-4'>
+                    <WeightTracker dogId={dog.id} />
+                    <WeightChart dogId={dog.id} />
+                    <HealthTracking
+                      dogId={dog.id}
+                      medications={dog.medications || []}
+                      dewormings={dog.dewormings || []}
+                      vetVisits={dog.vetVisits || []}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </CardContent>
           </Card>
         </TabsContent>
