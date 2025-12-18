@@ -400,81 +400,57 @@ export function DogProfile() {
                 <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
                   <div>
                     <div className='text-xs font-medium text-muted-foreground mb-1'>Breed</div>
-                    <button
-                      onClick={handleEditDog}
-                      className='font-medium hover:text-primary hover:underline text-left w-full'
-                    >
-                      {dog.breed || 'Click to add'}
-                    </button>
+                    <div className='font-medium text-muted-foreground'>
+                      {dog.breed || '-'}
+                    </div>
                   </div>
                   <div>
                     <div className='text-xs font-medium text-muted-foreground mb-1'>Collar Color</div>
-                    <button
-                      onClick={handleEditDog}
-                      className='font-medium hover:text-primary hover:underline text-left w-full'
-                    >
-                      {dog.color || 'Click to add'}
-                    </button>
+                    <div className='font-medium text-muted-foreground'>
+                      {dog.color || '-'}
+                    </div>
                   </div>
                   <div>
                     <div className='text-xs font-medium text-muted-foreground mb-1'>Market Status</div>
-                    <button
-                      onClick={handleEditDog}
-                      className='font-medium hover:text-primary hover:underline text-left w-full'
-                    >
+                    <div className='font-medium text-muted-foreground'>
                       {dog.marketStatus
                         ? dog.marketStatus === 'not_for_sale'
                           ? 'Not for Sale'
                           : dog.marketStatus.charAt(0).toUpperCase() + dog.marketStatus.slice(1)
-                        : 'Click to add'}
-                    </button>
+                        : '-'}
+                    </div>
                   </div>
                   <div>
                     <div className='text-xs font-medium text-muted-foreground mb-1'>Sale Price</div>
-                    <button
-                      onClick={handleEditDog}
-                      className='font-medium hover:text-primary hover:underline text-left w-full'
-                    >
-                      {dog.salePrice ? `$${dog.salePrice.toLocaleString()}` : 'Click to add'}
-                    </button>
+                    <div className='font-medium text-muted-foreground'>
+                      {dog.salePrice ? `$${dog.salePrice.toLocaleString()}` : '-'}
+                    </div>
                   </div>
                   <div>
                     <div className='text-xs font-medium text-muted-foreground mb-1'>Fertility</div>
-                    <button
-                      onClick={handleEditDog}
-                      className='font-medium hover:text-primary hover:underline text-left w-full'
-                    >
-                      {dog.breedingStatus === 'retired' ? 'Retired' : dog.breedingStatus ? 'Active' : 'Click to set'}
-                    </button>
+                    <div className='font-medium text-muted-foreground'>
+                      {dog.breedingStatus === 'retired' ? 'Retired' : dog.breedingStatus ? 'Active' : '-'}
+                    </div>
                   </div>
                   <div>
                     <div className='text-xs font-medium text-muted-foreground mb-1'>Size / Generation</div>
-                    <button
-                      onClick={handleEditDog}
-                      className='font-medium hover:text-primary hover:underline text-left w-full'
-                    >
-                      {dog.breedGeneration || 'Click to add'}
-                    </button>
+                    <div className='font-medium text-muted-foreground'>
+                      {dog.breedGeneration || '-'}
+                    </div>
                   </div>
                   <div>
                     <div className='text-xs font-medium text-muted-foreground mb-1'>Current Weight</div>
-                    <button
-                      onClick={handleEditDog}
-                      className='font-medium hover:text-primary hover:underline text-left w-full'
-                    >
+                    <div className='font-medium text-muted-foreground'>
                       {dog.weightHistory && dog.weightHistory.length > 0
                         ? `${dog.weightHistory[dog.weightHistory.length - 1].weight} ${dog.weightHistory[dog.weightHistory.length - 1].unit}`
-                        : 'Click to add'}
-                    </button>
+                        : '-'}
+                    </div>
                   </div>
                   <div>
                     <div className='text-xs font-medium text-muted-foreground mb-1'>Color</div>
-                    <button
-                      onClick={handleEditDog}
-                      className='font-medium hover:text-primary hover:underline text-left w-full'
-                    >
-                      {dog.color || 'Click to add'}
-                    </button>
+                    <div className='font-medium text-muted-foreground'>
+                      {dog.color || '-'}
+                    </div>
                   </div>
                   <div>
                     <div className='text-xs font-medium text-muted-foreground mb-1'>Color Genes</div>
@@ -498,43 +474,31 @@ export function DogProfile() {
                   </div>
                   <div>
                     <div className='text-xs font-medium text-muted-foreground mb-1'>Microchip</div>
-                    <button
-                      onClick={handleEditDog}
-                      className='font-medium hover:text-primary hover:underline text-left w-full'
-                    >
-                      {dog.microchip || 'Click to add'}
-                    </button>
+                    <div className='font-medium text-muted-foreground'>
+                      {dog.microchip || '-'}
+                    </div>
                   </div>
                   <div>
                     <div className='text-xs font-medium text-muted-foreground mb-1'>Registration #1</div>
-                    <button
-                      onClick={handleEditDog}
-                      className='font-medium hover:text-primary hover:underline text-left w-full'
-                    >
+                    <div className='font-medium text-muted-foreground'>
                       {dog.registrations && dog.registrations.length > 0
                         ? dog.registrations[0].registrationNumber
-                        : 'Click to add'}
-                    </button>
+                        : '-'}
+                    </div>
                   </div>
                   <div>
                     <div className='text-xs font-medium text-muted-foreground mb-1'>Registration #2</div>
-                    <button
-                      onClick={handleEditDog}
-                      className='font-medium hover:text-primary hover:underline text-left w-full'
-                    >
+                    <div className='font-medium text-muted-foreground'>
                       {dog.registrations && dog.registrations.length > 1
                         ? dog.registrations[1].registrationNumber
-                        : 'Click to add'}
-                    </button>
+                        : '-'}
+                    </div>
                   </div>
                   <div>
                     <div className='text-xs font-medium text-muted-foreground mb-1'>Notes</div>
-                    <button
-                      onClick={handleEditDog}
-                      className='font-medium hover:text-primary hover:underline text-left w-full'
-                    >
-                      {dog.notes ? (dog.notes.length > 30 ? dog.notes.substring(0, 30) + '...' : dog.notes) : 'Click to add'}
-                    </button>
+                    <div className='font-medium text-muted-foreground'>
+                      {dog.notes ? (dog.notes.length > 30 ? dog.notes.substring(0, 30) + '...' : dog.notes) : '-'}
+                    </div>
                   </div>
                 </div>
               </div>
