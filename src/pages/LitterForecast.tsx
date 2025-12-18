@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, DollarSign, Edit, TrendingUp } from 'lucide-react';
 import { addMonths, addDays, format, parseISO, differenceInDays } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
+import { BreedingTimeline } from '@/components/BreedingTimeline';
 
 interface ForecastedLitter {
   id: string;
@@ -101,13 +102,13 @@ export function LitterForecast() {
     }
 
     const mostRecentLitter = dogLitters[0];
-    const puppiesWithPrices = mostRecentLitter.puppies?.filter((p) => p.price && p.price > 0);
+    const puppiesWithPrices = mostRecentLitter.puppies?.filter((p) => p.salePrice && p.salePrice > 0);
 
     if (!puppiesWithPrices || puppiesWithPrices.length === 0) {
       return 3000;
     }
 
-    const avgPrice = puppiesWithPrices.reduce((sum, p) => sum + (p.price || 0), 0) / puppiesWithPrices.length;
+    const avgPrice = puppiesWithPrices.reduce((sum, p) => sum + (p.salePrice || 0), 0) / puppiesWithPrices.length;
     return Math.round(avgPrice);
   };
 
@@ -187,6 +188,79 @@ export function LitterForecast() {
   const totalProjectedIncome = forecastedLitters.reduce((sum, f) => sum + f.totalIncome, 0);
   const totalProjectedPuppies = forecastedLitters.reduce((sum, f) => sum + f.estimatedPuppies, 0);
 
+  // Prepare timeline data
+  const timelineData = useMemo(() => {
+    const now = new Date();
+    const timelineStart = now;
+    const timelineEnd = addMonths(now, timeframeMonths);
+
+    const dogTimelines = breedingFemales.map((dog) => {
+      const events: Array<{
+        id: string;
+        type: 'heat' | 'pregnancy' | 'estimated_heat';
+        startDate: Date;
+        endDate: Date;
+        label?: string;
+      }> = [];
+
+      // Add actual heat cycles
+      const dogHeatCycles = heatCycles
+        .filter((hc) => hc.dogId === dog.id && hc.startDate)
+        .filter((hc) => {
+          const heatDate = parseISO(hc.startDate);
+          return heatDate >= timelineStart && heatDate <= timelineEnd;
+        });
+
+      dogHeatCycles.forEach((hc, idx) => {
+        const startDate = parseISO(hc.startDate);
+        const endDate = hc.endDate ? parseISO(hc.endDate) : addDays(startDate, 21); // Default 3-week heat
+
+        events.push({
+          id: `heat-${hc.id || idx}`,
+          type: 'heat',
+          startDate,
+          endDate,
+        });
+      });
+
+      // Add forecasted heats and pregnancies
+      const dogForecasts = forecastedLitters.filter((f) => f.dogId === dog.id);
+      dogForecasts.forEach((forecast) => {
+        if (forecast.day1Heat) {
+          // Add estimated heat cycle
+          events.push({
+            id: `${forecast.id}-heat`,
+            type: 'estimated_heat',
+            startDate: forecast.day1Heat,
+            endDate: addDays(forecast.day1Heat, 21),
+          });
+
+          // Add pregnancy
+          if (forecast.matingDate && forecast.dueDate) {
+            events.push({
+              id: `${forecast.id}-pregnancy`,
+              type: 'pregnancy',
+              startDate: forecast.matingDate,
+              endDate: forecast.dueDate,
+            });
+          }
+        }
+      });
+
+      return {
+        dogId: dog.id,
+        dogName: dog.name,
+        events,
+      };
+    });
+
+    return {
+      dogTimelines,
+      startDate: timelineStart,
+      endDate: timelineEnd,
+    };
+  }, [breedingFemales, heatCycles, forecastedLitters, timeframeMonths]);
+
   const updateForecast = (forecastId: string, field: keyof ForecastedLitter, value: any) => {
     setEditingForecast((prev) => {
       const current = prev[forecastId] || {};
@@ -227,6 +301,13 @@ export function LitterForecast() {
           </div>
         </div>
       </div>
+
+      {/* Breeding Timeline */}
+      <BreedingTimeline
+        dogTimelines={timelineData.dogTimelines}
+        startDate={timelineData.startDate}
+        endDate={timelineData.endDate}
+      />
 
       {/* Summary Cards */}
       <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
