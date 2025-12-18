@@ -83,9 +83,9 @@ export function Dashboard() {
 
   // Calculate statistics and detailed data
   const stats = useMemo(() => {
-    const activeDams = dogs.filter((d) => d.sex === 'female' && !d.isDeceased);
-    const activeSires = dogs.filter((d) => d.sex === 'male' && !d.isDeceased);
-    const retiredDogs = dogs.filter((d) => d.isDeceased);
+    const activeDams = dogs.filter((d) => d.sex === 'female' && !d.isDeceased && d.breedingStatus !== 'retired');
+    const activeSires = dogs.filter((d) => d.sex === 'male' && !d.isDeceased && d.breedingStatus !== 'retired');
+    const retiredDogs = dogs.filter((d) => d.isDeceased || d.breedingStatus === 'retired');
 
     const allPuppies = litters.flatMap((litter) =>
       (litter.puppies || []).map((p) => ({ ...p, litter }))
@@ -126,7 +126,7 @@ export function Dashboard() {
 
   // Calculate upcoming heats
   const upcomingHeats = useMemo(() => {
-    const femaleDogs = dogs.filter((d) => d.sex === 'female' && !d.isDeceased);
+    const femaleDogs = dogs.filter((d) => d.sex === 'female' && !d.isDeceased && d.breedingStatus !== 'retired');
     const predictions: Array<{
       dog: (typeof dogs)[0];
       lastHeat: Date;
