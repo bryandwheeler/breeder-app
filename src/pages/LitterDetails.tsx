@@ -3,7 +3,8 @@ import { useDogStore } from '@/store/dogStoreFirebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Plus, Users, Calendar, DollarSign, FileText, Share2, TrendingUp, TrendingDown, Edit, Trash2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Plus, Users, Calendar, DollarSign, FileText, Share2, TrendingUp, TrendingDown, Edit, Trash2, ListChecks, Trophy } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PuppyCard } from '@/components/PuppyCard';
 import { PuppyFormDialog } from '@/components/PuppyFormDialog';
@@ -252,7 +253,7 @@ export function LitterDetails() {
       </div>
 
       {/* Litter Information */}
-      <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
         <Card>
           <CardHeader>
             <CardTitle className='flex items-center gap-2'>
@@ -296,6 +297,40 @@ export function LitterDetails() {
                 {sire?.name}
               </Link>
             </div>
+
+            {/* Pricing Info */}
+            <div className='pt-2 border-t'>
+              <strong className='block mb-2'>Pricing:</strong>
+              {litter.pricing?.petPrice && (
+                <div className='flex justify-between text-sm'>
+                  <span>Pet Price:</span>
+                  <span className='font-semibold'>
+                    ${litter.pricing.petPrice.toLocaleString()}
+                  </span>
+                </div>
+              )}
+              {litter.pricing?.breedingPrice && (
+                <div className='flex justify-between text-sm'>
+                  <span>Breeding Rights:</span>
+                  <span className='font-semibold'>
+                    ${litter.pricing.breedingPrice.toLocaleString()}
+                  </span>
+                </div>
+              )}
+              {litter.pricing?.showPrice && (
+                <div className='flex justify-between text-sm'>
+                  <span>Show Quality:</span>
+                  <span className='font-semibold'>
+                    ${litter.pricing.showPrice.toLocaleString()}
+                  </span>
+                </div>
+              )}
+              {!litter.pricing?.petPrice &&
+                !litter.pricing?.breedingPrice &&
+                !litter.pricing?.showPrice && (
+                  <p className='text-muted-foreground text-sm'>No pricing set</p>
+                )}
+            </div>
           </CardContent>
         </Card>
 
@@ -328,45 +363,6 @@ export function LitterDetails() {
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className='flex items-center gap-2'>
-              <DollarSign className='h-5 w-5' /> Pricing
-            </CardTitle>
-          </CardHeader>
-          <CardContent className='space-y-2'>
-            {litter.pricing?.petPrice && (
-              <div className='flex justify-between'>
-                <span>Pet Price:</span>
-                <span className='font-semibold'>
-                  ${litter.pricing.petPrice.toLocaleString()}
-                </span>
-              </div>
-            )}
-            {litter.pricing?.breedingPrice && (
-              <div className='flex justify-between'>
-                <span>Breeding Rights:</span>
-                <span className='font-semibold'>
-                  ${litter.pricing.breedingPrice.toLocaleString()}
-                </span>
-              </div>
-            )}
-            {litter.pricing?.showPrice && (
-              <div className='flex justify-between'>
-                <span>Show Quality:</span>
-                <span className='font-semibold'>
-                  ${litter.pricing.showPrice.toLocaleString()}
-                </span>
-              </div>
-            )}
-            {!litter.pricing?.petPrice &&
-              !litter.pricing?.breedingPrice &&
-              !litter.pricing?.showPrice && (
-                <p className='text-muted-foreground'>No pricing set</p>
-              )}
-          </CardContent>
-        </Card>
       </div>
 
       {litter.litterNotes && (
@@ -380,17 +376,37 @@ export function LitterDetails() {
         </Card>
       )}
 
-      {/* Milestones Section */}
-      {litter.dateOfBirth && (
-        <LitterMilestones litter={litter} onUpdate={updateLitter} />
-      )}
+      {/* Tabbed Content */}
+      <Tabs defaultValue='puppies' className='w-full'>
+        <TabsList className='grid w-full grid-cols-5'>
+          <TabsTrigger value='puppies' className='flex items-center gap-2'>
+            <Users className='h-4 w-4' />
+            <span className='hidden sm:inline'>Puppies</span>
+          </TabsTrigger>
+          {litter.dateOfBirth && (
+            <>
+              <TabsTrigger value='milestones' className='flex items-center gap-2'>
+                <Trophy className='h-4 w-4' />
+                <span className='hidden sm:inline'>Milestones</span>
+              </TabsTrigger>
+              <TabsTrigger value='tasks' className='flex items-center gap-2'>
+                <ListChecks className='h-4 w-4' />
+                <span className='hidden sm:inline'>Tasks</span>
+              </TabsTrigger>
+            </>
+          )}
+          <TabsTrigger value='waitlist' className='flex items-center gap-2'>
+            <Users className='h-4 w-4' />
+            <span className='hidden sm:inline'>Waitlist</span>
+          </TabsTrigger>
+          <TabsTrigger value='financials' className='flex items-center gap-2'>
+            <DollarSign className='h-4 w-4' />
+            <span className='hidden sm:inline'>Financials</span>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Care Tasks Section */}
-      {litter.dateOfBirth && (
-        <LitterCareTasks litter={litter} onUpdate={updateLitter} />
-      )}
-
-      {/* Puppies Grid */}
+        {/* Puppies Tab */}
+        <TabsContent value='puppies'>
       <div>
         <div className='flex justify-between items-center mb-4'>
           <h2 className='text-2xl font-bold'>Puppies</h2>
@@ -424,8 +440,24 @@ export function LitterDetails() {
           </div>
         )}
       </div>
+        </TabsContent>
 
-      {/* Waitlist/Buyers */}
+        {/* Milestones Tab */}
+        {litter.dateOfBirth && (
+          <TabsContent value='milestones'>
+            <LitterMilestones litter={litter} onUpdate={updateLitter} />
+          </TabsContent>
+        )}
+
+        {/* Tasks Tab */}
+        {litter.dateOfBirth && (
+          <TabsContent value='tasks'>
+            <LitterCareTasks litter={litter} onUpdate={updateLitter} />
+          </TabsContent>
+        )}
+
+        {/* Waitlist Tab */}
+        <TabsContent value='waitlist'>
       <Card>
         <CardHeader>
           <div className='flex justify-between items-center'>
@@ -479,23 +511,10 @@ export function LitterDetails() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
 
-      <PuppyFormDialog
-        open={puppyDialogOpen}
-        setOpen={setPuppyDialogOpen}
-        puppy={editingPuppy}
-        litterBuyers={buyers}
-        onSave={handleSavePuppy}
-      />
-
-      <BuyerFormDialog
-        open={buyerDialogOpen}
-        setOpen={setBuyerDialogOpen}
-        buyer={editingBuyer}
-        onSave={handleSaveBuyer}
-      />
-
-      {/* Financials */}
+        {/* Financials Tab */}
+        <TabsContent value='financials'>
       <Card>
         <CardHeader>
           <div className='flex justify-between items-center'>
@@ -579,6 +598,23 @@ export function LitterDetails() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
+
+      <PuppyFormDialog
+        open={puppyDialogOpen}
+        setOpen={setPuppyDialogOpen}
+        puppy={editingPuppy}
+        litterBuyers={buyers}
+        onSave={handleSavePuppy}
+      />
+
+      <BuyerFormDialog
+        open={buyerDialogOpen}
+        setOpen={setBuyerDialogOpen}
+        buyer={editingBuyer}
+        onSave={handleSaveBuyer}
+      />
 
       <ExpenseDialog
         open={expenseDialogOpen}
