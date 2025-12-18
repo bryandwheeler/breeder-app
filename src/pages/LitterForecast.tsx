@@ -243,6 +243,15 @@ export function LitterForecast() {
               startDate: forecast.matingDate,
               endDate: forecast.dueDate,
             });
+
+            // Add puppy care period (8 weeks after birth)
+            const puppyCareEnd = addDays(forecast.dueDate, 56); // 8 weeks = 56 days
+            events.push({
+              id: `${forecast.id}-puppy-care`,
+              type: 'puppy_care',
+              startDate: forecast.dueDate,
+              endDate: puppyCareEnd,
+            });
           }
         }
       });

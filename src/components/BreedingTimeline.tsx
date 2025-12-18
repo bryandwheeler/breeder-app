@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 
 interface TimelineEvent {
   id: string;
-  type: 'heat' | 'pregnancy' | 'estimated_heat';
+  type: 'heat' | 'pregnancy' | 'estimated_heat' | 'puppy_care';
   startDate: Date;
   endDate: Date;
   label?: string;
@@ -76,7 +76,9 @@ export function BreedingTimeline({ dogTimelines, startDate, endDate }: BreedingT
       case 'estimated_heat':
         return 'bg-green-500/40 border-2 border-green-500 border-dashed';
       case 'pregnancy':
-        return 'bg-pink-500';
+        return 'bg-pink-400';
+      case 'puppy_care':
+        return 'bg-blue-400';
       default:
         return 'bg-gray-400';
     }
@@ -103,7 +105,7 @@ export function BreedingTimeline({ dogTimelines, startDate, endDate }: BreedingT
       <CardContent>
         <div className='space-y-4'>
           {/* Legend */}
-          <div className='flex gap-4 items-center text-sm pb-2 border-b'>
+          <div className='flex gap-4 items-center text-sm pb-2 border-b flex-wrap'>
             <div className='flex items-center gap-2'>
               <div className='w-4 h-4 bg-green-500 rounded'></div>
               <span>Heat Cycle</span>
@@ -113,8 +115,12 @@ export function BreedingTimeline({ dogTimelines, startDate, endDate }: BreedingT
               <span>Estimated Heat</span>
             </div>
             <div className='flex items-center gap-2'>
-              <div className='w-4 h-4 bg-pink-500 rounded'></div>
+              <div className='w-4 h-4 bg-pink-400 rounded'></div>
               <span>Pregnancy</span>
+            </div>
+            <div className='flex items-center gap-2'>
+              <div className='w-4 h-4 bg-blue-400 rounded'></div>
+              <span>Puppy Care (8 weeks)</span>
             </div>
           </div>
 
@@ -194,6 +200,7 @@ export function BreedingTimeline({ dogTimelines, startDate, endDate }: BreedingT
           <p>• Green bars show actual or estimated heat cycles</p>
           <p>• Dotted green bars indicate estimated heat cycles (no history)</p>
           <p>• Pink bars show planned pregnancies (based on forecasted matings)</p>
+          <p>• Blue bars show the 8-week puppy care period after birth</p>
           <p>• Click on a dog's name to view their profile</p>
         </div>
       </CardContent>
