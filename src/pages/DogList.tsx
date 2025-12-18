@@ -122,6 +122,8 @@ export function DogList({
   const [breedingStatusFilters, setBreedingStatusFilters] = useState<BreedingStatus[]>([]);
   // New state: show retired dogs (default false)
   const [showRetired, setShowRetired] = useState(false);
+  // New state: show external studs (default false)
+  const [showExternalStuds, setShowExternalStuds] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dogToDelete, setDogToDelete] = useState<Dog | null>(null);
   const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>(() => {
@@ -421,6 +423,11 @@ export function DogList({
         return false;
       }
 
+      // Filter out external studs unless showExternalStuds is checked
+      if (!showExternalStuds && dog.programStatus === 'external_stud') {
+        return false;
+      }
+
       // Filter by program status
       if (programFilters.length > 0) {
         const dogProgram = (dog.programStatus || 'owned') as ProgramStatus;
@@ -574,6 +581,21 @@ export function DogList({
                 className='text-sm font-medium cursor-pointer'
               >
                 Show Retired
+              </label>
+            </div>
+
+            {/* Show External Studs Checkbox */}
+            <div className='flex items-center gap-2'>
+              <Checkbox
+                id='show-external-studs'
+                checked={showExternalStuds}
+                onCheckedChange={(checked) => setShowExternalStuds(checked as boolean)}
+              />
+              <label
+                htmlFor='show-external-studs'
+                className='text-sm font-medium cursor-pointer'
+              >
+                Show External Studs
               </label>
             </div>
           </div>
