@@ -169,9 +169,12 @@ export function LitterDetails() {
   };
 
   const availablePuppies = puppies.filter((p) => p.status === 'available');
+  const pendingPuppies = puppies.filter((p) => p.status === 'pending');
   const reservedPuppies = puppies.filter((p) => p.status === 'reserved');
   const soldPuppies = puppies.filter((p) => p.status === 'sold');
   const keptPuppies = puppies.filter((p) => p.status === 'kept');
+  const unavailablePuppies = puppies.filter((p) => p.status === 'unavailable');
+  const deceasedPuppies = puppies.filter((p) => p.isDeceased);
 
   const handleShareLitter = () => {
     if (!currentUser) return;
@@ -349,6 +352,12 @@ export function LitterDetails() {
               <span>Available:</span>
               <Badge variant='default'>{availablePuppies.length}</Badge>
             </div>
+            {pendingPuppies.length > 0 && (
+              <div className='flex justify-between'>
+                <span>Pending:</span>
+                <Badge variant='secondary'>{pendingPuppies.length}</Badge>
+              </div>
+            )}
             <div className='flex justify-between'>
               <span>Reserved:</span>
               <Badge variant='secondary'>{reservedPuppies.length}</Badge>
@@ -361,6 +370,18 @@ export function LitterDetails() {
               <span>Kept:</span>
               <Badge variant='destructive'>{keptPuppies.length}</Badge>
             </div>
+            {unavailablePuppies.length > 0 && (
+              <div className='flex justify-between'>
+                <span>Unavailable:</span>
+                <Badge variant='outline'>{unavailablePuppies.length}</Badge>
+              </div>
+            )}
+            {deceasedPuppies.length > 0 && (
+              <div className='flex justify-between'>
+                <span>Deceased:</span>
+                <Badge variant='destructive'>{deceasedPuppies.length}</Badge>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

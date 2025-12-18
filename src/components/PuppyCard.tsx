@@ -19,12 +19,16 @@ export function PuppyCard({ puppy, buyer, onEdit, onDelete, onReserve, onGenerat
     switch (status) {
       case 'available':
         return 'default';
+      case 'pending':
+        return 'secondary';
       case 'reserved':
         return 'secondary';
       case 'sold':
         return 'outline';
       case 'kept':
         return 'destructive';
+      case 'unavailable':
+        return 'outline';
       default:
         return 'default';
     }
@@ -51,6 +55,9 @@ export function PuppyCard({ puppy, buyer, onEdit, onDelete, onReserve, onGenerat
               <Badge variant={getStatusColor(puppy.status)}>
                 {getStatusLabel(puppy.status)}
               </Badge>
+              {puppy.isDeceased && (
+                <Badge variant='destructive'>Deceased</Badge>
+              )}
               <Badge variant='outline'>
                 {puppy.sex === 'male' ? '♂ Male' : '♀ Female'}
               </Badge>

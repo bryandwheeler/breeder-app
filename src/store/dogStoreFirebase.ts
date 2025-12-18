@@ -302,6 +302,8 @@ export const useDogStore = create<Store>()((set, get) => ({
               const litter: Litter = {
                 id: litterId,
                 ...litterData,
+                // Explicitly preserve buyers array from document
+                buyers: litterData.buyers || [],
                 puppies: subcollections.puppies.length > 0
                   ? subcollections.puppies
                   : litterData.puppies || [],

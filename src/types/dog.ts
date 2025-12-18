@@ -360,7 +360,8 @@ export interface Puppy {
   collar?: string;
   microchip?: string;
   photos: string[];
-  status: 'available' | 'reserved' | 'sold' | 'kept';
+  status: 'available' | 'reserved' | 'sold' | 'kept' | 'unavailable' | 'pending';
+  isDeceased?: boolean;
   buyerId?: string;
   reservationDate?: string;
   salePrice?: number;

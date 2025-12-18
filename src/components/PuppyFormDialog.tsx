@@ -244,7 +244,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: 
               onValueChange={(value) =>
                 setFormData({
                   ...formData,
-                  status: value as 'available' | 'reserved' | 'sold' | 'kept',
+                  status: value as 'available' | 'reserved' | 'sold' | 'kept' | 'unavailable' | 'pending',
                 })
               }
             >
@@ -253,11 +253,26 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value='available'>Available</SelectItem>
+                <SelectItem value='pending'>Pending</SelectItem>
                 <SelectItem value='reserved'>Reserved</SelectItem>
                 <SelectItem value='sold'>Sold</SelectItem>
                 <SelectItem value='kept'>Kept</SelectItem>
+                <SelectItem value='unavailable'>Unavailable</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className='flex items-center space-x-2'>
+            <Checkbox
+              id='isDeceased'
+              checked={formData.isDeceased || false}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, isDeceased: checked as boolean })
+              }
+            />
+            <Label htmlFor='isDeceased' className='cursor-pointer'>
+              Deceased
+            </Label>
           </div>
 
           {(formData.status === 'reserved' || formData.status === 'sold') && (
