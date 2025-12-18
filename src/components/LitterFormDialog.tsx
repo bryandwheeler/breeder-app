@@ -65,6 +65,10 @@ export function LitterFormDialog({
     null
   );
 
+  // Puppy count state
+  const [maleCount, setMaleCount] = useState(0);
+  const [femaleCount, setFemaleCount] = useState(0);
+
   useEffect(() => {
     if (litter) {
       setFormData({
@@ -82,6 +86,11 @@ export function LitterFormDialog({
         pricing: litter.pricing,
         ownerInfo: litter.ownerInfo,
       });
+      // Calculate existing puppy counts
+      const males = litter.puppies?.filter(p => p.sex === 'male').length || 0;
+      const females = litter.puppies?.filter(p => p.sex === 'female').length || 0;
+      setMaleCount(males);
+      setFemaleCount(females);
     } else {
       setFormData({
         litterName: '',
@@ -92,8 +101,58 @@ export function LitterFormDialog({
         puppies: [],
         buyers: [],
       });
+      setMaleCount(0);
+      setFemaleCount(0);
     }
   }, [litter, open]);
+
+  const generatePuppies = () => {
+    const existingPuppies = formData.puppies || [];
+    const existingMales = existingPuppies.filter(p => p.sex === 'male');
+    const existingFemales = existingPuppies.filter(p => p.sex === 'female');
+
+    const puppies: typeof existingPuppies = [];
+
+    // Keep existing male puppies, add or remove as needed
+    for (let i = 0; i < maleCount; i++) {
+      if (existingMales[i]) {
+        puppies.push(existingMales[i]);
+      } else {
+        puppies.push({
+          id: crypto.randomUUID(),
+          tempName: `Male ${i + 1}`,
+          sex: 'male',
+          color: '',
+          photos: [],
+          status: 'available',
+          healthTests: [],
+          shotRecords: [],
+          weightHistory: [],
+        });
+      }
+    }
+
+    // Keep existing female puppies, add or remove as needed
+    for (let i = 0; i < femaleCount; i++) {
+      if (existingFemales[i]) {
+        puppies.push(existingFemales[i]);
+      } else {
+        puppies.push({
+          id: crypto.randomUUID(),
+          tempName: `Female ${i + 1}`,
+          sex: 'female',
+          color: '',
+          photos: [],
+          status: 'available',
+          healthTests: [],
+          shotRecords: [],
+          weightHistory: [],
+        });
+      }
+    }
+
+    return puppies;
+  };
 
   const handleSireSearch = async () => {
     if (!sireSearchTerm.trim() || !currentUser) return;
@@ -140,8 +199,11 @@ export function LitterFormDialog({
       return;
     }
 
+    // Generate puppy records based on counts
+    const puppies = generatePuppies();
+
     // Prepare litter data with external sire info if applicable
-    const litterData = { ...formData };
+    const litterData = { ...formData, puppies };
     if (externalSire) {
       litterData.sireId = ''; // Clear internal sire ID
       litterData.externalSire = {
@@ -155,8 +217,16 @@ export function LitterFormDialog({
 
     if (litter) {
       await updateLitter(litter.id, litterData);
+      toast({
+        title: 'Litter updated',
+        description: `Litter now has ${puppies.length} puppy record${puppies.length !== 1 ? 's' : ''}.`,
+      });
     } else {
       await addLitter(litterData);
+      toast({
+        title: 'Litter created',
+        description: `Created litter with ${puppies.length} puppy record${puppies.length !== 1 ? 's' : ''}.`,
+      });
     }
 
     setOpen(false);
@@ -465,6 +535,46 @@ export function LitterFormDialog({
                   setFormData({ ...formData, pickupReadyDate: e.target.value })
                 }
               />
+            </div>
+          </div>
+
+          {/* Puppy Count Section */}
+          <div className='space-y-3 p-4 border rounded-lg bg-muted/30'>
+            <h3 className='font-semibold text-sm'>Puppy Count</h3>
+            <p className='text-xs text-muted-foreground'>
+              {litter
+                ? 'Update the count to add or remove puppy records. Existing puppies will be preserved.'
+                : 'Specify how many puppies to create records for. You can edit individual details later.'}
+            </p>
+            <div className='grid grid-cols-3 gap-4'>
+              <div>
+                <Label htmlFor='maleCount'>Male Puppies</Label>
+                <Input
+                  id='maleCount'
+                  type='number'
+                  min='0'
+                  value={maleCount}
+                  onChange={(e) => setMaleCount(parseInt(e.target.value) || 0)}
+                  placeholder='0'
+                />
+              </div>
+              <div>
+                <Label htmlFor='femaleCount'>Female Puppies</Label>
+                <Input
+                  id='femaleCount'
+                  type='number'
+                  min='0'
+                  value={femaleCount}
+                  onChange={(e) => setFemaleCount(parseInt(e.target.value) || 0)}
+                  placeholder='0'
+                />
+              </div>
+              <div>
+                <Label>Total Puppies</Label>
+                <div className='h-10 flex items-center justify-center font-semibold text-lg border rounded-md bg-background'>
+                  {maleCount + femaleCount}
+                </div>
+              </div>
             </div>
           </div>
 
