@@ -16,6 +16,7 @@ import { generateLitterRecord } from '@/lib/pdfGenerator';
 import { ContractSigningDialog } from '@/components/ContractSigningDialog';
 import { LitterMilestones } from '@/components/LitterMilestones';
 import { LitterCareTasks } from '@/components/LitterCareTasks';
+import { LitterFormDialog } from '@/components/LitterFormDialog';
 
 export function LitterDetails() {
   const { id } = useParams<{ id: string }>();
@@ -31,6 +32,7 @@ export function LitterDetails() {
   const [signingPuppy, setSigningPuppy] = useState<Puppy | null>(null);
   const [signingType, setSigningType] = useState<'contract' | 'health'>('contract');
   const [signingDialogOpen, setSigningDialogOpen] = useState(false);
+  const [litterEditDialogOpen, setLitterEditDialogOpen] = useState(false);
 
   if (!litter) {
     return (
@@ -237,6 +239,9 @@ export function LitterDetails() {
           </div>
         </div>
         <div className='flex gap-2'>
+          <Button variant='outline' onClick={() => setLitterEditDialogOpen(true)}>
+            <Edit className='mr-2 h-4 w-4' /> Edit Litter
+          </Button>
           <Button variant='outline' onClick={handleShareLitter}>
             <Share2 className='mr-2 h-4 w-4' /> Share
           </Button>
@@ -596,6 +601,12 @@ export function LitterDetails() {
           breederName={dam.breederName || ''}
         />
       )}
+
+      <LitterFormDialog
+        open={litterEditDialogOpen}
+        setOpen={setLitterEditDialogOpen}
+        litter={litter}
+      />
     </div>
   );
 }
