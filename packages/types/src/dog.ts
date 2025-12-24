@@ -1117,6 +1117,7 @@ export interface WaitlistEntry {
   id: string;
   userId: string; // Breeder's user ID
   inquiryId?: string; // Link to the original inquiry if came from inquiry
+  contactId?: string; // Link to Customer/Contact record in CRM
 
   // Customer Information
   name: string;
@@ -1294,9 +1295,32 @@ export interface Customer {
   litterIds?: string[]; // Litters they purchased from
   studJobIds?: string[]; // Stud jobs for stud clients
 
+  // Journey Tracking (for customer analytics)
+  stage?: CustomerStage;
+  inquiryDate?: string;
+  applicationDate?: string;
+  approvalDate?: string;
+  depositDate?: string;
+  depositAmount?: number;
+  contractDate?: string;
+  pickupDate?: string;
+  assignedPuppyId?: string;
+  preferredBreed?: string;
+  referralSource?: string; // Name/description of referral source
+
   createdAt?: string;
   updatedAt?: string;
 }
+
+// Customer journey stage
+export type CustomerStage =
+  | 'inquiry'
+  | 'application'
+  | 'approved'
+  | 'deposit'
+  | 'contract'
+  | 'pickup'
+  | 'archived';
 
 export interface Purchase {
   id: string;

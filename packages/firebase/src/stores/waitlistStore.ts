@@ -11,7 +11,6 @@ import {
   onSnapshot,
   serverTimestamp,
   getDocs,
-  orderBy,
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import { WaitlistEntry } from '@breeder/types';
@@ -140,19 +139,117 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
   submitWaitlistApplication: async (entry) => {
     // Public method - doesn't require auth
     // The userId will be set by the breeder who owns the application form
+    const breederId = (entry as any).userId;
     const waitlistRef = collection(db, 'waitlist');
+    const customersRef = collection(db, 'customers');
 
     // Get current count to set position
     // Count existing entries for this breeder using breederId
     const snapshot = await getDocs(
-      query(waitlistRef, where('breederId', '==', (entry as any).userId))
+      query(waitlistRef, where('breederId', '==', breederId))
     );
     const position = snapshot.docs.length + 1;
+
+    // Find or create a contact for this applicant
+    let contactId: string | undefined;
+
+    try {
+      // Search for existing contact by email first
+      const emailQuery = query(
+        customersRef,
+        where('breederId', '==', breederId),
+        where('email', '==', entry.email.toLowerCase().trim())
+      );
+      const emailSnapshot = await getDocs(emailQuery);
+
+      if (!emailSnapshot.empty) {
+        // Found existing contact by email
+        const existingContact = emailSnapshot.docs[0];
+        contactId = existingContact.id;
+
+        // Update contact roles to include 'prospect' if not already
+        const currentRoles = existingContact.data().contactRoles || [];
+        if (!currentRoles.includes('prospect')) {
+          await updateDoc(doc(db, 'customers', contactId), {
+            contactRoles: [...currentRoles, 'prospect'],
+            updatedAt: serverTimestamp(),
+          });
+        }
+      } else if (entry.phone) {
+        // Try phone match - normalize to last 10 digits
+        const normalizedPhone = entry.phone.replace(/\D/g, '').slice(-10);
+        if (normalizedPhone.length === 10) {
+          // Query all customers for this breeder and filter in memory
+          // (Firestore doesn't support partial string matching)
+          const allCustomersQuery = query(
+            customersRef,
+            where('breederId', '==', breederId)
+          );
+          const allCustomersSnapshot = await getDocs(allCustomersQuery);
+
+          for (const customerDoc of allCustomersSnapshot.docs) {
+            const customerPhone = (customerDoc.data().phone || '').replace(/\D/g, '');
+            if (customerPhone.slice(-10) === normalizedPhone) {
+              contactId = customerDoc.id;
+
+              // Update contact roles to include 'prospect' if not already
+              const currentRoles = customerDoc.data().contactRoles || [];
+              if (!currentRoles.includes('prospect')) {
+                await updateDoc(doc(db, 'customers', contactId), {
+                  contactRoles: [...currentRoles, 'prospect'],
+                  updatedAt: serverTimestamp(),
+                });
+              }
+              break;
+            }
+          }
+        }
+      }
+
+      // If no existing contact found, create a new one
+      if (!contactId) {
+        const newCustomer = {
+          name: entry.name,
+          email: entry.email.toLowerCase().trim(),
+          phone: entry.phone || '',
+          address: entry.address || '',
+          city: entry.city || '',
+          state: entry.state || '',
+          type: 'prospect',
+          status: 'active',
+          source: 'website',
+          preferredContact: 'email',
+          emailOptIn: true,
+          smsOptIn: false,
+          userId: breederId,
+          breederId: breederId,
+          firstContactDate: new Date().toISOString().split('T')[0],
+          lastContactDate: new Date().toISOString().split('T')[0],
+          totalPurchases: 0,
+          totalRevenue: 0,
+          lifetimeValue: 0,
+          interactions: [],
+          purchases: [],
+          tags: [],
+          contactRoles: ['prospect'],
+          notes: '',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+
+        const newContactDoc = await addDoc(customersRef, newCustomer);
+        contactId = newContactDoc.id;
+      }
+    } catch (error) {
+      // Log error but don't fail the waitlist submission
+      console.error('Error creating/linking contact for waitlist application:', error);
+    }
 
     const newEntry = {
       ...entry,
       // Persist breederId for rules; keep userId for backward compat
-      breederId: (entry as any).userId,
+      breederId: breederId,
+      contactId: contactId, // Link to contact record
       status: 'pending' as const,
       position,
       applicationDate: new Date().toISOString().split('T')[0],

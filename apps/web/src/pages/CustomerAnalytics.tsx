@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '@breeder/firebase';
+import { useCrmStore } from '@breeder/firebase';
 import { Customer } from '@breeder/types';
 import { CustomerLTVDashboard } from '@/components/CustomerLTVDashboard';
 import { CustomerJourneyVisualization } from '@/components/CustomerJourneyVisualization';
@@ -8,43 +7,32 @@ import { calculateConversionMetrics, ConversionMetrics } from '@/lib/customerAna
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, Users, BarChart3, User } from 'lucide-react';
+import { TrendingUp, BarChart3, User } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 
 export function CustomerAnalytics() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const { customers, loading, subscribeToCustomers } = useCrmStore();
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [conversionMetrics, setConversionMetrics] = useState<ConversionMetrics[]>([]);
-  const [loading, setLoading] = useState(true);
 
+  // Subscribe to customers on mount
   useEffect(() => {
-    loadCustomers();
-  }, []);
+    const unsubscribe = subscribeToCustomers();
+    return () => unsubscribe();
+  }, [subscribeToCustomers]);
 
-  const loadCustomers = async () => {
-    try {
-      const customersRef = collection(db, 'customers');
-      const q = query(customersRef, orderBy('inquiryDate', 'desc'));
-      const snapshot = await getDocs(q);
-      const customersData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Customer[];
-
-      setCustomers(customersData);
-      setConversionMetrics(calculateConversionMetrics(customersData));
+  // Calculate metrics when customers change
+  useEffect(() => {
+    if (customers.length > 0) {
+      setConversionMetrics(calculateConversionMetrics(customers));
 
       // Select first customer by default if available
-      if (customersData.length > 0 && !selectedCustomer) {
-        setSelectedCustomer(customersData[0]);
+      if (!selectedCustomer) {
+        setSelectedCustomer(customers[0]);
       }
-    } catch (error) {
-      console.error('Error loading customers:', error);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [customers, selectedCustomer]);
 
   if (loading) {
     return (
