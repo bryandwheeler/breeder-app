@@ -11,7 +11,7 @@ import { PuppyFormDialog } from '@/components/PuppyFormDialog';
 import { BuyerFormDialog } from '@/components/BuyerFormDialog';
 import { ExpenseDialog } from '@/components/ExpenseDialog';
 import { useState, useEffect } from 'react';
-import { Puppy, Buyer, Expense } from '@breeder/types';
+import { Puppy, Buyer, Expense, WaitlistEntry } from '@breeder/types';
 import { format } from 'date-fns';
 import { generateLitterRecord } from '@/lib/pdfGenerator';
 import { ContractSigningDialog } from '@/components/ContractSigningDialog';
@@ -100,7 +100,7 @@ export function LitterDetails() {
     setPuppyDialogOpen(true);
   };
 
-  const handleSavePuppy = async (puppy: Puppy) => {
+  const handleSavePuppy = async (puppy: Puppy, selectedWaitlistEntry?: WaitlistEntry) => {
     let updatedPuppies: Puppy[];
 
     if (editingPuppy) {
@@ -112,6 +112,27 @@ export function LitterDetails() {
     }
 
     await updateLitter(litter.id, { puppies: updatedPuppies });
+
+    // Handle waitlist entry assignment if a waitlist entry was selected
+    if (selectedWaitlistEntry) {
+      // First, unassign any previous waitlist entry from this puppy
+      const previouslyAssigned = litterWaitlist.find((e) => e.assignedPuppyId === puppy.id);
+      if (previouslyAssigned && previouslyAssigned.id !== selectedWaitlistEntry.id) {
+        await assignPuppyToWaitlistEntry(previouslyAssigned.id, null);
+      }
+
+      // Assign the new waitlist entry to this puppy
+      const puppyName = puppy.name || puppy.tempName || `${puppy.color} ${puppy.sex}`;
+      await assignPuppyToWaitlistEntry(selectedWaitlistEntry.id, puppy.id, puppyName);
+    } else if (editingPuppy) {
+      // No waitlist entry selected - check if we need to unassign any
+      const previouslyAssigned = litterWaitlist.find((e) => e.assignedPuppyId === puppy.id);
+      if (previouslyAssigned && !puppy.buyerId) {
+        // Unassign if no buyer selected at all
+        await assignPuppyToWaitlistEntry(previouslyAssigned.id, null);
+      }
+    }
+
     setPuppyDialogOpen(false);
     setEditingPuppy(null);
   };
@@ -774,6 +795,7 @@ export function LitterDetails() {
         setOpen={setPuppyDialogOpen}
         puppy={editingPuppy}
         litterBuyers={buyers}
+        litterWaitlist={litterWaitlist}
         onSave={handleSavePuppy}
       />
 

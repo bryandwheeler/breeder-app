@@ -6,21 +6,33 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Puppy, Buyer, ShotRecord, WeightEntry, BreedingRights, CoOwnership, Registration } from '@breeder/types';
-import { X, Upload, Plus, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Puppy, Buyer, ShotRecord, WeightEntry, BreedingRights, CoOwnership, Registration, WaitlistEntry } from '@breeder/types';
+import { X, Upload, Plus, Trash2, Users, User } from 'lucide-react';
 import { storage } from '@breeder/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ImageCropDialog } from '@/components/ImageCropDialog';
+
+// Combined buyer option type for unified dropdown
+type BuyerOption = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  type: 'legacy' | 'waitlist';
+  waitlistEntryId?: string;
+};
 
 interface PuppyFormDialogProps {
   open: boolean;
   setOpen: (open: boolean) => void;
   puppy: Puppy | null;
   litterBuyers: Buyer[];
-  onSave: (puppy: Puppy) => Promise<void>;
+  litterWaitlist?: WaitlistEntry[]; // Waitlist entries for this litter
+  onSave: (puppy: Puppy, selectedWaitlistEntry?: WaitlistEntry) => Promise<void>;
 }
 
-export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: PuppyFormDialogProps) {
+export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWaitlist = [], onSave }: PuppyFormDialogProps) {
   const [formData, setFormData] = useState<Puppy>({
     id: crypto.randomUUID(),
     sex: 'male',
@@ -35,10 +47,49 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: 
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string>('');
   const [uploading, setUploading] = useState(false);
+  const [selectedBuyerOption, setSelectedBuyerOption] = useState<string>('');
+
+  // Build combined buyer options from legacy buyers and waitlist entries
+  const buyerOptions: BuyerOption[] = [
+    // Legacy buyers (already on this litter)
+    ...litterBuyers.map((buyer) => ({
+      id: buyer.id,
+      name: buyer.name,
+      email: buyer.email,
+      phone: buyer.phone,
+      type: 'legacy' as const,
+    })),
+    // Waitlist entries (approved/active only, and not already assigned to another puppy)
+    ...litterWaitlist
+      .filter((entry) =>
+        (entry.status === 'approved' || entry.status === 'active' || entry.status === 'matched') &&
+        !entry.assignedPuppyId // Not already assigned to a puppy
+      )
+      .map((entry) => ({
+        id: `waitlist-${entry.id}`,
+        name: entry.name,
+        email: entry.email,
+        phone: entry.phone,
+        type: 'waitlist' as const,
+        waitlistEntryId: entry.id,
+      })),
+  ];
 
   useEffect(() => {
     if (puppy) {
       setFormData(puppy);
+      // Check if this puppy has a buyer assigned
+      if (puppy.buyerId) {
+        setSelectedBuyerOption(puppy.buyerId);
+      } else {
+        // Check if there's a waitlist entry assigned to this puppy
+        const assignedWaitlist = litterWaitlist.find((e) => e.assignedPuppyId === puppy.id);
+        if (assignedWaitlist) {
+          setSelectedBuyerOption(`waitlist-${assignedWaitlist.id}`);
+        } else {
+          setSelectedBuyerOption('');
+        }
+      }
     } else {
       setFormData({
         id: crypto.randomUUID(),
@@ -50,12 +101,34 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: 
         shotRecords: [],
         weightHistory: [],
       });
+      setSelectedBuyerOption('');
     }
-  }, [puppy, open]);
+  }, [puppy, open, litterWaitlist]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSave(formData);
+
+    // Determine if we're selecting a waitlist entry as the buyer
+    let selectedWaitlistEntry: WaitlistEntry | undefined;
+    let updatedFormData = { ...formData };
+
+    if (selectedBuyerOption) {
+      const buyerOption = buyerOptions.find((b) => b.id === selectedBuyerOption);
+      if (buyerOption?.type === 'waitlist' && buyerOption.waitlistEntryId) {
+        // Selecting from waitlist - don't set buyerId, let parent handle the waitlist assignment
+        selectedWaitlistEntry = litterWaitlist.find((e) => e.id === buyerOption.waitlistEntryId);
+        // Clear buyerId since we're using waitlist assignment instead
+        updatedFormData.buyerId = undefined;
+      } else if (buyerOption?.type === 'legacy') {
+        // Legacy buyer selection
+        updatedFormData.buyerId = buyerOption.id;
+      }
+    } else {
+      // No buyer selected - clear buyerId
+      updatedFormData.buyerId = undefined;
+    }
+
+    await onSave(updatedFormData, selectedWaitlistEntry);
     setOpen(false);
   };
 
@@ -278,22 +351,42 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, onSave }: 
           {(formData.status === 'reserved' || formData.status === 'sold') && (
             <>
               <div>
-                <Label htmlFor='buyerId'>Buyer</Label>
+                <Label htmlFor='buyerId'>Buyer / Waitlist Assignee</Label>
                 <Select
-                  value={formData.buyerId || ''}
-                  onValueChange={(value) => setFormData({ ...formData, buyerId: value })}
+                  value={selectedBuyerOption}
+                  onValueChange={(value) => setSelectedBuyerOption(value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder='Select a buyer' />
+                    <SelectValue placeholder='Select a buyer or waitlist entry' />
                   </SelectTrigger>
                   <SelectContent>
-                    {litterBuyers.map((buyer) => (
-                      <SelectItem key={buyer.id} value={buyer.id}>
-                        {buyer.name} - {buyer.email}
-                      </SelectItem>
-                    ))}
+                    {buyerOptions.length === 0 ? (
+                      <div className='p-2 text-sm text-muted-foreground text-center'>
+                        No buyers or waitlist entries available
+                      </div>
+                    ) : (
+                      buyerOptions.map((option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                          <div className='flex items-center gap-2'>
+                            {option.type === 'waitlist' ? (
+                              <Users className='h-3.5 w-3.5 text-blue-500' />
+                            ) : (
+                              <User className='h-3.5 w-3.5 text-green-500' />
+                            )}
+                            <span>{option.name}</span>
+                            <span className='text-muted-foreground'>- {option.email}</span>
+                            {option.type === 'waitlist' && (
+                              <Badge variant='secondary' className='text-xs ml-1'>Waitlist</Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
+                <p className='text-xs text-muted-foreground mt-1'>
+                  Select from existing buyers or assign someone from the waitlist
+                </p>
               </div>
 
               <div className='grid grid-cols-2 gap-4'>
