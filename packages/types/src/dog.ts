@@ -1173,6 +1173,7 @@ export interface WaitlistEntry {
   // Assignment
   assignedLitterId?: string; // Which litter they're assigned to
   assignedPuppyId?: string; // Which puppy they selected/were assigned
+  assignedPuppyName?: string; // Cached name for display
 
   // Communication
   notes?: string; // Breeder's internal notes
@@ -1186,8 +1187,12 @@ export interface WaitlistEntry {
   vetReference?: string;
   personalReferences?: string[];
 
+  // Source tracking
+  source?: 'website' | 'manual' | 'import'; // How the entry was created
+
   createdAt?: string;
   submittedAt?: string; // When the customer submitted the application
+  formSubmittedDate?: string; // When form was submitted (for entries created manually then later filled via form)
   updatedAt?: string;
 }
 

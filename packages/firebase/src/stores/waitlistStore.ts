@@ -23,6 +23,20 @@ type Store = {
   addToWaitlist: (
     entry: Omit<WaitlistEntry, 'id' | 'createdAt' | 'updatedAt'>
   ) => Promise<void>;
+  addContactToWaitlist: (
+    contactId: string,
+    litterId?: string,
+    preferences?: {
+      preferredSex?: 'male' | 'female' | 'either';
+      preferredColors?: string[];
+      notes?: string;
+    }
+  ) => Promise<string>; // Returns waitlist entry ID
+  assignPuppyToWaitlistEntry: (
+    waitlistEntryId: string,
+    puppyId: string | null, // null to unassign
+    puppyName?: string
+  ) => Promise<void>;
   updateWaitlistEntry: (
     id: string,
     updates: Partial<WaitlistEntry>
@@ -30,6 +44,8 @@ type Store = {
   deleteWaitlistEntry: (id: string) => Promise<void>;
   reorderWaitlist: (entries: WaitlistEntry[]) => Promise<void>;
   moveToPosition: (id: string, newPosition: number) => Promise<void>;
+  getWaitlistForLitter: (litterId: string) => WaitlistEntry[];
+  findExistingWaitlistEntry: (contactId: string, litterId?: string) => WaitlistEntry | undefined;
 
   // Public methods (for waitlist application form)
   submitWaitlistApplication: (
@@ -67,6 +83,108 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
     };
 
     await addDoc(waitlistRef, newEntry);
+  },
+
+  addContactToWaitlist: async (contactId, litterId, preferences) => {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Must be logged in to add to waitlist');
+
+    // First, get the contact details
+    const customerDoc = await getDocs(
+      query(
+        collection(db, 'customers'),
+        where('breederId', '==', user.uid)
+      )
+    );
+
+    const contact = customerDoc.docs.find(d => d.id === contactId);
+    if (!contact) throw new Error('Contact not found');
+
+    const contactData = contact.data();
+
+    // Check if contact already has a waitlist entry for this litter (or general if no litterId)
+    const existingEntry = get().findExistingWaitlistEntry(contactId, litterId);
+    if (existingEntry) {
+      // Return existing entry ID - caller can decide to update it
+      return existingEntry.id;
+    }
+
+    const waitlistRef = collection(db, 'waitlist');
+
+    // Get current waitlist count to set position
+    const currentWaitlist = get().waitlist.filter(
+      (e) => e.status === 'active' || e.status === 'approved'
+    );
+    const position = currentWaitlist.length + 1;
+
+    const newEntry = {
+      // Contact info from customer record
+      name: contactData.name,
+      email: contactData.email,
+      phone: contactData.phone || '',
+      address: contactData.address || '',
+      city: contactData.city || '',
+      state: contactData.state || '',
+      zipCode: contactData.zipCode || '',
+
+      // Link to contact
+      contactId: contactId,
+
+      // Litter assignment if provided
+      assignedLitterId: litterId || undefined,
+
+      // Preferences
+      preferredSex: preferences?.preferredSex || 'either',
+      preferredColors: preferences?.preferredColors || [],
+      notes: preferences?.notes || '',
+
+      // Breeder info
+      userId: user.uid,
+      breederId: user.uid,
+
+      // Status and position
+      status: 'active' as const,
+      position,
+      applicationDate: new Date().toISOString().split('T')[0],
+
+      // Source tracking
+      source: 'manual' as const, // Added by breeder, not via application form
+
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+
+    const docRef = await addDoc(waitlistRef, newEntry);
+
+    // Update the contact to add 'prospect' role if not present
+    const currentRoles = contactData.contactRoles || [];
+    if (!currentRoles.includes('prospect')) {
+      await updateDoc(doc(db, 'customers', contactId), {
+        contactRoles: [...currentRoles, 'prospect'],
+        updatedAt: serverTimestamp(),
+      });
+    }
+
+    return docRef.id;
+  },
+
+  getWaitlistForLitter: (litterId) => {
+    return get().waitlist.filter(
+      (entry) => entry.assignedLitterId === litterId
+    );
+  },
+
+  findExistingWaitlistEntry: (contactId, litterId) => {
+    const waitlist = get().waitlist;
+    return waitlist.find((entry) => {
+      if (entry.contactId !== contactId) return false;
+      // If litterId provided, match on that too
+      if (litterId) {
+        return entry.assignedLitterId === litterId;
+      }
+      // Otherwise just match on contactId (general waitlist)
+      return !entry.assignedLitterId;
+    });
   },
 
   updateWaitlistEntry: async (id, updates) => {
@@ -245,6 +363,77 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
       console.error('Error creating/linking contact for waitlist application:', error);
     }
 
+    // Check if this contact already has a waitlist entry (merge if so)
+    if (contactId) {
+      const existingEntriesQuery = query(
+        waitlistRef,
+        where('breederId', '==', breederId),
+        where('contactId', '==', contactId)
+      );
+      const existingEntriesSnapshot = await getDocs(existingEntriesQuery);
+
+      if (!existingEntriesSnapshot.empty) {
+        // Found existing entry - merge the form data into it
+        const existingEntry = existingEntriesSnapshot.docs[0];
+        const existingData = existingEntry.data();
+
+        // Merge: form data takes precedence for questionnaire fields,
+        // but preserve original position and assignment
+        const mergedData = {
+          // Update contact info from form (may have new address, etc.)
+          name: entry.name || existingData.name,
+          email: entry.email || existingData.email,
+          phone: entry.phone || existingData.phone,
+          address: entry.address || existingData.address,
+          city: entry.city || existingData.city,
+          state: entry.state || existingData.state,
+          zipCode: entry.zipCode || existingData.zipCode,
+
+          // Merge questionnaire data - prefer form submission
+          homeOwnership: entry.homeOwnership || existingData.homeOwnership,
+          hasYard: entry.hasYard ?? existingData.hasYard,
+          yardFenced: entry.yardFenced ?? existingData.yardFenced,
+          otherPets: entry.otherPets || existingData.otherPets,
+          children: entry.children ?? existingData.children,
+          childrenAges: entry.childrenAges || existingData.childrenAges,
+          experience: entry.experience || existingData.experience,
+          lifestyle: entry.lifestyle || existingData.lifestyle,
+          reason: entry.reason || existingData.reason,
+          vetReference: entry.vetReference || existingData.vetReference,
+          personalReferences: entry.personalReferences || existingData.personalReferences,
+
+          // Merge preferences - prefer form submission
+          preferredSex: entry.preferredSex || existingData.preferredSex,
+          preferredColors: entry.preferredColors?.length ? entry.preferredColors : existingData.preferredColors,
+          preferredSize: entry.preferredSize || existingData.preferredSize,
+          timeline: entry.timeline || existingData.timeline,
+
+          // Preserve assignment and position from original entry
+          // (breeder may have already assigned them to a litter)
+          assignedLitterId: existingData.assignedLitterId,
+          assignedPuppyId: existingData.assignedPuppyId,
+          position: existingData.position,
+
+          // Update status to pending if it was just 'active' (manually added)
+          status: existingData.status === 'active' ? 'pending' : existingData.status,
+
+          // Append notes if provided
+          notes: entry.notes
+            ? existingData.notes
+              ? `${existingData.notes}\n\n--- Application Update ---\n${entry.notes}`
+              : entry.notes
+            : existingData.notes,
+
+          // Track merge
+          formSubmittedDate: new Date().toISOString().split('T')[0],
+          updatedAt: serverTimestamp(),
+        };
+
+        await updateDoc(doc(db, 'waitlist', existingEntry.id), mergedData);
+        return; // Exit early - merged instead of creating new
+      }
+    }
+
     const newEntry = {
       ...entry,
       // Persist breederId for rules; keep userId for backward compat
@@ -258,6 +447,18 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
     };
 
     await addDoc(waitlistRef, newEntry);
+  },
+
+  assignPuppyToWaitlistEntry: async (waitlistEntryId, puppyId, puppyName) => {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Must be logged in to assign puppy');
+
+    const entryRef = doc(db, 'waitlist', waitlistEntryId);
+    await updateDoc(entryRef, {
+      assignedPuppyId: puppyId,
+      assignedPuppyName: puppyName || null,
+      updatedAt: serverTimestamp(),
+    });
   },
 
   subscribeToWaitlist: () => {

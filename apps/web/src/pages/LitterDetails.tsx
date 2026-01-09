@@ -1,16 +1,16 @@
 import { useParams, Link } from 'react-router-dom';
-import { useDogStore, useCrmStore, getExternalBreederInfo } from '@breeder/firebase';
+import { useDogStore, useCrmStore, getExternalBreederInfo, useWaitlistStore } from '@breeder/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Plus, Users, Calendar, DollarSign, FileText, Share2, TrendingUp, TrendingDown, Edit, Trash2, ListChecks, Trophy } from 'lucide-react';
+import { ArrowLeft, Plus, Users, Calendar, DollarSign, FileText, Share2, TrendingUp, TrendingDown, Edit, Trash2, ListChecks, Trophy, UserPlus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PuppyCard } from '@/components/PuppyCard';
 import { PuppyFormDialog } from '@/components/PuppyFormDialog';
 import { BuyerFormDialog } from '@/components/BuyerFormDialog';
 import { ExpenseDialog } from '@/components/ExpenseDialog';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Puppy, Buyer, Expense } from '@breeder/types';
 import { format } from 'date-fns';
 import { generateLitterRecord } from '@/lib/pdfGenerator';
@@ -18,12 +18,21 @@ import { ContractSigningDialog } from '@/components/ContractSigningDialog';
 import { LitterMilestones } from '@/components/LitterMilestones';
 import { LitterCareTasks } from '@/components/LitterCareTasks';
 import { LitterFormDialog } from '@/components/LitterFormDialog';
+import { AddContactToWaitlistDialog } from '@/components/AddContactToWaitlistDialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export function LitterDetails() {
   const { id } = useParams<{ id: string }>();
   const { litters, dogs, updateLitter } = useDogStore();
   const { currentUser } = useAuth();
   const { customers } = useCrmStore();
+  const { waitlist, subscribeToWaitlist, getWaitlistForLitter, assignPuppyToWaitlistEntry } = useWaitlistStore();
   const litter = litters.find((l) => l.id === id);
   const [editingPuppy, setEditingPuppy] = useState<Puppy | null>(null);
   const [puppyDialogOpen, setPuppyDialogOpen] = useState(false);
@@ -35,6 +44,16 @@ export function LitterDetails() {
   const [signingType, setSigningType] = useState<'contract' | 'health'>('contract');
   const [signingDialogOpen, setSigningDialogOpen] = useState(false);
   const [litterEditDialogOpen, setLitterEditDialogOpen] = useState(false);
+  const [addContactDialogOpen, setAddContactDialogOpen] = useState(false);
+
+  // Subscribe to waitlist
+  useEffect(() => {
+    const unsubscribe = subscribeToWaitlist();
+    return () => unsubscribe();
+  }, [subscribeToWaitlist]);
+
+  // Get waitlist entries for this specific litter
+  const litterWaitlist = id ? getWaitlistForLitter(id) : [];
 
   if (!litter) {
     return (
@@ -477,11 +496,16 @@ export function LitterDetails() {
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
             {puppies.map((puppy) => {
               const buyer = buyers.find((b) => b.id === puppy.buyerId);
+              // Find waitlist entry assigned to this puppy
+              const assignedWaitlistEntry = litterWaitlist.find(
+                (entry) => entry.assignedPuppyId === puppy.id
+              );
               return (
                 <PuppyCard
                   key={puppy.id}
                   puppy={puppy}
                   buyer={buyer}
+                  waitlistEntry={assignedWaitlistEntry}
                   onEdit={handleEditPuppy}
                   onDelete={handleDeletePuppy}
                   onGenerateContract={handleGenerateContract}
@@ -510,59 +534,151 @@ export function LitterDetails() {
 
         {/* Waitlist Tab */}
         <TabsContent value='waitlist'>
-      <Card>
-        <CardHeader>
-          <div className='flex justify-between items-center'>
-            <CardTitle className='flex items-center gap-2'>
-              <Users className='h-5 w-5' /> Buyer Waitlist ({buyers.length})
-            </CardTitle>
-            <Button onClick={handleAddBuyer} size='sm'>
-              <Plus className='mr-2 h-4 w-4' /> Add Buyer
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {buyers.length === 0 ? (
-            <p className='text-muted-foreground'>No buyers on waitlist</p>
-          ) : (
-            <div className='space-y-2'>
-              {buyers.map((buyer) => (
-                <div
-                  key={buyer.id}
-                  className='flex justify-between items-center p-3 border rounded-lg hover:bg-muted/50'
-                >
-                  <div className='flex-1'>
-                    <div className='font-medium'>{buyer.name}</div>
-                    <div className='text-sm text-muted-foreground'>{buyer.email}</div>
-                    {buyer.phone && (
-                      <div className='text-sm text-muted-foreground'>{buyer.phone}</div>
-                    )}
-                    {buyer.preferredSex && (
-                      <div className='text-xs text-muted-foreground'>
-                        Prefers: {buyer.preferredSex}
-                        {buyer.preferredColor && `, ${buyer.preferredColor}`}
-                      </div>
-                    )}
-                  </div>
-                  <div className='flex items-center gap-2'>
-                    <Badge variant='outline'>{buyer.status}</Badge>
-                    <Button variant='outline' size='sm' onClick={() => handleEditBuyer(buyer)}>
-                      Edit
-                    </Button>
-                    <Button
-                      variant='destructive'
-                      size='sm'
-                      onClick={() => handleDeleteBuyer(buyer.id)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
+          {/* Global Waitlist for this Litter */}
+          <Card className='mb-4'>
+            <CardHeader>
+              <div className='flex justify-between items-center'>
+                <CardTitle className='flex items-center gap-2'>
+                  <Users className='h-5 w-5' /> Litter Waitlist ({litterWaitlist.length})
+                </CardTitle>
+                <Button onClick={() => setAddContactDialogOpen(true)} size='sm'>
+                  <UserPlus className='mr-2 h-4 w-4' /> Add from Contacts
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {litterWaitlist.length === 0 ? (
+                <div className='text-center py-6'>
+                  <p className='text-muted-foreground mb-2'>No prospects assigned to this litter</p>
+                  <p className='text-sm text-muted-foreground'>
+                    Add contacts from your CRM to track prospects interested in this litter.
+                    When they submit an application form, their data will be merged automatically.
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              ) : (
+                <div className='space-y-2'>
+                  {litterWaitlist.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className='flex justify-between items-center p-3 border rounded-lg hover:bg-muted/50'
+                    >
+                      <div className='flex-1'>
+                        <div className='font-medium'>{entry.name}</div>
+                        <div className='text-sm text-muted-foreground'>{entry.email}</div>
+                        {entry.phone && (
+                          <div className='text-sm text-muted-foreground'>{entry.phone}</div>
+                        )}
+                        {entry.preferredSex && entry.preferredSex !== 'either' && (
+                          <div className='text-xs text-muted-foreground'>
+                            Prefers: {entry.preferredSex}
+                          </div>
+                        )}
+                      </div>
+                      <div className='flex items-center gap-3'>
+                        {/* Puppy Assignment Dropdown */}
+                        <Select
+                          value={entry.assignedPuppyId || 'unassigned'}
+                          onValueChange={async (value) => {
+                            const puppyId = value === 'unassigned' ? null : value;
+                            const puppy = puppies.find(p => p.id === value);
+                            await assignPuppyToWaitlistEntry(
+                              entry.id,
+                              puppyId,
+                              puppy?.name || puppy?.collar || puppy?.color
+                            );
+                          }}
+                        >
+                          <SelectTrigger className='w-[160px]'>
+                            <SelectValue placeholder='Assign puppy'>
+                              {entry.assignedPuppyId
+                                ? entry.assignedPuppyName ||
+                                  puppies.find(p => p.id === entry.assignedPuppyId)?.name ||
+                                  puppies.find(p => p.id === entry.assignedPuppyId)?.collar ||
+                                  'Assigned'
+                                : 'Unassigned'}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value='unassigned'>Unassigned</SelectItem>
+                            {puppies.map((puppy) => (
+                              <SelectItem key={puppy.id} value={puppy.id}>
+                                {puppy.name || puppy.collar || puppy.color || `Puppy ${puppy.id.slice(-4)}`}
+                                {puppy.sex && ` (${puppy.sex.charAt(0).toUpperCase()})`}
+                                {puppy.status !== 'available' && ` - ${puppy.status}`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Badge variant={entry.status === 'pending' ? 'secondary' : 'outline'}>
+                          {entry.status}
+                        </Badge>
+                        {entry.formSubmittedDate && (
+                          <Badge variant='default' className='text-xs'>
+                            Applied
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Legacy Buyer List */}
+          <Card>
+            <CardHeader>
+              <div className='flex justify-between items-center'>
+                <CardTitle className='flex items-center gap-2'>
+                  <Users className='h-5 w-5' /> Quick Buyers ({buyers.length})
+                </CardTitle>
+                <Button onClick={handleAddBuyer} size='sm' variant='outline'>
+                  <Plus className='mr-2 h-4 w-4' /> Add Buyer
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {buyers.length === 0 ? (
+                <p className='text-muted-foreground text-sm'>No quick buyers added</p>
+              ) : (
+                <div className='space-y-2'>
+                  {buyers.map((buyer) => (
+                    <div
+                      key={buyer.id}
+                      className='flex justify-between items-center p-3 border rounded-lg hover:bg-muted/50'
+                    >
+                      <div className='flex-1'>
+                        <div className='font-medium'>{buyer.name}</div>
+                        <div className='text-sm text-muted-foreground'>{buyer.email}</div>
+                        {buyer.phone && (
+                          <div className='text-sm text-muted-foreground'>{buyer.phone}</div>
+                        )}
+                        {buyer.preferredSex && (
+                          <div className='text-xs text-muted-foreground'>
+                            Prefers: {buyer.preferredSex}
+                            {buyer.preferredColor && `, ${buyer.preferredColor}`}
+                          </div>
+                        )}
+                      </div>
+                      <div className='flex items-center gap-2'>
+                        <Badge variant='outline'>{buyer.status}</Badge>
+                        <Button variant='outline' size='sm' onClick={() => handleEditBuyer(buyer)}>
+                          Edit
+                        </Button>
+                        <Button
+                          variant='destructive'
+                          size='sm'
+                          onClick={() => handleDeleteBuyer(buyer.id)}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Financials Tab */}
@@ -694,6 +810,13 @@ export function LitterDetails() {
         open={litterEditDialogOpen}
         setOpen={setLitterEditDialogOpen}
         litter={litter}
+      />
+
+      <AddContactToWaitlistDialog
+        open={addContactDialogOpen}
+        onOpenChange={setAddContactDialogOpen}
+        litterId={litter.id}
+        litterName={litter.litterName || `${dam?.name || 'Unknown'} x ${sire?.name || litter.externalSire?.name || 'Unknown'}`}
       />
     </div>
   );

@@ -1,12 +1,13 @@
-import { Puppy, Buyer } from '@breeder/types';
+import { Puppy, Buyer, WaitlistEntry } from '@breeder/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, User, FileText } from 'lucide-react';
+import { Edit, Trash2, User, FileText, Users } from 'lucide-react';
 
 interface PuppyCardProps {
   puppy: Puppy;
   buyer?: Buyer;
+  waitlistEntry?: WaitlistEntry; // Waitlist entry assigned to this puppy
   onEdit?: (puppy: Puppy) => void;
   onDelete?: (puppyId: string) => void;
   onReserve?: (puppyId: string) => void;
@@ -14,7 +15,7 @@ interface PuppyCardProps {
   onGenerateHealthGuarantee?: (puppy: Puppy) => void;
 }
 
-export function PuppyCard({ puppy, buyer, onEdit, onDelete, onReserve, onGenerateContract, onGenerateHealthGuarantee }: PuppyCardProps) {
+export function PuppyCard({ puppy, buyer, waitlistEntry, onEdit, onDelete, onReserve, onGenerateContract, onGenerateHealthGuarantee }: PuppyCardProps) {
   const getStatusColor = (status: Puppy['status']) => {
     switch (status) {
       case 'available':
@@ -109,6 +110,16 @@ export function PuppyCard({ puppy, buyer, onEdit, onDelete, onReserve, onGenerat
               <div>
                 <div className='font-medium'>{buyer.name}</div>
                 <div className='text-xs text-muted-foreground'>{buyer.email}</div>
+              </div>
+            </div>
+          )}
+          {waitlistEntry && !buyer && (
+            <div className='flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded'>
+              <Users className='h-4 w-4 text-blue-600 dark:text-blue-400' />
+              <div>
+                <div className='font-medium text-blue-900 dark:text-blue-100'>{waitlistEntry.name}</div>
+                <div className='text-xs text-blue-600 dark:text-blue-400'>{waitlistEntry.email}</div>
+                <div className='text-xs text-blue-500 dark:text-blue-500'>From Waitlist</div>
               </div>
             </div>
           )}

@@ -1,6 +1,6 @@
 import { collection, getDocs, writeBatch, doc, query, where } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import type { Dog, Customer, ContactRole, Litter, StudJob } from '@breeder/types';
+import type { Dog, Customer, ContactRole, Litter, StudJob, WaitlistEntry } from '@breeder/types';
 
 interface MigrationStats {
   guardiansProcessed: number;
@@ -485,6 +485,167 @@ async function migrateStudJobs(
   }
 
   console.log(`Migrated ${stats.studJobsProcessed} stud jobs, created ${stats.studJobsCreated} new contacts`);
+}
+
+interface WaitlistMigrationStats {
+  waitlistProcessed: number;
+  waitlistLinked: number;
+  contactsCreated: number;
+  errors: string[];
+}
+
+/**
+ * Migrate waitlist entries to Contact system
+ * Creates contacts for waitlist applicants and links them
+ */
+export async function migrateWaitlistToContacts(userId: string): Promise<WaitlistMigrationStats> {
+  console.log(`Starting waitlist contact migration for user ${userId}...`);
+
+  const stats: WaitlistMigrationStats = {
+    waitlistProcessed: 0,
+    waitlistLinked: 0,
+    contactsCreated: 0,
+    errors: [],
+  };
+
+  try {
+    // Load existing contacts
+    const customersRef = collection(db, 'customers');
+    const customersQuery = query(customersRef, where('breederId', '==', userId));
+    const customersSnapshot = await getDocs(customersQuery);
+
+    const contactMap = new Map<string, Customer>();
+    customersSnapshot.docs.forEach((docSnapshot) => {
+      const customer = { id: docSnapshot.id, ...docSnapshot.data() } as Customer;
+      const key = getContactKey({
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+      });
+      contactMap.set(key, customer);
+    });
+
+    console.log(`Found ${contactMap.size} existing contacts`);
+
+    // Query all waitlist entries for this breeder
+    const waitlistRef = collection(db, 'waitlist');
+    const waitlistQuery = query(waitlistRef, where('breederId', '==', userId));
+    const waitlistSnapshot = await getDocs(waitlistQuery);
+
+    console.log(`Found ${waitlistSnapshot.docs.length} waitlist entries`);
+
+    const batch = writeBatch(db);
+    let batchCount = 0;
+
+    for (const waitlistDoc of waitlistSnapshot.docs) {
+      const entry = waitlistDoc.data() as WaitlistEntry;
+      stats.waitlistProcessed++;
+
+      // Skip if already linked
+      if (entry.contactId) {
+        stats.waitlistLinked++;
+        continue;
+      }
+
+      const applicantData = {
+        name: entry.name || 'Unknown',
+        email: entry.email,
+        phone: entry.phone,
+      };
+
+      // Check if contact already exists by email or phone
+      const existingContact = findExistingContact(
+        Array.from(contactMap.values()),
+        applicantData.email,
+        applicantData.phone
+      );
+
+      let contactId: string;
+
+      if (existingContact) {
+        // Use existing contact, add prospect role if needed
+        contactId = existingContact.id;
+
+        if (!existingContact.contactRoles?.includes('prospect')) {
+          const updatedRoles = [...(existingContact.contactRoles || []), 'prospect' as ContactRole];
+          batch.update(doc(db, 'customers', contactId), {
+            contactRoles: updatedRoles as ContactRole[],
+          });
+          existingContact.contactRoles = updatedRoles as ContactRole[];
+        }
+
+        stats.waitlistLinked++;
+      } else {
+        // Create new contact
+        const contactKey = getContactKey(applicantData);
+        let contact = contactMap.get(contactKey);
+
+        if (!contact) {
+          contactId = doc(collection(db, 'customers')).id;
+          contact = {
+            id: contactId,
+            userId,
+            breederId: userId,
+            name: applicantData.name,
+            email: (applicantData.email || '').toLowerCase().trim(),
+            phone: applicantData.phone || '',
+            address: entry.address || '',
+            city: entry.city || '',
+            state: entry.state || '',
+            type: 'prospect',
+            status: 'active',
+            source: 'website',
+            preferredContact: 'email',
+            emailOptIn: true,
+            smsOptIn: false,
+            firstContactDate: entry.applicationDate || new Date().toISOString().split('T')[0],
+            lastContactDate: entry.applicationDate || new Date().toISOString().split('T')[0],
+            totalPurchases: 0,
+            totalRevenue: 0,
+            lifetimeValue: 0,
+            interactions: [],
+            purchases: [],
+            tags: [],
+            contactRoles: ['prospect'] as ContactRole[],
+            notes: '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          } as Customer;
+
+          batch.set(doc(db, 'customers', contactId), contact);
+          contactMap.set(contactKey, contact);
+          stats.contactsCreated++;
+          stats.waitlistLinked++;
+        } else {
+          contactId = contact.id;
+          stats.waitlistLinked++;
+        }
+      }
+
+      // Update waitlist entry with contactId
+      batch.update(doc(db, 'waitlist', waitlistDoc.id), {
+        contactId: contactId,
+      });
+
+      batchCount++;
+      if (batchCount >= 500) {
+        await batch.commit();
+        batchCount = 0;
+      }
+    }
+
+    if (batchCount > 0) {
+      await batch.commit();
+    }
+
+    console.log(`Migrated ${stats.waitlistProcessed} waitlist entries, linked ${stats.waitlistLinked}, created ${stats.contactsCreated} new contacts`);
+
+    return stats;
+  } catch (error) {
+    console.error('Waitlist migration failed:', error);
+    stats.errors.push(error instanceof Error ? error.message : 'Unknown error');
+    throw error;
+  }
 }
 
 /**

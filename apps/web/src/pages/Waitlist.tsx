@@ -148,12 +148,12 @@ function SortableWaitlistItem({
               (entry.depositPaid ? (
                 <div className='flex items-center gap-1 text-green-600'>
                   <CheckCircle className='h-4 w-4' />
-                  <span className='text-xs'>Paid</span>
+                  <span className='text-xs'>Deposit Paid</span>
                 </div>
               ) : (
                 <div className='flex items-center gap-1 text-yellow-600'>
                   <DollarSign className='h-4 w-4' />
-                  <span className='text-xs'>Pending</span>
+                  <span className='text-xs'>Deposit Pending</span>
                 </div>
               ))}
           </div>

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useBreederStore } from '@breeder/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { migrateToContacts } from '@breeder/firebase';
+import { migrateToContacts, migrateWaitlistToContacts } from '@breeder/firebase';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -91,6 +91,8 @@ export function BreederSettings() {
   // Migration state
   const [migrating, setMigrating] = useState(false);
   const [migrationStats, setMigrationStats] = useState<any>(null);
+  const [migratingWaitlist, setMigratingWaitlist] = useState(false);
+  const [waitlistMigrationStats, setWaitlistMigrationStats] = useState<any>(null);
 
   const handleMigration = async () => {
     if (!currentUser) return;
@@ -118,6 +120,35 @@ export function BreederSettings() {
       alert('Migration failed. Please try again or contact support.');
     } finally {
       setMigrating(false);
+    }
+  };
+
+  const handleWaitlistMigration = async () => {
+    if (!currentUser) return;
+
+    const confirmMigration = window.confirm(
+      'This will create Contact records for all your waitlist applicants who don\'t already have one. Continue?'
+    );
+
+    if (!confirmMigration) return;
+
+    setMigratingWaitlist(true);
+    setWaitlistMigrationStats(null);
+
+    try {
+      const stats = await migrateWaitlistToContacts(currentUser.uid);
+      setWaitlistMigrationStats(stats);
+      alert(
+        `Waitlist migration completed!\n\n` +
+        `Entries processed: ${stats.waitlistProcessed}\n` +
+        `Entries linked: ${stats.waitlistLinked}\n` +
+        `New contacts created: ${stats.contactsCreated}`
+      );
+    } catch (error) {
+      console.error('Waitlist migration failed:', error);
+      alert('Waitlist migration failed. Please try again or contact support.');
+    } finally {
+      setMigratingWaitlist(false);
     }
   };
 
@@ -952,6 +983,69 @@ export function BreederSettings() {
                       <div className='font-medium'>Stud Jobs</div>
                       <div className='text-muted-foreground'>
                         {migrationStats.studJobsProcessed} processed, {migrationStats.studJobsCreated} created
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className='border-t pt-6'>
+              <h3 className='text-lg font-semibold mb-2'>Migrate Waitlist to Contacts</h3>
+              <p className='text-sm text-muted-foreground mb-6'>
+                This migration will create Contact records for all your waitlist applicants
+                who don't already have linked contacts. This enables the unified CRM view.
+              </p>
+
+              <ul className='list-disc list-inside space-y-2 text-sm text-muted-foreground mb-6'>
+                <li>Create Contact records for waitlist applicants</li>
+                <li>Match existing contacts by email or phone to avoid duplicates</li>
+                <li>Link waitlist entries to their Contact records</li>
+              </ul>
+
+              <div className='bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6'>
+                <p className='text-sm text-yellow-800'>
+                  <strong>Note:</strong> This migration is safe and can be run multiple times.
+                  It will skip entries that are already linked to contacts.
+                </p>
+              </div>
+
+              <div className='flex items-center gap-4'>
+                <Button
+                  onClick={handleWaitlistMigration}
+                  disabled={migratingWaitlist}
+                  variant='default'
+                >
+                  {migratingWaitlist ? 'Migrating...' : 'Migrate Waitlist'}
+                </Button>
+
+                {waitlistMigrationStats && (
+                  <div className='text-sm text-green-600 font-medium'>
+                    Waitlist migration completed!
+                  </div>
+                )}
+              </div>
+
+              {waitlistMigrationStats && (
+                <div className='mt-6 p-4 bg-green-50 border border-green-200 rounded-md'>
+                  <h4 className='font-semibold text-green-800 mb-2'>Waitlist Migration Results</h4>
+                  <div className='grid grid-cols-3 gap-4 text-sm'>
+                    <div>
+                      <div className='font-medium'>Entries Processed</div>
+                      <div className='text-muted-foreground'>
+                        {waitlistMigrationStats.waitlistProcessed}
+                      </div>
+                    </div>
+                    <div>
+                      <div className='font-medium'>Entries Linked</div>
+                      <div className='text-muted-foreground'>
+                        {waitlistMigrationStats.waitlistLinked}
+                      </div>
+                    </div>
+                    <div>
+                      <div className='font-medium'>Contacts Created</div>
+                      <div className='text-muted-foreground'>
+                        {waitlistMigrationStats.contactsCreated}
                       </div>
                     </div>
                   </div>

@@ -170,6 +170,39 @@ body {
   color: var(--accent-foreground) !important;
 }
 
+/* Fix DropdownMenu transparency */
+[data-radix-popper-content-wrapper] [role="menu"],
+[data-radix-menu-content] {
+  background-color: var(--popover) !important;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+[data-radix-menu-content] [role="menuitem"] {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+}
+
+[data-radix-menu-content] [role="menuitem"]:hover,
+[data-radix-menu-content] [role="menuitem"][data-highlighted] {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+  outline: none;
+}
+
+/* Dark mode for dropdown menu */
+.dark [data-radix-popper-content-wrapper] [role="menu"],
+.dark [data-radix-menu-content] {
+  background-color: var(--popover) !important;
+}
+
+.dark [data-radix-menu-content] [role="menuitem"] {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+}
+
 /* Switch Button Styles */
 .switch-root {
   display: inline-flex;
