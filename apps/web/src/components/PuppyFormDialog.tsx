@@ -48,6 +48,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
   const [imageToCrop, setImageToCrop] = useState<string>('');
   const [uploading, setUploading] = useState(false);
   const [selectedBuyerOption, setSelectedBuyerOption] = useState<string>('');
+  const [saving, setSaving] = useState(false);
 
   // Build combined buyer options from legacy buyers and waitlist entries
   const buyerOptions: BuyerOption[] = [
@@ -111,28 +112,38 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Determine if we're selecting a waitlist entry as the buyer
-    let selectedWaitlistEntry: WaitlistEntry | undefined;
-    let updatedFormData = { ...formData };
+    if (saving) return; // Prevent double-submit
+    setSaving(true);
 
-    if (selectedBuyerOption) {
-      const buyerOption = buyerOptions.find((b) => b.id === selectedBuyerOption);
-      if (buyerOption?.type === 'waitlist' && buyerOption.waitlistEntryId) {
-        // Selecting from waitlist - don't set buyerId, let parent handle the waitlist assignment
-        selectedWaitlistEntry = litterWaitlist.find((e) => e.id === buyerOption.waitlistEntryId);
-        // Clear buyerId since we're using waitlist assignment instead
+    try {
+      // Determine if we're selecting a waitlist entry as the buyer
+      let selectedWaitlistEntry: WaitlistEntry | undefined;
+      let updatedFormData = { ...formData };
+
+      if (selectedBuyerOption) {
+        const buyerOption = buyerOptions.find((b) => b.id === selectedBuyerOption);
+        if (buyerOption?.type === 'waitlist' && buyerOption.waitlistEntryId) {
+          // Selecting from waitlist - don't set buyerId, let parent handle the waitlist assignment
+          selectedWaitlistEntry = litterWaitlist.find((e) => e.id === buyerOption.waitlistEntryId);
+          // Clear buyerId since we're using waitlist assignment instead
+          updatedFormData.buyerId = undefined;
+        } else if (buyerOption?.type === 'legacy') {
+          // Legacy buyer selection
+          updatedFormData.buyerId = buyerOption.id;
+        }
+      } else {
+        // No buyer selected - clear buyerId
         updatedFormData.buyerId = undefined;
-      } else if (buyerOption?.type === 'legacy') {
-        // Legacy buyer selection
-        updatedFormData.buyerId = buyerOption.id;
       }
-    } else {
-      // No buyer selected - clear buyerId
-      updatedFormData.buyerId = undefined;
-    }
 
-    await onSave(updatedFormData, selectedWaitlistEntry);
-    setOpen(false);
+      await onSave(updatedFormData, selectedWaitlistEntry);
+      setOpen(false);
+    } catch (error) {
+      console.error('Error saving puppy:', error);
+      alert('Failed to save puppy. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const addPhoto = () => {
@@ -1271,10 +1282,12 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
           </div>
 
           <div className='flex justify-end gap-2 pt-4'>
-            <Button type='button' variant='outline' onClick={() => setOpen(false)}>
+            <Button type='button' variant='outline' onClick={() => setOpen(false)} disabled={saving}>
               Cancel
             </Button>
-            <Button type='submit'>Save Puppy</Button>
+            <Button type='submit' disabled={saving}>
+              {saving ? 'Saving...' : 'Save Puppy'}
+            </Button>
           </div>
         </form>
       </DialogContent>
