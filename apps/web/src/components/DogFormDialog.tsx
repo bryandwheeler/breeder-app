@@ -38,7 +38,7 @@ import { Label } from '@/components/ui/label';
 import { Plus, Trash2, Upload, Search, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { storage } from '@breeder/firebase';
+import { storage, auth } from '@breeder/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ImageCropDialog } from '@/components/ImageCropDialog';
 import { MultiRegistrationManager } from '@/components/MultiRegistrationManager';
@@ -360,10 +360,16 @@ function DogFormContent({
     setUploadingPhoto(true);
 
     try {
-      // Create a unique filename
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('Must be logged in to upload photos');
+      }
+
+      // Create a unique filename with user prefix for storage rules
       const timestamp = Date.now();
       const filename = `dogs/${timestamp}_cropped.jpg`;
-      const storageRef = ref(storage, filename);
+      const storagePath = `users/${user.uid}/${filename}`;
+      const storageRef = ref(storage, storagePath);
 
       // Upload the cropped file
       await uploadBytes(storageRef, croppedBlob);

@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Puppy, Buyer, ShotRecord, WeightEntry, BreedingRights, CoOwnership, Registration, WaitlistEntry } from '@breeder/types';
 import { X, Upload, Plus, Trash2, Users, User } from 'lucide-react';
-import { storage } from '@breeder/firebase';
+import { storage, auth } from '@breeder/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ImageCropDialog } from '@/components/ImageCropDialog';
 
@@ -205,10 +205,16 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
     setUploading(true);
 
     try {
-      // Create a unique filename
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('Must be logged in to upload photos');
+      }
+
+      // Create a unique filename with user prefix for storage rules
       const timestamp = Date.now();
       const filename = `puppies/${timestamp}_cropped.jpg`;
-      const storageRef = ref(storage, filename);
+      const storagePath = `users/${user.uid}/${filename}`;
+      const storageRef = ref(storage, storagePath);
 
       // Upload the cropped file
       await uploadBytes(storageRef, croppedBlob);
