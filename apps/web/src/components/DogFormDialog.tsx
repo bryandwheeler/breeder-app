@@ -12,11 +12,13 @@ import {
 } from '@breeder/types';
 import { GuardianHomeDialog } from '@/components/GuardianHomeDialog';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogBody,
+  ResponsiveDialogFooter,
+} from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -1809,13 +1811,15 @@ function DogFormContent({
 
 export function DogFormDialog({ open, setOpen, dog }: DogFormDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className='w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6'>
-        <DialogHeader>
-          <DialogTitle>{dog ? `Edit ${dog.name}` : 'Add New Dog'}</DialogTitle>
-        </DialogHeader>
-        <DogFormContent key={dog?.id || 'new'} dog={dog} setOpen={setOpen} />
-      </DialogContent>
-    </Dialog>
+    <ResponsiveDialog open={open} onOpenChange={setOpen}>
+      <ResponsiveDialogContent className='md:max-w-5xl'>
+        <ResponsiveDialogHeader onClose={() => setOpen(false)}>
+          <ResponsiveDialogTitle>{dog ? `Edit ${dog.name}` : 'Add New Dog'}</ResponsiveDialogTitle>
+        </ResponsiveDialogHeader>
+        <ResponsiveDialogBody>
+          <DogFormContent key={dog?.id || 'new'} dog={dog} setOpen={setOpen} />
+        </ResponsiveDialogBody>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

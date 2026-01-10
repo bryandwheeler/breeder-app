@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogDescription,
+  ResponsiveDialogBody,
+} from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -240,17 +247,18 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
-        <DialogHeader>
-          <DialogTitle>{puppy ? 'Edit Puppy' : 'Add Puppy'}</DialogTitle>
-          <DialogDescription>
+    <ResponsiveDialog open={open} onOpenChange={setOpen}>
+      <ResponsiveDialogContent className='md:max-w-2xl'>
+        <ResponsiveDialogHeader onClose={() => setOpen(false)}>
+          <ResponsiveDialogTitle>{puppy ? 'Edit Puppy' : 'Add Puppy'}</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             {puppy ? 'Update the details for this puppy.' : 'Enter the details for the new puppy.'}
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
+        <ResponsiveDialogBody>
         <form onSubmit={handleSubmit} className='space-y-4'>
-          <div className='grid grid-cols-2 gap-4'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
             <div>
               <Label htmlFor='name'>Name (Optional)</Label>
               <Input
@@ -272,7 +280,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
             </div>
           </div>
 
-          <div className='grid grid-cols-2 gap-4'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
             <div>
               <Label htmlFor='sex'>Sex *</Label>
               <Select
@@ -301,7 +309,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
             </div>
           </div>
 
-          <div className='grid grid-cols-2 gap-4'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
             <div>
               <Label htmlFor='weight'>Current Weight</Label>
               <Input
@@ -331,7 +339,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
             </div>
           </div>
 
-          <div className='grid grid-cols-2 gap-4'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
             <div>
               <Label htmlFor='collar'>Collar ID</Label>
               <Input
@@ -432,7 +440,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
                 </p>
               </div>
 
-              <div className='grid grid-cols-2 gap-4'>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                 <div>
                   <Label htmlFor='salePrice'>Sale Price</Label>
                   <Input
@@ -458,7 +466,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
                 </div>
               </div>
 
-              <div className='grid grid-cols-2 gap-4'>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                 <div>
                   <Label htmlFor='reservationDate'>Reservation Date</Label>
                   <Input
@@ -539,7 +547,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
                 <div className='space-y-4 border p-4 rounded-md bg-muted/30'>
                   <h4 className='font-semibold text-sm'>Breeding Rights Terms</h4>
 
-                  <div className='grid grid-cols-2 gap-4'>
+                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                     <div>
                       <Label htmlFor='minimumBreedingAge'>Minimum Breeding Age (months)</Label>
                       <Input
@@ -672,7 +680,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
                 <div className='space-y-4 border p-4 rounded-md bg-muted/30'>
                   <h4 className='font-semibold text-sm'>Co-Ownership Agreement</h4>
 
-                  <div className='grid grid-cols-2 gap-4'>
+                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                     <div>
                       <Label htmlFor='coOwnerName'>Co-Owner Name</Label>
                       <Input
@@ -706,7 +714,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
                     </div>
                   </div>
 
-                  <div className='grid grid-cols-2 gap-4'>
+                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                     <div>
                       <Label htmlFor='coOwnerPhone'>Co-Owner Phone</Label>
                       <Input
@@ -756,7 +764,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
                     />
                   </div>
 
-                  <div className='grid grid-cols-2 gap-4'>
+                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                     <div>
                       <Label htmlFor='primaryResidence'>Primary Residence</Label>
                       <Select
@@ -819,7 +827,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
                     />
                   </div>
 
-                  <div className='grid grid-cols-2 gap-4'>
+                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                     <div>
                       <Label htmlFor='coMaxLitters'>Maximum Litters</Label>
                       <Input
@@ -881,7 +889,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
           <div className='space-y-4 border p-4 rounded-md'>
             <h4 className='font-semibold text-sm'>Registration Information</h4>
 
-            <div className='grid grid-cols-2 gap-4'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
               <div>
                 <Label htmlFor='registry'>Registry</Label>
                 <Select
@@ -937,7 +945,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
 
             {formData.registrations?.[0]?.registrationType !== 'none' && (
               <>
-                <div className='grid grid-cols-2 gap-4'>
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                   <div>
                     <Label htmlFor='registrationStatus'>Status</Label>
                     <Select
@@ -1319,7 +1327,8 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
             </Button>
           </div>
         </form>
-      </DialogContent>
+        </ResponsiveDialogBody>
+      </ResponsiveDialogContent>
 
       <ImageCropDialog
         open={cropDialogOpen}
@@ -1327,6 +1336,6 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
         imageSrc={imageToCrop}
         onCropComplete={handleCropComplete}
       />
-    </Dialog>
+    </ResponsiveDialog>
   );
 }

@@ -33,7 +33,8 @@ import { DnaProfile, Dog as DogType } from '@breeder/types';
 import { useState, useEffect, useMemo } from 'react';
 import { useHeatCycleStore } from '@breeder/firebase';
 import { useStudJobStore } from '@/store/studJobStore';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { ScrollableTabsList, ScrollableTabsTrigger } from '@/components/ui/scrollable-tabs';
 import { DogFormDialog } from '@/components/DogFormDialog';
 import { StudJobDialog } from '@/components/StudJobDialog';
 import {
@@ -286,18 +287,18 @@ export function DogProfile() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className='w-full'>
-        <TabsList>
-          <TabsTrigger value='overview'>Overview</TabsTrigger>
+        <ScrollableTabsList>
+          <ScrollableTabsTrigger value='overview'>Overview</ScrollableTabsTrigger>
           {dog.sex === 'female' && (
-            <TabsTrigger value='heat-cycles'>Heat Cycles</TabsTrigger>
+            <ScrollableTabsTrigger value='heat-cycles'>Heat Cycles</ScrollableTabsTrigger>
           )}
           {dog.sex === 'female' && (
-            <TabsTrigger value='breeding-forecast'>Breeding Forecast</TabsTrigger>
+            <ScrollableTabsTrigger value='breeding-forecast'>Breeding Forecast</ScrollableTabsTrigger>
           )}
           {dog.sex === 'male' && (
-            <TabsTrigger value='stud-jobs'>Stud Jobs ({studJobs.length})</TabsTrigger>
+            <ScrollableTabsTrigger value='stud-jobs'>Stud Jobs ({studJobs.length})</ScrollableTabsTrigger>
           )}
-        </TabsList>
+        </ScrollableTabsList>
 
         <TabsContent value='overview' className='space-y-6 mt-6'>
           {/* Comprehensive Details Card */}
@@ -797,7 +798,7 @@ export function DogProfile() {
                     <span className='font-semibold'>Additional Information</span>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <div className='grid grid-cols-2 gap-4 text-sm'>
+                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm'>
                       <div>
                         <div className='text-muted-foreground'>Microchip</div>
                         <div className='font-medium'>{dog.microchip || '-'}</div>
@@ -832,7 +833,7 @@ export function DogProfile() {
                       {(() => {
                         const guardianInfo = getGuardianContactInfo(dog.guardianHome, customers);
                         return (
-                          <div className='grid grid-cols-2 gap-4 text-sm'>
+                          <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm'>
                             <div>
                               <div className='text-muted-foreground'>Guardian Name</div>
                               {guardianInfo ? (
@@ -904,7 +905,7 @@ export function DogProfile() {
                     <span className='font-semibold'>Parents & Pedigree</span>
                   </AccordionTrigger>
                   <AccordionContent className='space-y-4'>
-                    <div className='grid grid-cols-2 gap-4 text-sm'>
+                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm'>
                       <div>
                         <div className='text-muted-foreground'>Sire</div>
                         <div className='font-medium'>
