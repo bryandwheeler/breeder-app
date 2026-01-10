@@ -1087,7 +1087,6 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
                 <input
                   type='file'
                   accept='image/*,.heic,.heif'
-                  capture='environment'
                   onChange={handleFileUpload}
                   disabled={uploading}
                   className='hidden'
