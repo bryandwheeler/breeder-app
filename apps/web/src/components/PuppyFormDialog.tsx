@@ -59,12 +59,15 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
       phone: buyer.phone,
       type: 'legacy' as const,
     })),
-    // Waitlist entries (approved/active only, and not already assigned to another puppy)
+    // Waitlist entries - include most statuses, and allow entries assigned to THIS puppy
     ...litterWaitlist
-      .filter((entry) =>
-        (entry.status === 'approved' || entry.status === 'active' || entry.status === 'matched') &&
-        !entry.assignedPuppyId // Not already assigned to a puppy
-      )
+      .filter((entry) => {
+        // Include pending, approved, active, and matched statuses
+        const validStatus = ['pending', 'approved', 'active', 'matched', 'reserved'].includes(entry.status);
+        // Not assigned to a DIFFERENT puppy (allow if assigned to this puppy or unassigned)
+        const notAssignedElsewhere = !entry.assignedPuppyId || entry.assignedPuppyId === puppy?.id;
+        return validStatus && notAssignedElsewhere;
+      })
       .map((entry) => ({
         id: `waitlist-${entry.id}`,
         name: entry.name,

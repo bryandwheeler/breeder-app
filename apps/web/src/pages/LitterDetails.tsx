@@ -116,7 +116,7 @@ export function LitterDetails() {
     // Handle waitlist entry assignment if a waitlist entry was selected
     if (selectedWaitlistEntry) {
       // First, unassign any previous waitlist entry from this puppy
-      const previouslyAssigned = litterWaitlist.find((e) => e.assignedPuppyId === puppy.id);
+      const previouslyAssigned = waitlist.find((e) => e.assignedPuppyId === puppy.id);
       if (previouslyAssigned && previouslyAssigned.id !== selectedWaitlistEntry.id) {
         await assignPuppyToWaitlistEntry(previouslyAssigned.id, null);
       }
@@ -126,7 +126,7 @@ export function LitterDetails() {
       await assignPuppyToWaitlistEntry(selectedWaitlistEntry.id, puppy.id, puppyName);
     } else if (editingPuppy) {
       // No waitlist entry selected - check if we need to unassign any
-      const previouslyAssigned = litterWaitlist.find((e) => e.assignedPuppyId === puppy.id);
+      const previouslyAssigned = waitlist.find((e) => e.assignedPuppyId === puppy.id);
       if (previouslyAssigned && !puppy.buyerId) {
         // Unassign if no buyer selected at all
         await assignPuppyToWaitlistEntry(previouslyAssigned.id, null);
@@ -795,7 +795,7 @@ export function LitterDetails() {
         setOpen={setPuppyDialogOpen}
         puppy={editingPuppy}
         litterBuyers={buyers}
-        litterWaitlist={litterWaitlist}
+        litterWaitlist={waitlist}
         onSave={handleSavePuppy}
       />
 
