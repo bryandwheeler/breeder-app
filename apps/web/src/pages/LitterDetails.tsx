@@ -3,7 +3,9 @@ import { useDogStore, useCrmStore, getExternalBreederInfo, useWaitlistStore } fr
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { ScrollableTabsList, ScrollableTabsTrigger } from '@/components/ui/scrollable-tabs';
+import { useIsMobile } from '@/hooks/use-media-query';
 import { ArrowLeft, Plus, Users, Calendar, DollarSign, FileText, Share2, TrendingUp, TrendingDown, Edit, Trash2, ListChecks, Trophy, UserPlus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PuppyCard } from '@/components/PuppyCard';
@@ -29,6 +31,7 @@ import {
 
 export function LitterDetails() {
   const { id } = useParams<{ id: string }>();
+  const isMobile = useIsMobile();
   const { litters, dogs, updateLitter } = useDogStore();
   const { currentUser } = useAuth();
   const { customers } = useCrmStore();
@@ -523,32 +526,32 @@ export function LitterDetails() {
 
       {/* Tabbed Content */}
       <Tabs defaultValue='puppies' className='w-full'>
-        <TabsList className='grid w-full grid-cols-5'>
-          <TabsTrigger value='puppies' className='flex items-center gap-2'>
+        <ScrollableTabsList>
+          <ScrollableTabsTrigger value='puppies' className='flex items-center gap-2'>
             <Users className='h-4 w-4' />
-            <span className='hidden sm:inline'>Puppies</span>
-          </TabsTrigger>
+            {!isMobile && 'Puppies'}
+          </ScrollableTabsTrigger>
           {litter.dateOfBirth && (
             <>
-              <TabsTrigger value='milestones' className='flex items-center gap-2'>
+              <ScrollableTabsTrigger value='milestones' className='flex items-center gap-2'>
                 <Trophy className='h-4 w-4' />
-                <span className='hidden sm:inline'>Milestones</span>
-              </TabsTrigger>
-              <TabsTrigger value='tasks' className='flex items-center gap-2'>
+                {!isMobile && 'Milestones'}
+              </ScrollableTabsTrigger>
+              <ScrollableTabsTrigger value='tasks' className='flex items-center gap-2'>
                 <ListChecks className='h-4 w-4' />
-                <span className='hidden sm:inline'>Tasks</span>
-              </TabsTrigger>
+                {!isMobile && 'Tasks'}
+              </ScrollableTabsTrigger>
             </>
           )}
-          <TabsTrigger value='waitlist' className='flex items-center gap-2'>
+          <ScrollableTabsTrigger value='waitlist' className='flex items-center gap-2'>
             <Users className='h-4 w-4' />
-            <span className='hidden sm:inline'>Waitlist</span>
-          </TabsTrigger>
-          <TabsTrigger value='financials' className='flex items-center gap-2'>
+            {!isMobile && 'Waitlist'}
+          </ScrollableTabsTrigger>
+          <ScrollableTabsTrigger value='financials' className='flex items-center gap-2'>
             <DollarSign className='h-4 w-4' />
-            <span className='hidden sm:inline'>Financials</span>
-          </TabsTrigger>
-        </TabsList>
+            {!isMobile && 'Financials'}
+          </ScrollableTabsTrigger>
+        </ScrollableTabsList>
 
         {/* Puppies Tab */}
         <TabsContent value='puppies'>

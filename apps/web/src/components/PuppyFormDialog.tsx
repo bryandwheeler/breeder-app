@@ -7,6 +7,7 @@ import {
   ResponsiveDialogDescription,
   ResponsiveDialogBody,
 } from '@/components/ui/responsive-dialog';
+import { CollapsibleFormSection } from '@/components/ui/collapsible-form-section';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -400,7 +401,11 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
           </div>
 
           {(formData.status === 'reserved' || formData.status === 'sold') && (
-            <>
+            <CollapsibleFormSection
+              title="Sale Details"
+              description="Buyer assignment, pricing, and dates"
+              defaultOpen={true}
+            >
               <div>
                 <Label htmlFor='buyerId'>Buyer / Waitlist Assignee</Label>
                 <Select
@@ -544,9 +549,11 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
 
               {/* Breeding Rights Details */}
               {formData.contractType === 'breeding_rights' && (
-                <div className='space-y-4 border p-4 rounded-md bg-muted/30'>
-                  <h4 className='font-semibold text-sm'>Breeding Rights Terms</h4>
-
+                <CollapsibleFormSection
+                  title="Breeding Rights Terms"
+                  description="Set breeding requirements and restrictions"
+                  defaultOpen={true}
+                >
                   <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                     <div>
                       <Label htmlFor='minimumBreedingAge'>Minimum Breeding Age (months)</Label>
@@ -672,13 +679,16 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
                       rows={3}
                     />
                   </div>
-                </div>
+                </CollapsibleFormSection>
               )}
 
               {/* Co-Ownership Details */}
               {formData.contractType === 'co_ownership' && (
-                <div className='space-y-4 border p-4 rounded-md bg-muted/30'>
-                  <h4 className='font-semibold text-sm'>Co-Ownership Agreement</h4>
+                <CollapsibleFormSection
+                  title="Co-Ownership Agreement"
+                  description="Define co-ownership terms and responsibilities"
+                  defaultOpen={true}
+                >
 
                   <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                     <div>
@@ -880,15 +890,17 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
                       rows={3}
                     />
                   </div>
-                </div>
+                </CollapsibleFormSection>
               )}
-            </>
+            </CollapsibleFormSection>
           )}
 
           {/* Registration Tracking */}
-          <div className='space-y-4 border p-4 rounded-md'>
-            <h4 className='font-semibold text-sm'>Registration Information</h4>
-
+          <CollapsibleFormSection
+            title="Registration Information"
+            description="AKC, UKC, or other registry details"
+            defaultOpen={false}
+          >
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
               <div>
                 <Label htmlFor='registry'>Registry</Label>
@@ -1012,7 +1024,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
                   />
                 </div>
 
-                <div className='grid grid-cols-3 gap-4'>
+                <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
                   <div>
                     <Label htmlFor='applicationDate'>Application Date</Label>
                     <Input
@@ -1092,7 +1104,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
                 </div>
               </>
             )}
-          </div>
+          </CollapsibleFormSection>
 
           <div>
             <Label>Photos</Label>
