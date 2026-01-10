@@ -52,6 +52,9 @@ interface Store {
     interactionId: string
   ) => Promise<void>;
 
+  // Quick Note (simplified interaction for notes)
+  addQuickNote: (customerId: string, note: string) => Promise<void>;
+
   // Purchase Management
   addPurchase: (
     customerId: string,
@@ -283,6 +286,17 @@ export const useCrmStore = create<Store>()((set, get) => ({
     await updateDoc(doc(db, 'customers', customerId), {
       interactions,
       updatedAt: serverTimestamp(),
+    });
+  },
+
+  // Quick Note - simplified interaction for notes
+  addQuickNote: async (customerId, note) => {
+    const today = new Date().toISOString().split('T')[0];
+    await get().addInteraction(customerId, {
+      date: today,
+      type: 'other',
+      subject: 'Note',
+      notes: note,
     });
   },
 

@@ -1376,6 +1376,33 @@ export interface Interaction {
   syncedAt?: string; // When it was synced from external source
 }
 
+// Unified Activity Item for timeline display
+export interface ActivityItem {
+  id: string;
+  type:
+    | 'interaction'
+    | 'email'
+    | 'instagram_dm'
+    | 'facebook_msg'
+    | 'sms'
+    | 'note'
+    | 'purchase'
+    | 'status_change';
+  timestamp: string;
+  direction?: 'inbound' | 'outbound';
+  subject?: string;
+  content?: string;
+  preview?: string; // Truncated content for list view
+  metadata?: {
+    conversationId?: string;
+    messageId?: string;
+    interactionId?: string;
+    purchaseId?: string;
+    interactionType?: Interaction['type'];
+  };
+  source: 'manual' | 'email' | 'instagram' | 'facebook' | 'sms' | 'system';
+}
+
 // Customer Segment for filtering/reporting
 export interface CustomerSegment {
   id: string;
