@@ -100,15 +100,25 @@ export function LitterDetails() {
     setPuppyDialogOpen(true);
   };
 
+  // Helper to remove undefined values from objects (Firebase doesn't accept undefined)
+  const cleanUndefined = <T extends Record<string, unknown>>(obj: T): T => {
+    return Object.fromEntries(
+      Object.entries(obj).filter(([_, v]) => v !== undefined)
+    ) as T;
+  };
+
   const handleSavePuppy = async (puppy: Puppy, selectedWaitlistEntry?: WaitlistEntry) => {
+    // Clean undefined values from the puppy object before saving
+    const cleanedPuppy = cleanUndefined(puppy);
+
     let updatedPuppies: Puppy[];
 
     if (editingPuppy) {
       // Update existing puppy
-      updatedPuppies = litter.puppies.map((p) => (p.id === puppy.id ? puppy : p));
+      updatedPuppies = litter.puppies.map((p) => (p.id === cleanedPuppy.id ? cleanedPuppy : p));
     } else {
       // Add new puppy
-      updatedPuppies = [...litter.puppies, puppy];
+      updatedPuppies = [...litter.puppies, cleanedPuppy];
     }
 
     await updateLitter(litter.id, { puppies: updatedPuppies });
