@@ -6,9 +6,12 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Dog } from '@breeder/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, ArrowRight, Home, Heart, X, ChevronDown, Settings2, GripVertical } from 'lucide-react';
+import { Edit, Trash2, ArrowRight, Home, Heart, X, ChevronDown, Settings2, GripVertical, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
+import { useIsMobile } from '@/hooks/use-media-query';
+import { MobileDogCard } from '@/components/dogs/MobileDogCard';
+import { Input } from '@/components/ui/input';
 import {
   Popover,
   PopoverContent,
@@ -115,9 +118,11 @@ export function DogList({
   openEditDialog: (dog: Dog | null) => void;
 }) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { dogs, deleteDog, updateDog, litters } = useDogStore();
   const { getBreedingRecordsForDog } = useHeatCycleStore();
   const { customers } = useCrmStore();
+  const [searchQuery, setSearchQuery] = useState('');
   const [programFilters, setProgramFilters] = useState<ProgramStatus[]>([]);
   // Default: no breeding status filters (show all)
   const [breedingStatusFilters, setBreedingStatusFilters] = useState<BreedingStatus[]>([]);
@@ -437,6 +442,36 @@ export function DogList({
     { value: 'guardian', label: 'Guardian Program' },
   ];
 
+  // Helper to get litter status for a dog (for mobile cards)
+  const getLitterStatus = (dog: Dog): 'pregnant' | 'bred' | 'recently_bred' | null => {
+    if (dog.sex !== 'female') return null;
+
+    // Check for planned/pregnant litters
+    const pendingLitters = litters.filter(
+      (litter) =>
+        litter.damId === dog.id &&
+        (litter.status === 'planned' || litter.status === 'pregnant')
+    );
+
+    if (pendingLitters.length > 0) {
+      const litter = pendingLitters[0];
+      if (litter.status === 'pregnant') return 'pregnant';
+      return 'bred';
+    }
+
+    // Check for recent breeding records (last 90 days)
+    const breedingRecords = getBreedingRecordsForDog(dog.id);
+    const recentBreedings = breedingRecords.filter((record) => {
+      const breedingDate = parseISO(record.breedingDate);
+      const daysSince = differenceInDays(new Date(), breedingDate);
+      return daysSince >= 0 && daysSince <= 90;
+    });
+
+    if (recentBreedings.length > 0) return 'recently_bred';
+
+    return null;
+  };
+
   // Filter and sort dogs
   const filteredDogs = dogs
     .filter((dog) => {
@@ -461,6 +496,17 @@ export function DogList({
       // Filter by breeding status
       if (breedingStatusFilters.length > 0) {
         if (!dog.breedingStatus || !breedingStatusFilters.includes(dog.breedingStatus as BreedingStatus)) {
+          return false;
+        }
+      }
+
+      // Filter by search query (for mobile)
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = dog.name.toLowerCase().includes(query);
+        const matchesCallName = dog.callName?.toLowerCase().includes(query);
+        const matchesBreed = dog.breed.toLowerCase().includes(query);
+        if (!matchesName && !matchesCallName && !matchesBreed) {
           return false;
         }
       }
@@ -623,6 +669,8 @@ export function DogList({
           </div>
 
           <div className='flex gap-2 w-full sm:w-auto'>
+            {/* Column settings - desktop only */}
+            {!isMobile && (
             <Popover open={columnSettingsOpen} onOpenChange={setColumnSettingsOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -675,6 +723,7 @@ export function DogList({
                 </div>
               </PopoverContent>
             </Popover>
+            )}
 
             <Button
               onClick={() => openEditDialog(null)}
@@ -688,11 +737,48 @@ export function DogList({
         </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={filteredDogs}
-        searchPlaceholder='Search all dogs...'
-      />
+      {/* Mobile: Card layout with search */}
+      {isMobile ? (
+        <div className='space-y-3'>
+          {/* Mobile search */}
+          <div className='relative'>
+            <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
+            <Input
+              type='search'
+              placeholder='Search dogs...'
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className='pl-9'
+            />
+          </div>
+
+          {/* Mobile cards */}
+          {filteredDogs.length === 0 ? (
+            <div className='text-center py-8 text-muted-foreground'>
+              No dogs found
+            </div>
+          ) : (
+            <div className='space-y-2'>
+              {filteredDogs.map((dog) => (
+                <MobileDogCard
+                  key={dog.id}
+                  dog={dog}
+                  onEdit={openEditDialog}
+                  onNavigate={(id) => navigate(`/dogs/${id}`)}
+                  litterStatus={getLitterStatus(dog)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Desktop: Table layout */
+        <DataTable
+          columns={columns}
+          data={filteredDogs}
+          searchPlaceholder='Search all dogs...'
+        />
+      )}
 
       <DeleteDogDialog
         open={deleteDialogOpen}
