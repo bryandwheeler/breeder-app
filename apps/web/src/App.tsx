@@ -19,6 +19,7 @@ import { Inquiries } from '@/pages/Inquiries';
 import { Waitlist } from '@/pages/Waitlist';
 import { WaitlistApplication } from '@/pages/WaitlistApplication';
 import { Customers } from '@/pages/Customers';
+import { ContactDetail } from '@/pages/ContactDetail';
 import { Connections } from '@/pages/Connections';
 import { BuyerPortal } from '@/pages/BuyerPortal';
 import { HealthRecords } from '@/pages/HealthRecords';
@@ -366,6 +367,14 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <Customers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/contacts/:id'
+                element={
+                  <ProtectedRoute>
+                    <ContactDetail />
                   </ProtectedRoute>
                 }
               />

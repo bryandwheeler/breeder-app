@@ -1,5 +1,6 @@
 // CRM - Contact management
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCrmStore } from '@breeder/firebase';
 import { Customer, ContactRole } from '@breeder/types';
 import { Card } from '@/components/ui/card';
@@ -50,6 +51,7 @@ import { AddCustomerDialog } from '@/components/AddCustomerDialog';
 import { formatCurrency } from '@/lib/utils';
 
 export function Customers() {
+  const navigate = useNavigate();
   const { customers, deleteCustomer } = useCrmStore();
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
@@ -371,7 +373,11 @@ export function Customers() {
             </TableHeader>
             <TableBody>
               {filteredCustomers.map((customer) => (
-                <TableRow key={customer.id}>
+                <TableRow
+                  key={customer.id}
+                  className='cursor-pointer hover:bg-muted/50'
+                  onClick={() => navigate(`/contacts/${customer.id}`)}
+                >
                   <TableCell>
                     <div className='font-medium'>{customer.name}</div>
                     <div className='text-sm text-muted-foreground'>
@@ -405,7 +411,7 @@ export function Customers() {
                     </Badge>
                   </TableCell>
 
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <div className='flex flex-col gap-1'>
                       {customer.phone && (
                         <a
@@ -471,7 +477,7 @@ export function Customers() {
                     </div>
                   </TableCell>
 
-                  <TableCell className='text-right'>
+                  <TableCell className='text-right' onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant='ghost' size='sm'>
