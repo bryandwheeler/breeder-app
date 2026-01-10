@@ -407,6 +407,10 @@ export interface Puppy {
   breedingRights?: BreedingRights;
   coOwnership?: CoOwnership;
 
+  // Uploaded contract documents
+  contractDocument?: ContractDocument;
+  healthGuaranteeDocument?: ContractDocument;
+
   // Registration tracking (multiple registries supported)
   registrations?: Registration[];
 
@@ -416,6 +420,16 @@ export interface Puppy {
   updates?: PuppyUpdate[];
   milestones?: Milestone[];
   notes?: string;
+}
+
+// Uploaded Contract Document
+export interface ContractDocument {
+  id: string;
+  name: string;
+  type: 'pdf' | 'image';
+  url: string;
+  uploadDate: string;
+  size?: number;
 }
 
 // Breeding Rights Contract Details

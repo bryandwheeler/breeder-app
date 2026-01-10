@@ -89,15 +89,19 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to add to waitlist');
 
+    // Check for admin impersonation
+    const impersonatedUserId = localStorage.getItem('impersonatedUserId');
+    const targetUserId = impersonatedUserId || user.uid;
+
     // First, get the contact details
     const customerDoc = await getDocs(
       query(
         collection(db, 'customers'),
-        where('breederId', '==', user.uid)
+        where('breederId', '==', targetUserId)
       )
     );
 
-    const contact = customerDoc.docs.find(d => d.id === contactId);
+    const contact = customerDoc.docs.find((d) => d.id === contactId);
     if (!contact) throw new Error('Contact not found');
 
     const contactData = contact.data();
@@ -117,7 +121,8 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
     );
     const position = currentWaitlist.length + 1;
 
-    const newEntry = {
+    // Build entry object - don't include undefined values (Firebase rejects them)
+    const newEntry: Record<string, unknown> = {
       // Contact info from customer record
       name: contactData.name,
       email: contactData.email,
@@ -130,17 +135,14 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
       // Link to contact
       contactId: contactId,
 
-      // Litter assignment if provided
-      assignedLitterId: litterId || undefined,
-
       // Preferences
       preferredSex: preferences?.preferredSex || 'either',
       preferredColors: preferences?.preferredColors || [],
       notes: preferences?.notes || '',
 
       // Breeder info
-      userId: user.uid,
-      breederId: user.uid,
+      userId: targetUserId,
+      breederId: targetUserId,
 
       // Status and position
       status: 'active' as const,
@@ -153,6 +155,11 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
+
+    // Only add assignedLitterId if it has a value (Firebase doesn't accept undefined)
+    if (litterId) {
+      newEntry.assignedLitterId = litterId;
+    }
 
     const docRef = await addDoc(waitlistRef, newEntry);
 

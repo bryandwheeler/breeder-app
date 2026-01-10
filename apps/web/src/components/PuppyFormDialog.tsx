@@ -157,25 +157,45 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
+    // Validate file type - include HEIC for iOS devices
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
+    const isValidType = file.type.startsWith('image/') ||
+                        validTypes.includes(file.type.toLowerCase()) ||
+                        file.name.toLowerCase().endsWith('.heic') ||
+                        file.name.toLowerCase().endsWith('.heif');
+
+    if (!isValidType) {
       alert('Please select an image file');
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image size must be less than 5MB');
+    // Validate file size (max 10MB for mobile - HEIC can be larger)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image size must be less than 10MB');
       return;
     }
 
-    // Read the file and open crop dialog
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImageToCrop(reader.result as string);
-      setCropDialogOpen(true);
-    };
-    reader.readAsDataURL(file);
+    setUploading(true);
+
+    try {
+      // Read the file and open crop dialog
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImageToCrop(reader.result as string);
+        setCropDialogOpen(true);
+        setUploading(false);
+      };
+      reader.onerror = () => {
+        console.error('FileReader error:', reader.error);
+        alert('Failed to read image file. Please try again.');
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error reading file:', error);
+      alert('Failed to read image file. Please try again.');
+      setUploading(false);
+    }
 
     // Reset the input
     e.target.value = '';
@@ -1066,7 +1086,8 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
               <div className='flex gap-2 items-center'>
                 <input
                   type='file'
-                  accept='image/*'
+                  accept='image/*,.heic,.heif'
+                  capture='environment'
                   onChange={handleFileUpload}
                   disabled={uploading}
                   className='hidden'

@@ -11,7 +11,7 @@ import { PuppyFormDialog } from '@/components/PuppyFormDialog';
 import { BuyerFormDialog } from '@/components/BuyerFormDialog';
 import { ExpenseDialog } from '@/components/ExpenseDialog';
 import { useState, useEffect } from 'react';
-import { Puppy, Buyer, Expense, WaitlistEntry } from '@breeder/types';
+import { Puppy, Buyer, Expense, WaitlistEntry, ContractDocument } from '@breeder/types';
 import { format } from 'date-fns';
 import { generateLitterRecord } from '@/lib/pdfGenerator';
 import { ContractSigningDialog } from '@/components/ContractSigningDialog';
@@ -202,9 +202,33 @@ export function LitterDetails() {
 
   const handleGenerateContract = (puppy: Puppy) => {
     if (!dam || !sire) return;
-    const buyer = buyers.find(b => b.id === puppy.buyerId);
+
+    // Check for legacy buyer first
+    let buyer = buyers.find(b => b.id === puppy.buyerId);
+
+    // If no legacy buyer, check for waitlist entry assigned to this puppy
     if (!buyer) {
-      alert('Please assign a buyer to this puppy first');
+      const waitlistEntry = litterWaitlist.find(e => e.assignedPuppyId === puppy.id);
+      if (waitlistEntry) {
+        // Create a buyer-like object from the waitlist entry
+        buyer = {
+          id: waitlistEntry.id,
+          name: waitlistEntry.name,
+          email: waitlistEntry.email,
+          phone: waitlistEntry.phone,
+          address: [waitlistEntry.address, waitlistEntry.city, waitlistEntry.state, waitlistEntry.zipCode]
+            .filter(Boolean)
+            .join(', '),
+          status: 'reserved' as const,
+          dateAdded: waitlistEntry.applicationDate || new Date().toISOString().split('T')[0],
+          preferredSex: waitlistEntry.preferredSex,
+          notes: waitlistEntry.notes,
+        };
+      }
+    }
+
+    if (!buyer) {
+      alert('Please assign a buyer or waitlist entry to this puppy first');
       return;
     }
     setSigningPuppy(puppy);
@@ -217,6 +241,25 @@ export function LitterDetails() {
     setSigningPuppy(puppy);
     setSigningType('health');
     setSigningDialogOpen(true);
+  };
+
+  const handleContractDocumentUploaded = async (document: ContractDocument) => {
+    if (!signingPuppy) return;
+
+    // Update the puppy with the uploaded document
+    const updatedPuppies = litter.puppies.map((p) => {
+      if (p.id === signingPuppy.id) {
+        if (signingType === 'contract') {
+          return { ...p, contractDocument: document };
+        } else {
+          return { ...p, healthGuaranteeDocument: document };
+        }
+      }
+      return p;
+    });
+
+    await updateLitter(litter.id, { puppies: updatedPuppies });
+    setSigningPuppy(null);
   };
 
   const availablePuppies = puppies.filter((p) => p.status === 'available');
@@ -805,7 +848,7 @@ export function LitterDetails() {
         setOpen={setPuppyDialogOpen}
         puppy={editingPuppy}
         litterBuyers={buyers}
-        litterWaitlist={waitlist}
+        litterWaitlist={litterWaitlist}
         onSave={handleSavePuppy}
       />
 
@@ -832,9 +875,33 @@ export function LitterDetails() {
           litter={litter}
           dam={dam}
           sire={sire}
-          buyer={buyers.find(b => b.id === signingPuppy.buyerId)}
+          buyer={(() => {
+            // Check for legacy buyer first
+            const legacyBuyer = buyers.find(b => b.id === signingPuppy.buyerId);
+            if (legacyBuyer) return legacyBuyer;
+
+            // Check for waitlist entry assigned to this puppy
+            const waitlistEntry = litterWaitlist.find(e => e.assignedPuppyId === signingPuppy.id);
+            if (waitlistEntry) {
+              return {
+                id: waitlistEntry.id,
+                name: waitlistEntry.name,
+                email: waitlistEntry.email,
+                phone: waitlistEntry.phone,
+                address: [waitlistEntry.address, waitlistEntry.city, waitlistEntry.state, waitlistEntry.zipCode]
+                  .filter(Boolean)
+                  .join(', '),
+                status: 'reserved' as const,
+                dateAdded: waitlistEntry.applicationDate || new Date().toISOString().split('T')[0],
+                preferredSex: waitlistEntry.preferredSex,
+                notes: waitlistEntry.notes,
+              };
+            }
+            return undefined;
+          })()}
           kennelName={dam.kennelName || 'Doodle Bliss Kennel'}
           breederName={dam.breederName || ''}
+          onDocumentUploaded={handleContractDocumentUploaded}
         />
       )}
 

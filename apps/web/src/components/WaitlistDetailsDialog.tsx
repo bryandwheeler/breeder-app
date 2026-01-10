@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { WaitlistEntry } from '@breeder/types';
-import { useWaitlistStore } from '@breeder/firebase';
+import { useWaitlistStore, useDogStore } from '@breeder/firebase';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -21,8 +22,9 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mail, Phone, MapPin, Home, CheckCircle, XCircle, Clock, Send, User } from 'lucide-react';
+import { Mail, Phone, MapPin, Home, CheckCircle, XCircle, Clock, Send, User, Baby, Dog } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import { Link } from 'react-router-dom';
 
 interface Props {
   open: boolean;
@@ -31,8 +33,30 @@ interface Props {
 }
 
 export function WaitlistDetailsDialog({ open, setOpen, entry }: Props) {
-  const { updateWaitlistEntry } = useWaitlistStore();
+  const { updateWaitlistEntry, assignPuppyToWaitlistEntry } = useWaitlistStore();
+  const { litters, dogs } = useDogStore();
   const [formData, setFormData] = useState(entry);
+
+  // Reset form data when entry changes
+  useEffect(() => {
+    setFormData(entry);
+  }, [entry]);
+
+  // Get available litters for assignment
+  const availableLitters = litters.filter((l) => {
+    const birthDate = l.dateOfBirth ? new Date(l.dateOfBirth) : null;
+    const isRecent = birthDate && (Date.now() - birthDate.getTime()) < 180 * 24 * 60 * 60 * 1000;
+    const isExpected = l.status === 'expected' || l.status === 'confirmed';
+    return isRecent || isExpected;
+  });
+
+  // Get assigned litter info (from original entry for display)
+  const assignedLitter = litters.find((l) => l.id === entry.assignedLitterId);
+  const assignedPuppy = assignedLitter?.puppies?.find((p) => p.id === entry.assignedPuppyId);
+
+  // Get puppies from currently selected litter in form (for dropdown)
+  const selectedLitter = litters.find((l) => l.id === formData.assignedLitterId);
+  const litterPuppies = selectedLitter?.puppies || [];
 
   const handleSave = async () => {
     await updateWaitlistEntry(entry.id, formData);
@@ -58,6 +82,9 @@ export function WaitlistDetailsDialog({ open, setOpen, entry }: Props) {
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Waitlist Application Details</DialogTitle>
+          <DialogDescription>
+            View and manage details for {entry.name}'s waitlist application.
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="info" className="space-y-4">
@@ -236,6 +263,114 @@ export function WaitlistDetailsDialog({ open, setOpen, entry }: Props) {
 
           {/* Management */}
           <TabsContent value="management" className="space-y-6">
+            {/* Litter & Puppy Assignment */}
+            <div className="space-y-4">
+              <h3 className="font-semibold">Litter & Puppy Assignment</h3>
+
+              {/* Current Assignment Status */}
+              {(assignedLitter || assignedPuppy) && (
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    {assignedPuppy ? (
+                      <>
+                        <Baby className="h-5 w-5 text-blue-600" />
+                        <span className="font-medium text-blue-900 dark:text-blue-100">
+                          Assigned to Puppy: {assignedPuppy.name || assignedPuppy.collar || assignedPuppy.color || 'Unnamed'}
+                        </span>
+                      </>
+                    ) : assignedLitter ? (
+                      <>
+                        <Dog className="h-5 w-5 text-blue-600" />
+                        <span className="font-medium text-blue-900 dark:text-blue-100">
+                          On Waitlist for: {assignedLitter.litterName || 'Litter'}
+                        </span>
+                      </>
+                    ) : null}
+                  </div>
+                  {assignedLitter && (
+                    <Link
+                      to={`/litters/${assignedLitter.id}`}
+                      className="text-sm text-blue-600 hover:underline"
+                    >
+                      View Litter Details →
+                    </Link>
+                  )}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Assigned Litter</Label>
+                  <Select
+                    value={formData.assignedLitterId || 'none'}
+                    onValueChange={(value) => {
+                      const litterId = value === 'none' ? undefined : value;
+                      setFormData({
+                        ...formData,
+                        assignedLitterId: litterId,
+                        // Clear puppy assignment if litter changes
+                        assignedPuppyId: litterId !== formData.assignedLitterId ? undefined : formData.assignedPuppyId,
+                        assignedPuppyName: litterId !== formData.assignedLitterId ? undefined : formData.assignedPuppyName,
+                      });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="No litter assigned" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Litter (General Waitlist)</SelectItem>
+                      {availableLitters.map((litter) => {
+                        const dam = dogs.find((d) => d.id === litter.damId);
+                        const sire = dogs.find((d) => d.id === litter.sireId);
+                        return (
+                          <SelectItem key={litter.id} value={litter.id}>
+                            {litter.litterName || `${dam?.name || 'Unknown'} x ${sire?.name || litter.externalSire?.name || 'Unknown'}`}
+                            {litter.status === 'expected' && ' (Expected)'}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Assigned Puppy</Label>
+                  <Select
+                    value={formData.assignedPuppyId || 'none'}
+                    onValueChange={(value) => {
+                      const puppyId = value === 'none' ? undefined : value;
+                      const puppy = litterPuppies.find((p) => p.id === puppyId);
+                      setFormData({
+                        ...formData,
+                        assignedPuppyId: puppyId,
+                        assignedPuppyName: puppy?.name || puppy?.collar || puppy?.color,
+                      });
+                    }}
+                    disabled={!formData.assignedLitterId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={formData.assignedLitterId ? "Select a puppy" : "Select a litter first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Puppy Assigned</SelectItem>
+                      {litterPuppies.map((puppy) => (
+                        <SelectItem key={puppy.id} value={puppy.id}>
+                          {puppy.name || puppy.collar || puppy.color || `Puppy ${puppy.id.slice(-4)}`}
+                          {puppy.sex && ` (${puppy.sex.charAt(0).toUpperCase()})`}
+                          {puppy.status !== 'available' && ` - ${puppy.status}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!formData.assignedLitterId && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Assign a litter first to select a puppy
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Status Management */}
             <div className="space-y-4">
               <h3 className="font-semibold">Application Status</h3>

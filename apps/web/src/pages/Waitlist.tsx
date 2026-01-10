@@ -1,7 +1,7 @@
 // Waitlist management dashboard
 import { useState, useEffect } from 'react';
-import { useWaitlistStore } from '@breeder/firebase';
-import { WaitlistEntry } from '@breeder/types';
+import { useWaitlistStore, useDogStore } from '@breeder/firebase';
+import { WaitlistEntry, Litter } from '@breeder/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +40,8 @@ import {
   CheckCircle,
   XCircle,
   Code,
+  Baby,
+  Dog,
 } from 'lucide-react';
 import { WaitlistDetailsDialog } from '@/components/WaitlistDetailsDialog';
 import { WaitlistEmbedDialog } from '@/components/WaitlistEmbedDialog';
@@ -48,16 +50,22 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from '@/components/ui/tooltip';
+import { Link } from 'react-router-dom';
 
 function SortableWaitlistItem({
   entry,
   onView,
   onDelete,
+  litters,
 }: {
   entry: WaitlistEntry;
   onView: (entry: WaitlistEntry) => void;
   onDelete: (id: string) => void;
+  litters: Litter[];
 }) {
+  // Get litter and puppy info
+  const assignedLitter = litters.find((l) => l.id === entry.assignedLitterId);
+  const assignedPuppy = assignedLitter?.puppies?.find((p) => p.id === entry.assignedPuppyId);
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: entry.id });
 
@@ -131,8 +139,43 @@ function SortableWaitlistItem({
             </div>
           </div>
 
+          {/* Litter/Puppy Assignment */}
+          <div className='min-w-[180px]'>
+            {assignedPuppy ? (
+              <div className='flex items-center gap-2 text-sm'>
+                <Baby className='h-4 w-4 text-blue-500' />
+                <div>
+                  <div className='font-medium text-blue-700 dark:text-blue-400'>
+                    {assignedPuppy.name || assignedPuppy.collar || assignedPuppy.color || 'Puppy'}
+                  </div>
+                  <Link
+                    to={`/litters/${assignedLitter?.id}`}
+                    className='text-xs text-muted-foreground hover:underline'
+                  >
+                    {assignedLitter?.litterName || 'View Litter'}
+                  </Link>
+                </div>
+              </div>
+            ) : assignedLitter ? (
+              <Link
+                to={`/litters/${assignedLitter.id}`}
+                className='flex items-center gap-2 text-sm hover:underline'
+              >
+                <Dog className='h-4 w-4 text-purple-500' />
+                <span className='text-purple-700 dark:text-purple-400'>
+                  {assignedLitter.litterName || 'Assigned Litter'}
+                </span>
+              </Link>
+            ) : (
+              <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                <Dog className='h-4 w-4 opacity-50' />
+                <span>General Waitlist</span>
+              </div>
+            )}
+          </div>
+
           {/* Preferences */}
-          <div className='text-sm text-muted-foreground'>
+          <div className='text-sm text-muted-foreground min-w-[100px]'>
             {entry.preferredSex && (
               <div>
                 Sex:{' '}
@@ -205,6 +248,7 @@ export function Waitlist() {
     reorderWaitlist,
     subscribeToWaitlist,
   } = useWaitlistStore();
+  const { litters } = useDogStore();
   const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(
     null
   );
@@ -363,6 +407,7 @@ export function Waitlist() {
                 <SortableWaitlistItem
                   key={entry.id}
                   entry={entry}
+                  litters={litters}
                   onView={(entry) => {
                     setSelectedEntry(entry);
                     setDetailsOpen(true);
