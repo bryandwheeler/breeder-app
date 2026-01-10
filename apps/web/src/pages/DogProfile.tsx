@@ -53,6 +53,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { ImageGalleryDialog } from '@/components/ImageGalleryDialog';
 
 export function DogProfile() {
   const { id } = useParams<{ id: string }>();
@@ -66,6 +67,8 @@ export function DogProfile() {
   const [editingDog, setEditingDog] = useState<DogType | null>(null);
   const [editingStudJob, setEditingStudJob] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
   const dog = dogs.find((d) => d.id === id);
 
   // Get litters for this dog (if female)
@@ -321,12 +324,22 @@ export function DogProfile() {
                       src={photo}
                       alt={`${dog.name} ${i + 1}`}
                       className='w-16 h-16 rounded-lg object-cover border-2 border-gray-200 hover:border-primary cursor-pointer transition'
+                      onClick={() => {
+                        setGalleryInitialIndex(i);
+                        setGalleryOpen(true);
+                      }}
                     />
                   ))}
                   {dog.photos.length > 5 && (
-                    <div className='w-16 h-16 rounded-lg bg-muted flex items-center justify-center text-xs font-semibold'>
+                    <button
+                      onClick={() => {
+                        setGalleryInitialIndex(5);
+                        setGalleryOpen(true);
+                      }}
+                      className='w-16 h-16 rounded-lg bg-muted flex items-center justify-center text-xs font-semibold hover:bg-muted/80 transition cursor-pointer'
+                    >
                       +{dog.photos.length - 5}
-                    </div>
+                    </button>
                   )}
                 </div>
               )}
@@ -780,12 +793,25 @@ export function DogProfile() {
                     <AccordionContent>
                       <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
                         {dog.photos.map((photo, i) => (
-                          <img
+                          <button
                             key={i}
-                            src={photo}
-                            alt={`${dog.name} ${i + 1}`}
-                            className='w-full h-48 object-cover rounded-lg shadow-md hover:scale-105 transition'
-                          />
+                            onClick={() => {
+                              setGalleryInitialIndex(i);
+                              setGalleryOpen(true);
+                            }}
+                            className='relative group'
+                          >
+                            <img
+                              src={photo}
+                              alt={`${dog.name} ${i + 1}`}
+                              className='w-full h-48 object-cover rounded-lg shadow-md hover:scale-105 transition cursor-pointer'
+                            />
+                            <div className='absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-lg transition flex items-center justify-center'>
+                              <span className='text-white opacity-0 group-hover:opacity-100 text-sm font-medium'>
+                                View
+                              </span>
+                            </div>
+                          </button>
                         ))}
                       </div>
                     </AccordionContent>
@@ -1283,6 +1309,22 @@ export function DogProfile() {
         preselectedStudId={dog.id}
         editingJob={editingStudJob}
       />
+
+      {/* Image Gallery Dialog */}
+      {dog.photos && dog.photos.length > 0 && (
+        <ImageGalleryDialog
+          open={galleryOpen}
+          onOpenChange={setGalleryOpen}
+          images={dog.photos}
+          initialIndex={galleryInitialIndex}
+          title={`${dog.name}'s Photos`}
+          onDelete={async (index) => {
+            const newPhotos = [...dog.photos!];
+            newPhotos.splice(index, 1);
+            await updateDog(dog.id, { photos: newPhotos });
+          }}
+        />
+      )}
     </div>
   );
 }
