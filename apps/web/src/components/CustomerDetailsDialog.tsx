@@ -2,17 +2,19 @@ import { useState } from 'react';
 import { Customer, Interaction, Purchase, ContactRole } from '@breeder/types';
 import { useCrmStore } from '@breeder/firebase';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogBody,
+} from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { ScrollableTabsList, ScrollableTabsTrigger } from '@/components/ui/scrollable-tabs';
 import {
   Select,
   SelectContent,
@@ -178,31 +180,32 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className='max-w-5xl max-h-[90vh] overflow-y-auto'>
-        <DialogHeader>
+    <ResponsiveDialog open={open} onOpenChange={setOpen}>
+      <ResponsiveDialogContent className='md:max-w-5xl'>
+        <ResponsiveDialogHeader onClose={() => setOpen(false)}>
           <div className='flex items-center justify-between'>
-            <DialogTitle>Customer Profile</DialogTitle>
+            <ResponsiveDialogTitle>Customer Profile</ResponsiveDialogTitle>
             <Badge className={getTypeColor(formData.type)}>
               {formData.type.replace('_', ' ')}
             </Badge>
           </div>
-        </DialogHeader>
+        </ResponsiveDialogHeader>
 
+        <ResponsiveDialogBody>
         <Tabs defaultValue='profile' className='space-y-4'>
-          <TabsList>
-            <TabsTrigger value='profile'>Profile</TabsTrigger>
-            <TabsTrigger value='interactions'>
+          <ScrollableTabsList>
+            <ScrollableTabsTrigger value='profile'>Profile</ScrollableTabsTrigger>
+            <ScrollableTabsTrigger value='interactions'>
               Interactions ({customer.interactions?.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value='purchases'>
+            </ScrollableTabsTrigger>
+            <ScrollableTabsTrigger value='purchases'>
               Purchases ({customer.purchases?.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value='settings'>Settings</TabsTrigger>
-            <TabsTrigger value='messaging'>
+            </ScrollableTabsTrigger>
+            <ScrollableTabsTrigger value='settings'>Settings</ScrollableTabsTrigger>
+            <ScrollableTabsTrigger value='messaging'>
               Messaging ({customer.conversationIds?.length || 0})
-            </TabsTrigger>
-          </TabsList>
+            </ScrollableTabsTrigger>
+          </ScrollableTabsList>
 
           {/* Profile Tab */}
           <TabsContent value='profile' className='space-y-6'>
@@ -220,7 +223,7 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
               </div>
 
               {isEditingProfile ? (
-                <div className='grid grid-cols-2 gap-4'>
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                   <div className='col-span-2'>
                     <Label>Name *</Label>
                     <Input
@@ -332,7 +335,7 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
                   </div>
                 </div>
               ) : (
-                <div className='grid grid-cols-2 gap-4 text-sm'>
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm'>
                   <div className='col-span-2'>
                     <div className='font-medium'>Name</div>
                     <div className='text-lg'>{customer.name}</div>
@@ -427,7 +430,7 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
             {/* Customer Stats */}
             <div className='space-y-3'>
               <h3 className='font-semibold'>Customer Stats</h3>
-              <div className='grid grid-cols-4 gap-4'>
+              <div className='grid grid-cols-2 sm:grid-cols-4 gap-4'>
                 <Card className='p-3'>
                   <div className='text-xs text-muted-foreground mb-1'>
                     Total Purchases
@@ -466,7 +469,7 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
             {/* Important Dates */}
             <div className='space-y-3'>
               <h3 className='font-semibold'>Important Dates</h3>
-              <div className='grid grid-cols-2 gap-4 text-sm'>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm'>
                 <div>
                   <div className='font-medium'>First Contact</div>
                   <div>
@@ -558,7 +561,7 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
             {showAddInteraction && (
               <Card className='p-4 space-y-4'>
                 <h4 className='font-medium'>New Interaction</h4>
-                <div className='grid grid-cols-2 gap-4'>
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                   <div>
                     <Label>Date</Label>
                     <Input
@@ -738,7 +741,7 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
             {showAddPurchase && (
               <Card className='p-4 space-y-4'>
                 <h4 className='font-medium'>New Purchase</h4>
-                <div className='grid grid-cols-2 gap-4'>
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                   <div>
                     <Label>Purchase Date</Label>
                     <Input
@@ -889,7 +892,7 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
             <div className='space-y-4'>
               <h3 className='font-semibold'>Customer Settings</h3>
 
-              <div className='grid grid-cols-2 gap-4'>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                 <div>
                   <Label>Type</Label>
                   <Select
@@ -1108,7 +1111,7 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
                 customer.conversationIds.length > 0 && (
                   <div className='space-y-3'>
                     <h4 className='font-medium text-sm'>Messaging Overview</h4>
-                    <div className='grid grid-cols-3 gap-3'>
+                    <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
                       <Card className='p-3'>
                         <div className='text-xs text-muted-foreground'>
                           Conversations
@@ -1199,7 +1202,8 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
           </Button>
           <Button onClick={handleSave}>Save Changes</Button>
         </div>
-      </DialogContent>
+        </ResponsiveDialogBody>
+      </ResponsiveDialogContent>
 
       {/* Email Compose Dialog */}
       <EmailCompose
@@ -1212,6 +1216,6 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
           console.log('Email sent to customer:', customer.email);
         }}
       />
-    </Dialog>
+    </ResponsiveDialog>
   );
 }

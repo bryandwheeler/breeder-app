@@ -4,7 +4,9 @@ import { useCrmStore, useDogStore, useWaitlistStore } from '@breeder/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { ScrollableTabsList, ScrollableTabsTrigger } from '@/components/ui/scrollable-tabs';
+import { useIsMobile } from '@/hooks/use-media-query';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -65,6 +67,7 @@ import { Customer } from '@breeder/types';
 export function ContactDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { toast } = useToast();
   const { customers, addQuickNote, updateCustomer } = useCrmStore();
   const { litters } = useDogStore();
@@ -372,10 +375,10 @@ export function ContactDetail() {
         </div>
       </div>
 
-      {/* Main Layout */}
+      {/* Main Layout - Stacked on mobile, sidebar on desktop */}
       <div className='grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6'>
-        {/* Sidebar */}
-        <div className='space-y-4'>
+        {/* Sidebar - Shows as horizontal cards on mobile */}
+        <div className={isMobile ? 'grid grid-cols-2 gap-3' : 'space-y-4'}>
           {/* Contact Info Card */}
           <Card>
             <CardHeader className='pb-3'>
@@ -556,32 +559,32 @@ export function ContactDetail() {
         {/* Main Content Area */}
         <div>
           <Tabs defaultValue='activity' className='w-full'>
-            <TabsList className='mb-4'>
-              <TabsTrigger value='activity' className='gap-2'>
+            <ScrollableTabsList className='mb-4'>
+              <ScrollableTabsTrigger value='activity' className='gap-2'>
                 <Activity className='h-4 w-4' />
-                Activity
-              </TabsTrigger>
-              <TabsTrigger value='email' className='gap-2'>
+                {!isMobile && 'Activity'}
+              </ScrollableTabsTrigger>
+              <ScrollableTabsTrigger value='email' className='gap-2'>
                 <Mail className='h-4 w-4' />
-                Email
-              </TabsTrigger>
-              <TabsTrigger value='messages' className='gap-2'>
+                {!isMobile && 'Email'}
+              </ScrollableTabsTrigger>
+              <ScrollableTabsTrigger value='messages' className='gap-2'>
                 <MessageSquare className='h-4 w-4' />
-                Messages
-              </TabsTrigger>
-              <TabsTrigger value='purchases' className='gap-2'>
+                {!isMobile && 'Messages'}
+              </ScrollableTabsTrigger>
+              <ScrollableTabsTrigger value='purchases' className='gap-2'>
                 <DollarSign className='h-4 w-4' />
-                Purchases
-              </TabsTrigger>
-              <TabsTrigger value='notes' className='gap-2'>
+                {!isMobile && 'Purchases'}
+              </ScrollableTabsTrigger>
+              <ScrollableTabsTrigger value='notes' className='gap-2'>
                 <FileText className='h-4 w-4' />
-                Notes
-              </TabsTrigger>
-              <TabsTrigger value='settings' className='gap-2'>
+                {!isMobile && 'Notes'}
+              </ScrollableTabsTrigger>
+              <ScrollableTabsTrigger value='settings' className='gap-2'>
                 <Settings className='h-4 w-4' />
-                Settings
-              </TabsTrigger>
-            </TabsList>
+                {!isMobile && 'Settings'}
+              </ScrollableTabsTrigger>
+            </ScrollableTabsList>
 
             <TabsContent value='activity'>
               <Card>

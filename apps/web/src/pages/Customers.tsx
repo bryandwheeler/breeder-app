@@ -48,10 +48,13 @@ import {
 } from 'lucide-react';
 import { CustomerDetailsDialog } from '@/components/CustomerDetailsDialog';
 import { AddCustomerDialog } from '@/components/AddCustomerDialog';
+import { MobileContactCard } from '@/components/contacts/MobileContactCard';
 import { formatCurrency } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-media-query';
 
 export function Customers() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { customers, deleteCustomer } = useCrmStore();
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
@@ -225,53 +228,55 @@ export function Customers() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className='grid grid-cols-1 md:grid-cols-5 gap-4'>
-        <Card className='p-4'>
-          <div className='flex items-center gap-2 text-muted-foreground mb-1'>
-            <User className='h-4 w-4' />
-            <div className='text-sm'>Total Contacts</div>
-          </div>
-          <div className='text-2xl font-bold'>{stats.total}</div>
-        </Card>
+      {/* Stats Cards - Horizontally scrollable on mobile */}
+      <div className='overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible'>
+        <div className='flex gap-4 md:grid md:grid-cols-5 min-w-max md:min-w-0'>
+          <Card className='p-4 min-w-[140px] md:min-w-0'>
+            <div className='flex items-center gap-2 text-muted-foreground mb-1'>
+              <User className='h-4 w-4' />
+              <div className='text-sm'>Total Contacts</div>
+            </div>
+            <div className='text-2xl font-bold'>{stats.total}</div>
+          </Card>
 
-        <Card className='p-4'>
-          <div className='flex items-center gap-2 text-muted-foreground mb-1'>
-            <TrendingUp className='h-4 w-4' />
-            <div className='text-sm'>Active</div>
-          </div>
-          <div className='text-2xl font-bold text-green-600'>
-            {stats.active}
-          </div>
-        </Card>
+          <Card className='p-4 min-w-[140px] md:min-w-0'>
+            <div className='flex items-center gap-2 text-muted-foreground mb-1'>
+              <TrendingUp className='h-4 w-4' />
+              <div className='text-sm'>Active</div>
+            </div>
+            <div className='text-2xl font-bold text-green-600'>
+              {stats.active}
+            </div>
+          </Card>
 
-        <Card className='p-4'>
-          <div className='flex items-center gap-2 text-muted-foreground mb-1'>
-            <DollarSign className='h-4 w-4' />
-            <div className='text-sm'>Total Revenue</div>
-          </div>
-          <div className='text-2xl font-bold'>
-            {formatCurrency(stats.totalRevenue)}
-          </div>
-        </Card>
+          <Card className='p-4 min-w-[140px] md:min-w-0'>
+            <div className='flex items-center gap-2 text-muted-foreground mb-1'>
+              <DollarSign className='h-4 w-4' />
+              <div className='text-sm'>Total Revenue</div>
+            </div>
+            <div className='text-2xl font-bold'>
+              {formatCurrency(stats.totalRevenue)}
+            </div>
+          </Card>
 
-        <Card className='p-4'>
-          <div className='flex items-center gap-2 text-muted-foreground mb-1'>
-            <TrendingUp className='h-4 w-4' />
-            <div className='text-sm'>Avg. LTV</div>
-          </div>
-          <div className='text-2xl font-bold'>
-            {formatCurrency(stats.averageLifetimeValue)}
-          </div>
-        </Card>
+          <Card className='p-4 min-w-[140px] md:min-w-0'>
+            <div className='flex items-center gap-2 text-muted-foreground mb-1'>
+              <TrendingUp className='h-4 w-4' />
+              <div className='text-sm'>Avg. LTV</div>
+            </div>
+            <div className='text-2xl font-bold'>
+              {formatCurrency(stats.averageLifetimeValue)}
+            </div>
+          </Card>
 
-        <Card className='p-4'>
-          <div className='flex items-center gap-2 text-muted-foreground mb-1'>
-            <ShoppingCart className='h-4 w-4' />
-            <div className='text-sm'>Total Purchases</div>
-          </div>
-          <div className='text-2xl font-bold'>{stats.totalPurchases}</div>
-        </Card>
+          <Card className='p-4 min-w-[140px] md:min-w-0'>
+            <div className='flex items-center gap-2 text-muted-foreground mb-1'>
+              <ShoppingCart className='h-4 w-4' />
+              <div className='text-sm'>Total Purchases</div>
+            </div>
+            <div className='text-2xl font-bold'>{stats.totalPurchases}</div>
+          </Card>
+        </div>
       </div>
 
       {/* Filters */}
@@ -344,7 +349,7 @@ export function Customers() {
         </div>
       </Card>
 
-      {/* Customer Table */}
+      {/* Customer List */}
       {filteredCustomers.length === 0 ? (
         <Card className='p-12 text-center'>
           <User className='h-12 w-12 text-muted-foreground mx-auto mb-4' />
@@ -354,7 +359,25 @@ export function Customers() {
               : 'No contacts match your filters.'}
           </p>
         </Card>
+      ) : isMobile ? (
+        /* Mobile: Card layout */
+        <div className='space-y-3'>
+          {filteredCustomers.map((customer) => (
+            <MobileContactCard
+              key={customer.id}
+              customer={customer}
+              onNavigate={(id) => navigate(`/contacts/${id}`)}
+              onViewDetails={(c) => {
+                setSelectedCustomer(c);
+                setDetailsOpen(true);
+              }}
+              onDelete={handleDelete}
+              getContactRoles={getContactRoles}
+            />
+          ))}
+        </div>
       ) : (
+        /* Desktop: Table layout */
         <Card>
           <Table>
             <TableHeader>
