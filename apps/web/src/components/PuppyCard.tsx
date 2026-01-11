@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Puppy, Buyer, WaitlistEntry } from '@breeder/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, User, FileText, Users, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { ImageGalleryDialog } from '@/components/ImageGalleryDialog';
 
 interface PuppyCardProps {
   puppy: Puppy;
@@ -13,9 +15,13 @@ interface PuppyCardProps {
   onReserve?: (puppyId: string) => void;
   onGenerateContract?: (puppy: Puppy) => void;
   onGenerateHealthGuarantee?: (puppy: Puppy) => void;
+  onPhotoDelete?: (puppy: Puppy, photoIndex: number) => void;
 }
 
-export function PuppyCard({ puppy, buyer, waitlistEntry, onEdit, onDelete, onReserve, onGenerateContract, onGenerateHealthGuarantee }: PuppyCardProps) {
+export function PuppyCard({ puppy, buyer, waitlistEntry, onEdit, onDelete, onReserve, onGenerateContract, onGenerateHealthGuarantee, onPhotoDelete }: PuppyCardProps) {
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
+
   const getStatusColor = (status: Puppy['status']) => {
     switch (status) {
       case 'available':
@@ -81,15 +87,41 @@ export function PuppyCard({ puppy, buyer, waitlistEntry, onEdit, onDelete, onRes
       </CardHeader>
       <CardContent>
         {puppy.photos && puppy.photos.length > 0 && (
-          <div className='mb-4 grid grid-cols-2 gap-2'>
-            {puppy.photos.slice(0, 2).map((photo, index) => (
-              <img
-                key={index}
-                src={photo}
-                alt={`${puppy.name || 'Puppy'} ${index + 1}`}
-                className='w-full h-32 object-cover rounded-lg'
-              />
-            ))}
+          <div className='mb-4 relative'>
+            <div className='grid grid-cols-2 gap-2'>
+              {puppy.photos.slice(0, 2).map((photo, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setGalleryInitialIndex(index);
+                    setGalleryOpen(true);
+                  }}
+                  className='relative group'
+                >
+                  <img
+                    src={photo}
+                    alt={`${puppy.name || 'Puppy'} ${index + 1}`}
+                    className='w-full h-32 object-cover rounded-lg cursor-pointer'
+                  />
+                  <div className='absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-lg transition flex items-center justify-center'>
+                    <span className='text-white opacity-0 group-hover:opacity-100 text-sm font-medium'>
+                      View
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+            {puppy.photos.length > 2 && (
+              <button
+                onClick={() => {
+                  setGalleryInitialIndex(2);
+                  setGalleryOpen(true);
+                }}
+                className='absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded hover:bg-black/80 transition'
+              >
+                +{puppy.photos.length - 2} more
+              </button>
+            )}
           </div>
         )}
 
@@ -209,6 +241,18 @@ export function PuppyCard({ puppy, buyer, waitlistEntry, onEdit, onDelete, onRes
           </div>
         )}
       </CardContent>
+
+      {/* Image Gallery Dialog */}
+      {puppy.photos && puppy.photos.length > 0 && (
+        <ImageGalleryDialog
+          open={galleryOpen}
+          onOpenChange={setGalleryOpen}
+          images={puppy.photos}
+          initialIndex={galleryInitialIndex}
+          title={`${puppy.name || 'Puppy'}'s Photos`}
+          onDelete={onPhotoDelete ? (index) => onPhotoDelete(puppy, index) : undefined}
+        />
+      )}
     </Card>
   );
 }

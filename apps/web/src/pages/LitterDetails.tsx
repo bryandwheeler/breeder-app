@@ -157,6 +157,16 @@ export function LitterDetails() {
     await updateLitter(litter.id, { puppies: updatedPuppies });
   };
 
+  const handleDeletePuppyPhoto = async (puppy: Puppy, photoIndex: number) => {
+    const newPhotos = [...(puppy.photos || [])];
+    newPhotos.splice(photoIndex, 1);
+
+    const updatedPuppies = litter.puppies.map((p) =>
+      p.id === puppy.id ? { ...p, photos: newPhotos } : p
+    );
+    await updateLitter(litter.id, { puppies: updatedPuppies });
+  };
+
   const handleAddBuyer = () => {
     setEditingBuyer(null);
     setBuyerDialogOpen(true);
@@ -585,6 +595,7 @@ export function LitterDetails() {
                   waitlistEntry={assignedWaitlistEntry}
                   onEdit={handleEditPuppy}
                   onDelete={handleDeletePuppy}
+                  onPhotoDelete={handleDeletePuppyPhoto}
                   onGenerateContract={handleGenerateContract}
                   onGenerateHealthGuarantee={handleGenerateHealthGuarantee}
                 />
