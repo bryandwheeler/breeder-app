@@ -580,8 +580,15 @@ export interface GuardianHome {
   // Contract-specific data (kept here - specific to guardian arrangement)
   contractDate: string;
   contractDocument?: string; // URL to stored contract
-  littersAllowed: number; // Total litters allowed per contract
-  littersCompleted: number; // Litters completed so far
+
+  // For dams: contract based on number of litters
+  littersAllowed?: number; // Total litters allowed per contract
+  littersCompleted?: number; // Litters completed so far
+
+  // For studs: contract based on age/date expiry
+  contractExpiryDate?: string; // Date the contract expires (ISO string)
+  contractExpiryAge?: number; // Age in years when contract expires
+
   notes?: string;
 }
 

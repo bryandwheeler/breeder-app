@@ -1804,6 +1804,8 @@ function DogFormContent({
         setOpen={setGuardianDialogOpen}
         guardianHome={guardianHome}
         onSave={(guardian) => setGuardianHome(guardian)}
+        dogSex={form.watch('sex')}
+        dogDateOfBirth={form.watch('dateOfBirth')}
       />
     </Form>
   );

@@ -904,11 +904,45 @@ export function DogProfile() {
                               <div className='font-medium'>{dog.guardianHome.contractDate}</div>
                             </div>
                             <div className='col-span-2'>
-                              <div className='text-muted-foreground'>Contract Progress</div>
+                              <div className='text-muted-foreground'>Contract Terms</div>
                               <div className='font-medium'>
-                                {dog.guardianHome.littersCompleted} of {dog.guardianHome.littersAllowed} litters completed
-                                {dog.guardianHome.littersCompleted >= dog.guardianHome.littersAllowed && (
-                                  <Badge variant='default' className='ml-2'>Contract Complete</Badge>
+                                {/* Dam: show litter-based contract */}
+                                {dog.sex === 'female' && dog.guardianHome.littersAllowed != null && (
+                                  <>
+                                    {dog.guardianHome.littersCompleted || 0} of {dog.guardianHome.littersAllowed} litters completed
+                                    {(dog.guardianHome.littersCompleted || 0) >= dog.guardianHome.littersAllowed && (
+                                      <Badge variant='default' className='ml-2'>Contract Complete</Badge>
+                                    )}
+                                  </>
+                                )}
+                                {/* Stud: show age/date-based contract */}
+                                {dog.sex === 'male' && (dog.guardianHome.contractExpiryDate || dog.guardianHome.contractExpiryAge) && (
+                                  <>
+                                    {dog.guardianHome.contractExpiryDate ? (
+                                      <>
+                                        Expires {new Date(dog.guardianHome.contractExpiryDate).toLocaleDateString()}
+                                        {dog.guardianHome.contractExpiryAge && (
+                                          <span className='text-muted-foreground ml-1'>
+                                            (at age {dog.guardianHome.contractExpiryAge} years)
+                                          </span>
+                                        )}
+                                        {new Date(dog.guardianHome.contractExpiryDate) <= new Date() && (
+                                          <Badge variant='default' className='ml-2'>Contract Complete</Badge>
+                                        )}
+                                      </>
+                                    ) : dog.guardianHome.contractExpiryAge ? (
+                                      <>Expires at age {dog.guardianHome.contractExpiryAge} years</>
+                                    ) : null}
+                                  </>
+                                )}
+                                {/* Fallback for legacy data or missing contract terms */}
+                                {dog.sex === 'female' && dog.guardianHome.littersAllowed == null &&
+                                 !dog.guardianHome.contractExpiryDate && !dog.guardianHome.contractExpiryAge && (
+                                  <span className='text-muted-foreground'>No contract terms set</span>
+                                )}
+                                {dog.sex === 'male' && !dog.guardianHome.contractExpiryDate &&
+                                 !dog.guardianHome.contractExpiryAge && dog.guardianHome.littersAllowed == null && (
+                                  <span className='text-muted-foreground'>No contract terms set</span>
                                 )}
                               </div>
                             </div>

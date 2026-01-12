@@ -12,6 +12,10 @@ interface GuardianHomeDialogProps {
   setOpen: (open: boolean) => void;
   guardianHome?: GuardianHome;
   onSave: (guardian: GuardianHome) => void;
+  /** Dog's sex - determines which contract fields to show */
+  dogSex: 'male' | 'female';
+  /** Dog's date of birth - used to calculate expiry age */
+  dogDateOfBirth?: string;
 }
 
 export function GuardianHomeDialog({
@@ -19,16 +23,41 @@ export function GuardianHomeDialog({
   setOpen,
   guardianHome,
   onSave,
+  dogSex,
+  dogDateOfBirth,
 }: GuardianHomeDialogProps) {
+  const isFemale = dogSex === 'female';
+
   const [guardian, setGuardian] = useState<GuardianHome>(
     guardianHome || {
       contactId: '',
       contractDate: new Date().toISOString().split('T')[0],
-      littersAllowed: 2,
-      littersCompleted: 0,
+      // Default values based on sex
+      ...(isFemale
+        ? { littersAllowed: 2, littersCompleted: 0 }
+        : { contractExpiryAge: 7 }),
       notes: '',
     }
   );
+
+  // Calculate expiry date from age if dog DOB is available
+  const calculateExpiryDateFromAge = (age: number) => {
+    if (!dogDateOfBirth) return undefined;
+    const dob = new Date(dogDateOfBirth);
+    const expiryDate = new Date(dob);
+    expiryDate.setFullYear(expiryDate.getFullYear() + age);
+    return expiryDate.toISOString().split('T')[0];
+  };
+
+  // Calculate age from expiry date
+  const calculateAgeFromExpiryDate = (expiryDateStr: string) => {
+    if (!dogDateOfBirth) return undefined;
+    const dob = new Date(dogDateOfBirth);
+    const expiryDate = new Date(expiryDateStr);
+    const ageInMs = expiryDate.getTime() - dob.getTime();
+    const ageInYears = ageInMs / (1000 * 60 * 60 * 24 * 365.25);
+    return Math.round(ageInYears * 10) / 10; // Round to 1 decimal
+  };
 
   useEffect(() => {
     if (guardianHome) {
@@ -97,56 +126,131 @@ export function GuardianHomeDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="littersAllowed">Litters Allowed</Label>
-                <Input
-                  id="littersAllowed"
-                  type="number"
-                  min="0"
-                  value={guardian.littersAllowed}
-                  onChange={(e) =>
-                    setGuardian({
-                      ...guardian,
-                      littersAllowed: parseInt(e.target.value) || 0,
-                    })
-                  }
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Total litters allowed per contract
-                </p>
-              </div>
+            {/* Dam: Litter-based contract */}
+            {isFemale && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="littersAllowed">Litters Allowed</Label>
+                    <Input
+                      id="littersAllowed"
+                      type="number"
+                      min="0"
+                      value={guardian.littersAllowed || 0}
+                      onChange={(e) =>
+                        setGuardian({
+                          ...guardian,
+                          littersAllowed: parseInt(e.target.value) || 0,
+                        })
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Total litters allowed per contract
+                    </p>
+                  </div>
 
-              <div>
-                <Label htmlFor="littersCompleted">Litters Completed</Label>
-                <Input
-                  id="littersCompleted"
-                  type="number"
-                  min="0"
-                  value={guardian.littersCompleted}
-                  onChange={(e) =>
-                    setGuardian({
-                      ...guardian,
-                      littersCompleted: parseInt(e.target.value) || 0,
-                    })
-                  }
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Litters completed so far
-                </p>
-              </div>
-            </div>
+                  <div>
+                    <Label htmlFor="littersCompleted">Litters Completed</Label>
+                    <Input
+                      id="littersCompleted"
+                      type="number"
+                      min="0"
+                      value={guardian.littersCompleted || 0}
+                      onChange={(e) =>
+                        setGuardian({
+                          ...guardian,
+                          littersCompleted: parseInt(e.target.value) || 0,
+                        })
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Litters completed so far
+                    </p>
+                  </div>
+                </div>
 
-            {guardian.littersAllowed > 0 && (
-              <div className="p-3 bg-muted rounded-md">
-                <p className="text-sm">
-                  <strong>Contract Progress:</strong> {guardian.littersCompleted} of{' '}
-                  {guardian.littersAllowed} litters completed
-                  {guardian.littersCompleted >= guardian.littersAllowed && (
-                    <span className="text-green-600 ml-2">✓ Contract Complete</span>
-                  )}
-                </p>
-              </div>
+                {(guardian.littersAllowed || 0) > 0 && (
+                  <div className="p-3 bg-muted rounded-md">
+                    <p className="text-sm">
+                      <strong>Contract Progress:</strong> {guardian.littersCompleted || 0} of{' '}
+                      {guardian.littersAllowed} litters completed
+                      {(guardian.littersCompleted || 0) >= (guardian.littersAllowed || 0) && (
+                        <span className="text-green-600 ml-2">✓ Contract Complete</span>
+                      )}
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Stud: Age/Date-based contract */}
+            {!isFemale && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="contractExpiryAge">Contract Expires at Age (years)</Label>
+                    <Input
+                      id="contractExpiryAge"
+                      type="number"
+                      min="1"
+                      max="15"
+                      step="0.5"
+                      value={guardian.contractExpiryAge || ''}
+                      onChange={(e) => {
+                        const age = parseFloat(e.target.value) || 0;
+                        setGuardian({
+                          ...guardian,
+                          contractExpiryAge: age,
+                          contractExpiryDate: calculateExpiryDateFromAge(age),
+                        });
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Age when contract expires
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="contractExpiryDate">Contract Expiry Date</Label>
+                    <Input
+                      id="contractExpiryDate"
+                      type="date"
+                      value={guardian.contractExpiryDate || ''}
+                      onChange={(e) => {
+                        const expiryDate = e.target.value;
+                        setGuardian({
+                          ...guardian,
+                          contractExpiryDate: expiryDate,
+                          contractExpiryAge: calculateAgeFromExpiryDate(expiryDate),
+                        });
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {dogDateOfBirth ? 'Auto-calculated from age' : 'Enter expiry date'}
+                    </p>
+                  </div>
+                </div>
+
+                {guardian.contractExpiryDate && (
+                  <div className="p-3 bg-muted rounded-md">
+                    <p className="text-sm">
+                      <strong>Contract Status:</strong>{' '}
+                      {new Date(guardian.contractExpiryDate) <= new Date() ? (
+                        <span className="text-green-600">✓ Contract Complete (Expired)</span>
+                      ) : (
+                        <>
+                          Expires on {new Date(guardian.contractExpiryDate).toLocaleDateString()}
+                          {guardian.contractExpiryAge && (
+                            <span className="text-muted-foreground ml-1">
+                              (at age {guardian.contractExpiryAge} years)
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </p>
+                  </div>
+                )}
+              </>
             )}
 
             <div>
