@@ -231,7 +231,14 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
       const downloadUrl = await getDownloadURL(storageRef);
 
       // Add the URL to photos
-      setFormData({ ...formData, photos: [...formData.photos, downloadUrl] });
+      const newPhotos = [...formData.photos, downloadUrl];
+      const updatedFormData = { ...formData, photos: newPhotos };
+      setFormData(updatedFormData);
+
+      // Auto-save photo for existing puppies
+      if (puppy) {
+        await onSave(updatedFormData);
+      }
     } catch (error) {
       console.error('Error uploading image:', error);
       alert('Failed to upload image. Please try again.');

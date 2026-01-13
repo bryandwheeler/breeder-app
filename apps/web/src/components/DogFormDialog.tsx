@@ -390,7 +390,17 @@ const DogFormContent = forwardRef<DogFormHandle, {
       const downloadUrl = await getDownloadURL(storageRef);
 
       // Add the URL to photos
-      setPhotos((prev) => [...prev, downloadUrl]);
+      const newPhotos = [...photos, downloadUrl];
+      setPhotos(newPhotos);
+
+      // Auto-save photo for existing dogs
+      if (dog) {
+        await updateDog(dog.id, { photos: newPhotos });
+        toast({
+          title: 'Photo added',
+          description: 'Photo has been saved automatically.',
+        });
+      }
     } catch (error) {
       console.error('Error uploading image:', error);
       alert('Failed to upload image. Please try again.');
