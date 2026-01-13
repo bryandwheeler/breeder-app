@@ -58,6 +58,7 @@ import { useAdminStore } from '@breeder/firebase';
 import { BreedAutocomplete } from '@/components/BreedAutocomplete';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { Combobox } from '@/components/ui/combobox';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -930,26 +931,20 @@ function DogFormContent({
                     name='sireId'
                     render={({ field }) => (
                       <FormItem>
-                        <Select
-                          onValueChange={(value) =>
-                            field.onChange(value === 'none' ? '' : value)
-                          }
-                          value={field.value || 'none'}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder='Select sire from your dogs' />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value='none'>None / Unknown</SelectItem>
-                            {males.map((m) => (
-                              <SelectItem key={m.id} value={m.id}>
-                                {m.name} {m.callName && `("${m.callName}")`}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Combobox
+                          options={[
+                            { value: '', label: 'None / Unknown' },
+                            ...males.map((m) => ({
+                              value: m.id,
+                              label: m.callName ? `${m.name} ("${m.callName}")` : m.name,
+                            })),
+                          ]}
+                          value={field.value || ''}
+                          onValueChange={(value) => field.onChange(value)}
+                          placeholder='Select sire from your dogs'
+                          searchPlaceholder='Search by name...'
+                          emptyText='No matching dogs found'
+                        />
                       </FormItem>
                     )}
                   />
@@ -1149,26 +1144,20 @@ function DogFormContent({
                     name='damId'
                     render={({ field }) => (
                       <FormItem>
-                        <Select
-                          onValueChange={(value) =>
-                            field.onChange(value === 'none' ? '' : value)
-                          }
-                          value={field.value || 'none'}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder='Select dam from your dogs' />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value='none'>None / Unknown</SelectItem>
-                            {females.map((f) => (
-                              <SelectItem key={f.id} value={f.id}>
-                                {f.name} {f.callName && `("${f.callName}")`}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Combobox
+                          options={[
+                            { value: '', label: 'None / Unknown' },
+                            ...females.map((f) => ({
+                              value: f.id,
+                              label: f.callName ? `${f.name} ("${f.callName}")` : f.name,
+                            })),
+                          ]}
+                          value={field.value || ''}
+                          onValueChange={(value) => field.onChange(value)}
+                          placeholder='Select dam from your dogs'
+                          searchPlaceholder='Search by name...'
+                          emptyText='No matching dogs found'
+                        />
                       </FormItem>
                     )}
                   />
