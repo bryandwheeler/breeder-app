@@ -17,7 +17,6 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
   ResponsiveDialogBody,
-  ResponsiveDialogFooter,
 } from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,7 +37,7 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Plus, Trash2, Upload, Search, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef, useImperativeHandle, forwardRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { storage, auth } from '@breeder/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -87,13 +86,18 @@ interface DogFormDialogProps {
   dog: Dog | null;
 }
 
-function DogFormContent({
-  dog,
-  setOpen,
-}: {
+// Expose form methods to parent
+export interface DogFormHandle {
+  submit: () => void;
+}
+
+const DogFormContent = forwardRef<DogFormHandle, {
   dog: Dog | null;
   setOpen: (open: boolean) => void;
-}) {
+}>(function DogFormContent({
+  dog,
+  setOpen,
+}, ref) {
   const { currentUser } = useAuth();
   const { dogs, addDog, updateDog } = useDogStore();
   const males = dogs.filter((d) => d.sex === 'male');
@@ -237,6 +241,11 @@ function DogFormContent({
       notes: dog?.notes || '',
     },
   });
+
+  // Expose submit method to parent via ref
+  useImperativeHandle(ref, () => ({
+    submit: () => form.handleSubmit(onSubmit)(),
+  }));
 
   const onSubmit = (values: FormValues) => {
     const dogData: Partial<Dog> = {
@@ -1798,17 +1807,38 @@ function DogFormContent({
       />
     </Form>
   );
-}
+});
 
 export function DogFormDialog({ open, setOpen, dog }: DogFormDialogProps) {
+  const formRef = useRef<DogFormHandle>(null);
+
   return (
     <ResponsiveDialog open={open} onOpenChange={setOpen}>
       <ResponsiveDialogContent className='md:max-w-5xl'>
         <ResponsiveDialogHeader onClose={() => setOpen(false)}>
-          <ResponsiveDialogTitle>{dog ? `Edit ${dog.name}` : 'Add New Dog'}</ResponsiveDialogTitle>
+          <div className='flex items-center justify-between w-full'>
+            <ResponsiveDialogTitle>{dog ? `Edit ${dog.name}` : 'Add New Dog'}</ResponsiveDialogTitle>
+            <div className='hidden sm:flex items-center gap-2'>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() => setOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type='button'
+                size='sm'
+                onClick={() => formRef.current?.submit()}
+              >
+                {dog ? 'Save' : 'Add Dog'}
+              </Button>
+            </div>
+          </div>
         </ResponsiveDialogHeader>
         <ResponsiveDialogBody>
-          <DogFormContent key={dog?.id || 'new'} dog={dog} setOpen={setOpen} />
+          <DogFormContent ref={formRef} key={dog?.id || 'new'} dog={dog} setOpen={setOpen} />
         </ResponsiveDialogBody>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
