@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,15 @@ export function Signup() {
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signup, loginWithGoogle, loginWithFacebook } = useAuth();
+  const { signup, loginWithGoogle, loginWithFacebook, currentUser } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (currentUser) {
+      navigate('/', { replace: true });
+    }
+  }, [currentUser, navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
