@@ -143,8 +143,12 @@ export function Sidebar({
   }, [currentUser, checkIsAdmin]);
 
   const isImpersonating = !!impersonatedUserId;
+  // Show both admin and breeder navigation for admins (admin first, then breeder)
+  // When impersonating, only show breeder navigation
   const navToRender =
-    isAdmin && !isImpersonating ? adminNavigation : breederNavigation;
+    isAdmin && !isImpersonating
+      ? [...adminNavigation, ...breederNavigation]
+      : breederNavigation;
   const topClass = isImpersonating ? 'top-28' : 'top-16';
 
   return (
