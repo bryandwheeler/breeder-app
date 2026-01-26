@@ -196,6 +196,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (result?.user) {
           const isNew = !!getAdditionalUserInfo(result)?.isNewUser;
           await ensureUserProfile(result.user, isNew);
+
+          // Log the login/signup
+          if (isNew) {
+            await logUserSignup(
+              result.user.uid,
+              result.user.email || 'unknown',
+              result.user.displayName || 'Unknown User'
+            );
+          } else {
+            await logUserLogin(
+              result.user.uid,
+              result.user.email || 'unknown',
+              result.user.displayName || 'Unknown User'
+            );
+          }
+
+          // Redirect to home after successful OAuth redirect login
+          // This handles the case where user returns from Google/Facebook
+          if (window.location.pathname === '/login' || window.location.pathname === '/signup') {
+            window.location.replace('/');
+          }
         }
       })
       .catch((error) => {
