@@ -37,7 +37,19 @@ export function Signup() {
       await signup(email, password, displayName);
       navigate('/');
     } catch (err: any) {
-      setError(err.message || 'Failed to create account');
+      // Provide helpful error messages
+      const errorCode = err?.code;
+      if (errorCode === 'auth/email-already-in-use') {
+        setError('An account with this email already exists. Please sign in instead.');
+      } else if (errorCode === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
+      } else if (errorCode === 'auth/weak-password') {
+        setError('Password is too weak. Please use at least 6 characters.');
+      } else if (errorCode === 'auth/operation-not-allowed') {
+        setError('Email/password signup is not enabled. Please contact support.');
+      } else {
+        setError(err.message || 'Failed to create account');
+      }
     } finally {
       setLoading(false);
     }
