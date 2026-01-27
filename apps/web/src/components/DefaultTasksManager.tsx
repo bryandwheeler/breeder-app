@@ -46,7 +46,6 @@ import {
   Moon,
   Loader2,
   Save,
-  RefreshCw,
   GripVertical,
 } from 'lucide-react';
 import {
@@ -201,7 +200,7 @@ function SortableWeeklyTaskItem({
   );
 }
 
-// Sortable Daily Task Item
+// Sortable Daily Task Item - compact horizontal card
 function SortableDailyTaskItem({
   task,
   onEdit,
@@ -230,34 +229,29 @@ function SortableDailyTaskItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'flex items-start gap-2 p-2 rounded border text-sm bg-background',
+        'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm bg-background min-w-[200px] max-w-[280px]',
         !task.isActive && 'opacity-50 bg-muted',
         isDragging && 'opacity-50 shadow-lg z-50'
       )}
     >
       <button
         type="button"
-        className="cursor-grab active:cursor-grabbing touch-none p-0.5 hover:bg-muted rounded mt-0.5"
+        className="cursor-grab active:cursor-grabbing touch-none p-0.5 hover:bg-muted rounded flex-shrink-0"
         {...attributes}
         {...listeners}
       >
         <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
       </button>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm leading-tight">{task.name}</p>
-        {task.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2">
-            {task.description}
-          </p>
-        )}
-        <p className="text-xs text-muted-foreground mt-1">
-          Weeks {task.weekStart}
+        <p className="font-medium text-sm leading-tight truncate">{task.name}</p>
+        <p className="text-xs text-muted-foreground">
+          Wk {task.weekStart}
           {task.weekEnd !== undefined && task.weekEnd !== null
             ? `-${task.weekEnd}`
             : '+'}
         </p>
       </div>
-      <div className="flex flex-col gap-1">
+      <div className="flex gap-0.5 flex-shrink-0">
         <Button
           variant="ghost"
           size="icon"
@@ -302,8 +296,6 @@ export function DefaultTasksManager() {
   const [editingDaily, setEditingDaily] = useState<AdminDailyTask | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'weekly' | 'daily'; id: string } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [resetting, setResetting] = useState(false);
-  const [resetConfirmOpen, setResetConfirmOpen] = useState<'weekly' | 'daily' | null>(null);
 
   // Weekly form state
   const [weeklyForm, setWeeklyForm] = useState({
@@ -460,80 +452,6 @@ export function DefaultTasksManager() {
       });
     });
     await batch.commit();
-  };
-
-  // Reset to defaults (opens confirmation dialog)
-  const resetWeeklyToDefaults = () => {
-    setResetConfirmOpen('weekly');
-  };
-
-  const resetDailyToDefaults = () => {
-    setResetConfirmOpen('daily');
-  };
-
-  const executeReset = async () => {
-    if (!resetConfirmOpen) return;
-
-    setResetting(true);
-    try {
-      const collectionPath = resetConfirmOpen === 'weekly'
-        ? 'defaultTaskTemplates/weekly/tasks'
-        : 'defaultTaskTemplates/daily/tasks';
-      const fromFirestore = resetConfirmOpen === 'weekly' ? weeklyFromFirestore : dailyFromFirestore;
-      const firestoreTemplates = resetConfirmOpen === 'weekly' ? firestoreWeeklyTasks : firestoreDailyTasks;
-
-      // Only delete Firestore docs if we have any
-      if (fromFirestore && firestoreTemplates.length > 0) {
-        const deleteBatch = writeBatch(db);
-        firestoreTemplates.forEach((task) => {
-          deleteBatch.delete(doc(db, collectionPath, task.id));
-        });
-        await deleteBatch.commit();
-      }
-
-      // If we had Firestore data, persist the defaults to reset
-      // If we were showing hardcoded defaults, persist them to Firestore for future editing
-      const createBatch = writeBatch(db);
-      if (resetConfirmOpen === 'weekly') {
-        DEFAULT_CARE_TEMPLATES.forEach((template, index) => {
-          const docRef = doc(collection(db, 'defaultTaskTemplates', 'weekly', 'tasks'));
-          createBatch.set(docRef, {
-            id: docRef.id,
-            name: template.name,
-            description: template.description || '',
-            weekDue: template.weekDue,
-            sortOrder: index,
-            isActive: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          });
-        });
-      } else {
-        DEFAULT_DAILY_ROUTINES.forEach((routine) => {
-          const docRef = doc(collection(db, 'defaultTaskTemplates', 'daily', 'tasks'));
-          createBatch.set(docRef, {
-            id: docRef.id,
-            name: routine.name,
-            description: routine.description || '',
-            timeOfDay: routine.timeOfDay,
-            weekStart: routine.weekStart,
-            weekEnd: routine.weekEnd ?? null,
-            order: routine.order,
-            isActive: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          });
-        });
-      }
-      await createBatch.commit();
-
-      setResetConfirmOpen(null);
-    } catch (error) {
-      console.error('Error resetting to defaults:', error);
-      alert('Failed to reset to defaults');
-    } finally {
-      setResetting(false);
-    }
   };
 
   // Weekly CRUD
@@ -915,26 +833,10 @@ export function DefaultTasksManager() {
                     One-time tasks that occur at specific weeks of the litter's life
                   </CardDescription>
                 </div>
-                <div className="flex gap-2">
-                  {weeklyFromFirestore && (
-                    <Button
-                      variant="outline"
-                      onClick={resetWeeklyToDefaults}
-                      disabled={resetting || loadingWeekly}
-                    >
-                      {resetting ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                      )}
-                      Reset to Defaults
-                    </Button>
-                  )}
-                  <Button onClick={() => openWeeklyDialog()}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Task
-                  </Button>
-                </div>
+                <Button onClick={() => openWeeklyDialog()}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Task
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -1001,26 +903,10 @@ export function DefaultTasksManager() {
                     Recurring tasks that happen daily at specific times
                   </CardDescription>
                 </div>
-                <div className="flex gap-2">
-                  {dailyFromFirestore && (
-                    <Button
-                      variant="outline"
-                      onClick={resetDailyToDefaults}
-                      disabled={resetting || loadingDaily}
-                    >
-                      {resetting ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                      )}
-                      Reset to Defaults
-                    </Button>
-                  )}
-                  <Button onClick={() => openDailyDialog()}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Task
-                  </Button>
-                </div>
+                <Button onClick={() => openDailyDialog()}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Task
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -1030,7 +916,7 @@ export function DefaultTasksManager() {
                   <p className="text-sm text-muted-foreground">Loading...</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-4">
                   {(['morning', 'midday', 'evening', 'both'] as const).map((timeOfDay) => {
                     const tasks = dailyTasksByTime[timeOfDay].sort((a, b) => a.order - b.order);
                     if (tasks.length === 0 && timeOfDay !== 'morning' && timeOfDay !== 'evening') {
@@ -1038,13 +924,15 @@ export function DefaultTasksManager() {
                     }
                     return (
                       <div key={timeOfDay} className="border rounded-lg p-4">
-                        <h4 className="font-medium mb-3 flex items-center gap-2">
+                        <div className="flex items-center gap-2 mb-3">
                           {renderTimeOfDayIcon(timeOfDay)}
-                          <span className="capitalize">{timeOfDay === 'both' ? 'Morning & Evening' : timeOfDay}</span>
-                          <Badge variant="outline" className="ml-auto">
+                          <h4 className="font-medium">
+                            {timeOfDay === 'both' ? 'Morning & Evening' : timeOfDay.charAt(0).toUpperCase() + timeOfDay.slice(1)}
+                          </h4>
+                          <Badge variant="outline">
                             {tasks.length}
                           </Badge>
-                        </h4>
+                        </div>
                         <DndContext
                           sensors={sensors}
                           collisionDetection={closestCenter}
@@ -1054,7 +942,7 @@ export function DefaultTasksManager() {
                             items={tasks.map((t) => t.id)}
                             strategy={verticalListSortingStrategy}
                           >
-                            <div className="space-y-2">
+                            <div className="flex flex-wrap gap-2">
                               {tasks.map((task) => (
                                 <SortableDailyTaskItem
                                   key={task.id}
@@ -1064,7 +952,7 @@ export function DefaultTasksManager() {
                                 />
                               ))}
                               {tasks.length === 0 && (
-                                <p className="text-xs text-muted-foreground text-center py-2">
+                                <p className="text-xs text-muted-foreground py-2">
                                   No tasks
                                 </p>
                               )}
@@ -1309,29 +1197,6 @@ export function DefaultTasksManager() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Reset Confirmation Dialog */}
-      <AlertDialog open={resetConfirmOpen !== null} onOpenChange={(open) => !open && setResetConfirmOpen(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reset to Defaults?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will delete all {resetConfirmOpen === 'weekly' ? 'weekly milestone' : 'daily routine'} templates
-              and replace them with the original defaults. Your customizations will be lost.
-              Existing litter tasks are not affected.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={executeReset}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {resetting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              Reset to Defaults
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
