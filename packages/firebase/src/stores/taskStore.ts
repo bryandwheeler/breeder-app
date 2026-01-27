@@ -377,20 +377,23 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       const batch = writeBatch(db);
 
       // Fetch weekly templates from Firestore, fall back to hardcoded defaults
+      // Note: No orderBy to avoid index requirements on new collections
       const weeklyTemplatesRef = collection(db, 'defaultTaskTemplates', 'weekly', 'tasks');
-      const weeklySnapshot = await getDocs(query(weeklyTemplatesRef, orderBy('sortOrder')));
+      const weeklySnapshot = await getDocs(weeklyTemplatesRef);
 
       interface WeeklyTemplate {
         id: string;
         name: string;
         description?: string;
         weekDue: number;
+        sortOrder?: number;
         isActive?: boolean;
       }
 
       let weeklyTemplates: WeeklyTemplate[] = weeklySnapshot.docs
         .map((d) => ({ id: d.id, ...d.data() } as WeeklyTemplate))
-        .filter((t) => t.isActive !== false);
+        .filter((t) => t.isActive !== false)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
       // Fall back to hardcoded defaults if Firestore is empty
       if (weeklyTemplates.length === 0) {
@@ -426,8 +429,9 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       });
 
       // Fetch daily templates from Firestore, fall back to hardcoded defaults
+      // Note: No orderBy to avoid index requirements on new collections
       const dailyTemplatesRef = collection(db, 'defaultTaskTemplates', 'daily', 'tasks');
-      const dailySnapshot = await getDocs(query(dailyTemplatesRef, orderBy('order')));
+      const dailySnapshot = await getDocs(dailyTemplatesRef);
 
       interface DailyTemplate {
         id: string;
@@ -436,12 +440,14 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         timeOfDay: 'morning' | 'midday' | 'evening' | 'both';
         weekStart: number;
         weekEnd?: number;
+        order?: number;
         isActive?: boolean;
       }
 
       let dailyTemplates: DailyTemplate[] = dailySnapshot.docs
         .map((d) => ({ id: d.id, ...d.data() } as DailyTemplate))
-        .filter((t) => t.isActive !== false);
+        .filter((t) => t.isActive !== false)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
       // Fall back to hardcoded defaults if Firestore is empty
       if (dailyTemplates.length === 0) {

@@ -41,11 +41,9 @@ import {
   Plus,
   Pencil,
   Trash2,
-  GripVertical,
   Sunrise,
   Sun,
   Moon,
-  Calendar,
   Loader2,
   Save,
   RefreshCw,
@@ -54,21 +52,16 @@ import { cn } from '@/lib/utils';
 import {
   collection,
   doc,
-  getDocs,
   setDoc,
   updateDoc,
   deleteDoc,
   onSnapshot,
-  query,
-  orderBy,
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '@breeder/firebase';
 import {
   DEFAULT_CARE_TEMPLATES,
   DEFAULT_DAILY_ROUTINES,
-  CareTask,
-  DailyRoutineTask,
 } from '@breeder/types';
 
 // Types for admin-managed default templates
@@ -96,14 +89,49 @@ interface AdminDailyTask {
   updatedAt: string;
 }
 
-export function DefaultTasksManager() {
-  // Weekly milestone templates
-  const [weeklyTasks, setWeeklyTasks] = useState<AdminWeeklyTask[]>([]);
-  const [loadingWeekly, setLoadingWeekly] = useState(true);
+// Convert hardcoded defaults to admin format for display
+const getDefaultWeeklyTasks = (): AdminWeeklyTask[] => {
+  return DEFAULT_CARE_TEMPLATES.map((template, index) => ({
+    id: `default-weekly-${index}`,
+    name: template.name,
+    description: template.description || '',
+    weekDue: template.weekDue,
+    sortOrder: index,
+    isActive: true,
+    createdAt: '',
+    updatedAt: '',
+  }));
+};
 
-  // Daily routine templates
-  const [dailyTasks, setDailyTasks] = useState<AdminDailyTask[]>([]);
+const getDefaultDailyTasks = (): AdminDailyTask[] => {
+  return DEFAULT_DAILY_ROUTINES.map((routine, index) => ({
+    id: `default-daily-${index}`,
+    name: routine.name,
+    description: routine.description || '',
+    timeOfDay: routine.timeOfDay,
+    weekStart: routine.weekStart,
+    weekEnd: routine.weekEnd,
+    order: routine.order,
+    isActive: true,
+    createdAt: '',
+    updatedAt: '',
+  }));
+};
+
+export function DefaultTasksManager() {
+  // Weekly milestone templates from Firestore
+  const [firestoreWeeklyTasks, setFirestoreWeeklyTasks] = useState<AdminWeeklyTask[]>([]);
+  const [loadingWeekly, setLoadingWeekly] = useState(true);
+  const [weeklyFromFirestore, setWeeklyFromFirestore] = useState(false);
+
+  // Daily routine templates from Firestore
+  const [firestoreDailyTasks, setFirestoreDailyTasks] = useState<AdminDailyTask[]>([]);
   const [loadingDaily, setLoadingDaily] = useState(true);
+  const [dailyFromFirestore, setDailyFromFirestore] = useState(false);
+
+  // Effective tasks: use Firestore if available, otherwise hardcoded defaults
+  const weeklyTasks = weeklyFromFirestore ? firestoreWeeklyTasks : getDefaultWeeklyTasks();
+  const dailyTasks = dailyFromFirestore ? firestoreDailyTasks : getDefaultDailyTasks();
 
   // Dialog state
   const [weeklyDialogOpen, setWeeklyDialogOpen] = useState(false);
@@ -113,7 +141,6 @@ export function DefaultTasksManager() {
   const [editingDaily, setEditingDaily] = useState<AdminDailyTask | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'weekly' | 'daily'; id: string } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [initializing, setInitializing] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState<'weekly' | 'daily' | null>(null);
 
@@ -135,11 +162,7 @@ export function DefaultTasksManager() {
     isActive: true,
   });
 
-  // Track initialization state
-  const [hasInitializedWeekly, setHasInitializedWeekly] = useState(false);
-  const [hasInitializedDaily, setHasInitializedDaily] = useState(false);
-
-  // Subscribe to weekly templates (no orderBy - sort client-side to avoid index issues)
+  // Subscribe to weekly templates from Firestore
   useEffect(() => {
     const collectionRef = collection(db, 'defaultTaskTemplates', 'weekly', 'tasks');
 
@@ -152,11 +175,15 @@ export function DefaultTasksManager() {
         })) as AdminWeeklyTask[];
         // Sort client-side
         tasks.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-        setWeeklyTasks(tasks);
+        setFirestoreWeeklyTasks(tasks);
+        // If Firestore has data, use it; otherwise we'll show hardcoded defaults
+        setWeeklyFromFirestore(tasks.length > 0);
         setLoadingWeekly(false);
       },
       (error) => {
         console.error('Error subscribing to weekly templates:', error);
+        // On error, show hardcoded defaults
+        setWeeklyFromFirestore(false);
         setLoadingWeekly(false);
       }
     );
@@ -164,7 +191,7 @@ export function DefaultTasksManager() {
     return unsubscribe;
   }, []);
 
-  // Subscribe to daily templates (no orderBy - sort client-side to avoid index issues)
+  // Subscribe to daily templates from Firestore
   useEffect(() => {
     const collectionRef = collection(db, 'defaultTaskTemplates', 'daily', 'tasks');
 
@@ -177,88 +204,21 @@ export function DefaultTasksManager() {
         })) as AdminDailyTask[];
         // Sort client-side
         tasks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-        setDailyTasks(tasks);
+        setFirestoreDailyTasks(tasks);
+        // If Firestore has data, use it; otherwise we'll show hardcoded defaults
+        setDailyFromFirestore(tasks.length > 0);
         setLoadingDaily(false);
       },
       (error) => {
         console.error('Error subscribing to daily templates:', error);
+        // On error, show hardcoded defaults
+        setDailyFromFirestore(false);
         setLoadingDaily(false);
       }
     );
 
     return unsubscribe;
   }, []);
-
-  // Auto-initialize weekly templates if empty (only once)
-  useEffect(() => {
-    if (!loadingWeekly && weeklyTasks.length === 0 && !initializing && !hasInitializedWeekly) {
-      setHasInitializedWeekly(true);
-      initializeWeeklyDefaultsAuto();
-    }
-  }, [loadingWeekly, weeklyTasks.length, initializing, hasInitializedWeekly]);
-
-  // Auto-initialize daily templates if empty (only once)
-  useEffect(() => {
-    if (!loadingDaily && dailyTasks.length === 0 && !initializing && !hasInitializedDaily) {
-      setHasInitializedDaily(true);
-      initializeDailyDefaultsAuto();
-    }
-  }, [loadingDaily, dailyTasks.length, initializing, hasInitializedDaily]);
-
-  // Auto-initialize functions (silent, no alerts)
-  const initializeWeeklyDefaultsAuto = async () => {
-    setInitializing(true);
-    try {
-      const batch = writeBatch(db);
-      DEFAULT_CARE_TEMPLATES.forEach((template, index) => {
-        const docRef = doc(collection(db, 'defaultTaskTemplates', 'weekly', 'tasks'));
-        batch.set(docRef, {
-          id: docRef.id,
-          name: template.name,
-          description: template.description || '',
-          weekDue: template.weekDue,
-          sortOrder: index,
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-      });
-      await batch.commit();
-      console.log('Auto-initialized weekly task templates from defaults');
-    } catch (error) {
-      console.error('Error auto-initializing weekly defaults:', error);
-    } finally {
-      setInitializing(false);
-    }
-  };
-
-  const initializeDailyDefaultsAuto = async () => {
-    setInitializing(true);
-    try {
-      const batch = writeBatch(db);
-      DEFAULT_DAILY_ROUTINES.forEach((routine, index) => {
-        const docRef = doc(collection(db, 'defaultTaskTemplates', 'daily', 'tasks'));
-        batch.set(docRef, {
-          id: docRef.id,
-          name: routine.name,
-          description: routine.description || '',
-          timeOfDay: routine.timeOfDay,
-          weekStart: routine.weekStart,
-          weekEnd: routine.weekEnd,
-          order: routine.order,
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-      });
-      await batch.commit();
-      console.log('Auto-initialized daily task templates from defaults');
-    } catch (error) {
-      console.error('Error auto-initializing daily defaults:', error);
-    } finally {
-      setInitializing(false);
-    }
-  };
 
   // Group weekly tasks by week
   const weeklyTasksByWeek = useMemo(() => {
@@ -290,69 +250,43 @@ export function DefaultTasksManager() {
     return grouped;
   }, [dailyTasks]);
 
-  // Initialize from hardcoded defaults if empty
-  const initializeWeeklyDefaults = async () => {
-    if (weeklyTasks.length > 0) {
-      alert('Weekly templates already exist. Delete all first to reinitialize.');
-      return;
-    }
-
-    setInitializing(true);
-    try {
-      const batch = writeBatch(db);
-      DEFAULT_CARE_TEMPLATES.forEach((template, index) => {
-        const docRef = doc(collection(db, 'defaultTaskTemplates', 'weekly', 'tasks'));
-        batch.set(docRef, {
-          id: docRef.id,
-          name: template.name,
-          description: template.description || '',
-          weekDue: template.weekDue,
-          sortOrder: index,
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
+  // Persist hardcoded defaults to Firestore (called when first edit is made)
+  const persistWeeklyDefaults = async (): Promise<void> => {
+    const batch = writeBatch(db);
+    DEFAULT_CARE_TEMPLATES.forEach((template, index) => {
+      const docRef = doc(collection(db, 'defaultTaskTemplates', 'weekly', 'tasks'));
+      batch.set(docRef, {
+        id: docRef.id,
+        name: template.name,
+        description: template.description || '',
+        weekDue: template.weekDue,
+        sortOrder: index,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
-      await batch.commit();
-    } catch (error) {
-      console.error('Error initializing weekly defaults:', error);
-      alert('Failed to initialize weekly defaults');
-    } finally {
-      setInitializing(false);
-    }
+    });
+    await batch.commit();
   };
 
-  const initializeDailyDefaults = async () => {
-    if (dailyTasks.length > 0) {
-      alert('Daily templates already exist. Delete all first to reinitialize.');
-      return;
-    }
-
-    setInitializing(true);
-    try {
-      const batch = writeBatch(db);
-      DEFAULT_DAILY_ROUTINES.forEach((routine, index) => {
-        const docRef = doc(collection(db, 'defaultTaskTemplates', 'daily', 'tasks'));
-        batch.set(docRef, {
-          id: docRef.id,
-          name: routine.name,
-          description: routine.description || '',
-          timeOfDay: routine.timeOfDay,
-          weekStart: routine.weekStart,
-          weekEnd: routine.weekEnd,
-          order: routine.order,
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
+  const persistDailyDefaults = async (): Promise<void> => {
+    const batch = writeBatch(db);
+    DEFAULT_DAILY_ROUTINES.forEach((routine) => {
+      const docRef = doc(collection(db, 'defaultTaskTemplates', 'daily', 'tasks'));
+      batch.set(docRef, {
+        id: docRef.id,
+        name: routine.name,
+        description: routine.description || '',
+        timeOfDay: routine.timeOfDay,
+        weekStart: routine.weekStart,
+        weekEnd: routine.weekEnd,
+        order: routine.order,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
-      await batch.commit();
-    } catch (error) {
-      console.error('Error initializing daily defaults:', error);
-      alert('Failed to initialize daily defaults');
-    } finally {
-      setInitializing(false);
-    }
+    });
+    await batch.commit();
   };
 
   // Reset to defaults (opens confirmation dialog)
@@ -372,16 +306,20 @@ export function DefaultTasksManager() {
       const collectionPath = resetConfirmOpen === 'weekly'
         ? 'defaultTaskTemplates/weekly/tasks'
         : 'defaultTaskTemplates/daily/tasks';
-      const templates = resetConfirmOpen === 'weekly' ? weeklyTasks : dailyTasks;
+      const fromFirestore = resetConfirmOpen === 'weekly' ? weeklyFromFirestore : dailyFromFirestore;
+      const firestoreTemplates = resetConfirmOpen === 'weekly' ? firestoreWeeklyTasks : firestoreDailyTasks;
 
-      // Delete all existing
-      const deleteBatch = writeBatch(db);
-      templates.forEach((task) => {
-        deleteBatch.delete(doc(db, collectionPath, task.id));
-      });
-      await deleteBatch.commit();
+      // Only delete Firestore docs if we have any
+      if (fromFirestore && firestoreTemplates.length > 0) {
+        const deleteBatch = writeBatch(db);
+        firestoreTemplates.forEach((task) => {
+          deleteBatch.delete(doc(db, collectionPath, task.id));
+        });
+        await deleteBatch.commit();
+      }
 
-      // Re-create from hardcoded defaults
+      // If we had Firestore data, persist the defaults to reset
+      // If we were showing hardcoded defaults, persist them to Firestore for future editing
       const createBatch = writeBatch(db);
       if (resetConfirmOpen === 'weekly') {
         DEFAULT_CARE_TEMPLATES.forEach((template, index) => {
@@ -398,7 +336,7 @@ export function DefaultTasksManager() {
           });
         });
       } else {
-        DEFAULT_DAILY_ROUTINES.forEach((routine, index) => {
+        DEFAULT_DAILY_ROUTINES.forEach((routine) => {
           const docRef = doc(collection(db, 'defaultTaskTemplates', 'daily', 'tasks'));
           createBatch.set(docRef, {
             id: docRef.id,
@@ -457,8 +395,14 @@ export function DefaultTasksManager() {
     try {
       const now = new Date().toISOString();
 
-      if (editingWeekly) {
-        // Update existing
+      // If we're not yet using Firestore, persist defaults first
+      if (!weeklyFromFirestore) {
+        await persistWeeklyDefaults();
+        // Wait for snapshot to update - the subscription will set weeklyFromFirestore
+      }
+
+      if (editingWeekly && !editingWeekly.id.startsWith('default-')) {
+        // Update existing Firestore doc
         const docRef = doc(db, 'defaultTaskTemplates', 'weekly', 'tasks', editingWeekly.id);
         await updateDoc(docRef, {
           name: weeklyForm.name,
@@ -468,7 +412,7 @@ export function DefaultTasksManager() {
           updatedAt: now,
         });
       } else {
-        // Create new
+        // Create new - get max sortOrder from effective tasks
         const maxSortOrder = weeklyTasks.reduce((max, t) => Math.max(max, t.sortOrder), -1);
         const docRef = doc(collection(db, 'defaultTaskTemplates', 'weekly', 'tasks'));
         await setDoc(docRef, {
@@ -528,8 +472,14 @@ export function DefaultTasksManager() {
     try {
       const now = new Date().toISOString();
 
-      if (editingDaily) {
-        // Update existing
+      // If we're not yet using Firestore, persist defaults first
+      if (!dailyFromFirestore) {
+        await persistDailyDefaults();
+        // Wait for snapshot to update - the subscription will set dailyFromFirestore
+      }
+
+      if (editingDaily && !editingDaily.id.startsWith('default-')) {
+        // Update existing Firestore doc
         const docRef = doc(db, 'defaultTaskTemplates', 'daily', 'tasks', editingDaily.id);
         await updateDoc(docRef, {
           name: dailyForm.name,
@@ -582,7 +532,55 @@ export function DefaultTasksManager() {
       const collectionPath = deleteTarget.type === 'weekly'
         ? 'defaultTaskTemplates/weekly/tasks'
         : 'defaultTaskTemplates/daily/tasks';
-      await deleteDoc(doc(db, collectionPath, deleteTarget.id));
+      const fromFirestore = deleteTarget.type === 'weekly' ? weeklyFromFirestore : dailyFromFirestore;
+
+      // If showing hardcoded defaults, persist to Firestore first (excluding the one being deleted)
+      if (!fromFirestore || deleteTarget.id.startsWith('default-')) {
+        if (deleteTarget.type === 'weekly') {
+          // Persist all defaults except the one being deleted
+          const batch = writeBatch(db);
+          DEFAULT_CARE_TEMPLATES.forEach((template, index) => {
+            if (`default-weekly-${index}` !== deleteTarget.id) {
+              const docRef = doc(collection(db, 'defaultTaskTemplates', 'weekly', 'tasks'));
+              batch.set(docRef, {
+                id: docRef.id,
+                name: template.name,
+                description: template.description || '',
+                weekDue: template.weekDue,
+                sortOrder: index,
+                isActive: true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              });
+            }
+          });
+          await batch.commit();
+        } else {
+          // Daily
+          const batch = writeBatch(db);
+          DEFAULT_DAILY_ROUTINES.forEach((routine, index) => {
+            if (`default-daily-${index}` !== deleteTarget.id) {
+              const docRef = doc(collection(db, 'defaultTaskTemplates', 'daily', 'tasks'));
+              batch.set(docRef, {
+                id: docRef.id,
+                name: routine.name,
+                description: routine.description || '',
+                timeOfDay: routine.timeOfDay,
+                weekStart: routine.weekStart,
+                weekEnd: routine.weekEnd,
+                order: routine.order,
+                isActive: true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              });
+            }
+          });
+          await batch.commit();
+        }
+      } else {
+        // Normal Firestore delete
+        await deleteDoc(doc(db, collectionPath, deleteTarget.id));
+      }
       setDeleteDialogOpen(false);
       setDeleteTarget(null);
     } catch (error) {
@@ -596,6 +594,7 @@ export function DefaultTasksManager() {
   // Move task up/down in order
   const moveTask = async (type: 'weekly' | 'daily', taskId: string, direction: 'up' | 'down') => {
     const tasks = type === 'weekly' ? weeklyTasks : dailyTasks;
+    const fromFirestore = type === 'weekly' ? weeklyFromFirestore : dailyFromFirestore;
     const orderField = type === 'weekly' ? 'sortOrder' : 'order';
     const collectionPath = type === 'weekly'
       ? 'defaultTaskTemplates/weekly/tasks'
@@ -634,10 +633,64 @@ export function DefaultTasksManager() {
       : (swapTask as AdminDailyTask).order;
 
     try {
-      const batch = writeBatch(db);
-      batch.update(doc(db, collectionPath, currentTask.id), { [orderField]: swapOrder });
-      batch.update(doc(db, collectionPath, swapTask.id), { [orderField]: currentOrder });
-      await batch.commit();
+      // If showing hardcoded defaults, persist to Firestore with updated order
+      if (!fromFirestore || taskId.startsWith('default-')) {
+        if (type === 'weekly') {
+          const batch = writeBatch(db);
+          DEFAULT_CARE_TEMPLATES.forEach((template, index) => {
+            const docRef = doc(collection(db, 'defaultTaskTemplates', 'weekly', 'tasks'));
+            // Swap order for the two tasks being moved
+            let order = index;
+            if (`default-weekly-${index}` === currentTask.id) {
+              order = swapOrder;
+            } else if (`default-weekly-${index}` === swapTask.id) {
+              order = currentOrder;
+            }
+            batch.set(docRef, {
+              id: docRef.id,
+              name: template.name,
+              description: template.description || '',
+              weekDue: template.weekDue,
+              sortOrder: order,
+              isActive: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            });
+          });
+          await batch.commit();
+        } else {
+          const batch = writeBatch(db);
+          DEFAULT_DAILY_ROUTINES.forEach((routine, index) => {
+            const docRef = doc(collection(db, 'defaultTaskTemplates', 'daily', 'tasks'));
+            // Swap order for the two tasks being moved
+            let order = routine.order;
+            if (`default-daily-${index}` === currentTask.id) {
+              order = swapOrder;
+            } else if (`default-daily-${index}` === swapTask.id) {
+              order = currentOrder;
+            }
+            batch.set(docRef, {
+              id: docRef.id,
+              name: routine.name,
+              description: routine.description || '',
+              timeOfDay: routine.timeOfDay,
+              weekStart: routine.weekStart,
+              weekEnd: routine.weekEnd,
+              order,
+              isActive: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            });
+          });
+          await batch.commit();
+        }
+      } else {
+        // Normal Firestore update
+        const batch = writeBatch(db);
+        batch.update(doc(db, collectionPath, currentTask.id), { [orderField]: swapOrder });
+        batch.update(doc(db, collectionPath, swapTask.id), { [orderField]: currentOrder });
+        await batch.commit();
+      }
     } catch (error) {
       console.error('Error reordering tasks:', error);
     }
@@ -683,19 +736,21 @@ export function DefaultTasksManager() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={weeklyTasks.length === 0 ? initializeWeeklyDefaultsAuto : resetWeeklyToDefaults}
-                    disabled={initializing || resetting || loadingWeekly}
-                  >
-                    {(initializing || resetting) ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                    )}
-                    {weeklyTasks.length === 0 ? 'Load Defaults' : 'Reset to Defaults'}
-                  </Button>
-                  <Button onClick={() => openWeeklyDialog()} disabled={initializing}>
+                  {weeklyFromFirestore && (
+                    <Button
+                      variant="outline"
+                      onClick={resetWeeklyToDefaults}
+                      disabled={resetting || loadingWeekly}
+                    >
+                      {resetting ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
+                      Reset to Defaults
+                    </Button>
+                  )}
+                  <Button onClick={() => openWeeklyDialog()}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add Task
                   </Button>
@@ -703,18 +758,10 @@ export function DefaultTasksManager() {
               </div>
             </CardHeader>
             <CardContent>
-              {loadingWeekly || (initializing && weeklyTasks.length === 0) ? (
+              {loadingWeekly ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    {initializing ? 'Initializing default templates...' : 'Loading...'}
-                  </p>
-                </div>
-              ) : weeklyTasks.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No weekly milestone templates.</p>
-                  <p className="text-sm">Add a task or reset to defaults.</p>
+                  <p className="text-sm text-muted-foreground">Loading...</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -810,19 +857,21 @@ export function DefaultTasksManager() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={dailyTasks.length === 0 ? initializeDailyDefaultsAuto : resetDailyToDefaults}
-                    disabled={initializing || resetting || loadingDaily}
-                  >
-                    {(initializing || resetting) ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                    )}
-                    {dailyTasks.length === 0 ? 'Load Defaults' : 'Reset to Defaults'}
-                  </Button>
-                  <Button onClick={() => openDailyDialog()} disabled={initializing}>
+                  {dailyFromFirestore && (
+                    <Button
+                      variant="outline"
+                      onClick={resetDailyToDefaults}
+                      disabled={resetting || loadingDaily}
+                    >
+                      {resetting ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
+                      Reset to Defaults
+                    </Button>
+                  )}
+                  <Button onClick={() => openDailyDialog()}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add Task
                   </Button>
@@ -830,18 +879,10 @@ export function DefaultTasksManager() {
               </div>
             </CardHeader>
             <CardContent>
-              {loadingDaily || (initializing && dailyTasks.length === 0) ? (
+              {loadingDaily ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    {initializing ? 'Initializing default templates...' : 'Loading...'}
-                  </p>
-                </div>
-              ) : dailyTasks.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Sunrise className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No daily routine templates.</p>
-                  <p className="text-sm">Add a task or reset to defaults.</p>
+                  <p className="text-sm text-muted-foreground">Loading...</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
