@@ -22,6 +22,7 @@ import { BreedManagement } from '@/components/BreedManagement';
 import { SubscriptionManagement } from '@/components/SubscriptionManagement';
 import { AuditLogViewer } from '@/components/AuditLogViewer';
 import { StripeSettings } from '@/components/StripeSettings';
+import { DefaultTasksManager } from '@/components/DefaultTasksManager';
 
 export function AdminSettings() {
   const navigate = useNavigate();
@@ -330,11 +331,12 @@ export function AdminSettings() {
 
       {/* Tabbed Management Sections */}
       <Tabs defaultValue='global' className='w-full'>
-        <TabsList className='grid w-full grid-cols-5'>
+        <TabsList className='grid w-full grid-cols-6'>
           <TabsTrigger value='global'>Global Lists</TabsTrigger>
+          <TabsTrigger value='tasks'>Task Templates</TabsTrigger>
           <TabsTrigger value='registries'>Registries</TabsTrigger>
           <TabsTrigger value='subscriptions'>Subscriptions</TabsTrigger>
-          <TabsTrigger value='stripe'>Stripe Settings</TabsTrigger>
+          <TabsTrigger value='stripe'>Stripe</TabsTrigger>
           <TabsTrigger value='audit'>Audit Logs</TabsTrigger>
         </TabsList>
 
@@ -343,6 +345,11 @@ export function AdminSettings() {
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
             <BreedManagement />
           </div>
+        </TabsContent>
+
+        {/* Task Templates Tab */}
+        <TabsContent value='tasks'>
+          <DefaultTasksManager />
         </TabsContent>
 
         {/* Registries Tab */}

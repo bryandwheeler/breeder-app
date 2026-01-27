@@ -376,8 +376,34 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       const birthDateObj = new Date(birthDate);
       const batch = writeBatch(db);
 
-      // Generate weekly milestone tasks from DEFAULT_CARE_TEMPLATES
-      DEFAULT_CARE_TEMPLATES.forEach((template) => {
+      // Fetch weekly templates from Firestore, fall back to hardcoded defaults
+      const weeklyTemplatesRef = collection(db, 'defaultTaskTemplates', 'weekly', 'tasks');
+      const weeklySnapshot = await getDocs(query(weeklyTemplatesRef, orderBy('sortOrder')));
+
+      interface WeeklyTemplate {
+        id: string;
+        name: string;
+        description?: string;
+        weekDue: number;
+        isActive?: boolean;
+      }
+
+      let weeklyTemplates: WeeklyTemplate[] = weeklySnapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() } as WeeklyTemplate))
+        .filter((t) => t.isActive !== false);
+
+      // Fall back to hardcoded defaults if Firestore is empty
+      if (weeklyTemplates.length === 0) {
+        weeklyTemplates = DEFAULT_CARE_TEMPLATES.map((t, i) => ({
+          id: `hardcoded-${i}`,
+          name: t.name,
+          description: t.description,
+          weekDue: t.weekDue,
+        }));
+      }
+
+      // Generate weekly milestone tasks
+      weeklyTemplates.forEach((template) => {
         const dueDate = new Date(birthDateObj);
         dueDate.setDate(dueDate.getDate() + template.weekDue * 7);
 
@@ -399,6 +425,36 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         });
       });
 
+      // Fetch daily templates from Firestore, fall back to hardcoded defaults
+      const dailyTemplatesRef = collection(db, 'defaultTaskTemplates', 'daily', 'tasks');
+      const dailySnapshot = await getDocs(query(dailyTemplatesRef, orderBy('order')));
+
+      interface DailyTemplate {
+        id: string;
+        name: string;
+        description?: string;
+        timeOfDay: 'morning' | 'midday' | 'evening' | 'both';
+        weekStart: number;
+        weekEnd?: number;
+        isActive?: boolean;
+      }
+
+      let dailyTemplates: DailyTemplate[] = dailySnapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() } as DailyTemplate))
+        .filter((t) => t.isActive !== false);
+
+      // Fall back to hardcoded defaults if Firestore is empty
+      if (dailyTemplates.length === 0) {
+        dailyTemplates = DEFAULT_DAILY_ROUTINES.map((r, i) => ({
+          id: `hardcoded-${i}`,
+          name: r.name,
+          description: r.description,
+          timeOfDay: r.timeOfDay,
+          weekStart: r.weekStart,
+          weekEnd: r.weekEnd,
+        }));
+      }
+
       // Generate daily tasks - create for the next 10 weeks (70 days)
       // But skip days that are in the past (don't create overdue daily tasks)
       const totalDays = 70; // ~10 weeks of daily tasks
@@ -415,7 +471,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
         const currentWeek = Math.floor(day / 7);
 
-        DEFAULT_DAILY_ROUTINES.forEach((routine) => {
+        dailyTemplates.forEach((routine) => {
           // Check if this routine applies to the current week
           const isActive = routine.weekStart <= currentWeek;
           const notEnded = routine.weekEnd === undefined || routine.weekEnd >= currentWeek;
