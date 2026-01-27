@@ -48,6 +48,7 @@ import {
   Calendar,
   Loader2,
   Save,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -113,6 +114,8 @@ export function DefaultTasksManager() {
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'weekly' | 'daily'; id: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [initializing, setInitializing] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState<'weekly' | 'daily' | null>(null);
 
   // Weekly form state
   const [weeklyForm, setWeeklyForm] = useState({
@@ -132,6 +135,10 @@ export function DefaultTasksManager() {
     isActive: true,
   });
 
+  // Track if we've checked for auto-initialization
+  const [weeklyInitChecked, setWeeklyInitChecked] = useState(false);
+  const [dailyInitChecked, setDailyInitChecked] = useState(false);
+
   // Subscribe to weekly templates
   useEffect(() => {
     const q = query(
@@ -148,10 +155,12 @@ export function DefaultTasksManager() {
         })) as AdminWeeklyTask[];
         setWeeklyTasks(tasks);
         setLoadingWeekly(false);
+        setWeeklyInitChecked(true);
       },
       (error) => {
         console.error('Error subscribing to weekly templates:', error);
         setLoadingWeekly(false);
+        setWeeklyInitChecked(true);
       }
     );
 
@@ -174,15 +183,86 @@ export function DefaultTasksManager() {
         })) as AdminDailyTask[];
         setDailyTasks(tasks);
         setLoadingDaily(false);
+        setDailyInitChecked(true);
       },
       (error) => {
         console.error('Error subscribing to daily templates:', error);
         setLoadingDaily(false);
+        setDailyInitChecked(true);
       }
     );
 
     return unsubscribe;
   }, []);
+
+  // Auto-initialize weekly templates if empty (on first load only)
+  useEffect(() => {
+    if (weeklyInitChecked && !loadingWeekly && weeklyTasks.length === 0 && !initializing) {
+      initializeWeeklyDefaultsAuto();
+    }
+  }, [weeklyInitChecked, loadingWeekly, weeklyTasks.length]);
+
+  // Auto-initialize daily templates if empty (on first load only)
+  useEffect(() => {
+    if (dailyInitChecked && !loadingDaily && dailyTasks.length === 0 && !initializing) {
+      initializeDailyDefaultsAuto();
+    }
+  }, [dailyInitChecked, loadingDaily, dailyTasks.length]);
+
+  // Auto-initialize functions (silent, no alerts)
+  const initializeWeeklyDefaultsAuto = async () => {
+    setInitializing(true);
+    try {
+      const batch = writeBatch(db);
+      DEFAULT_CARE_TEMPLATES.forEach((template, index) => {
+        const docRef = doc(collection(db, 'defaultTaskTemplates', 'weekly', 'tasks'));
+        batch.set(docRef, {
+          id: docRef.id,
+          name: template.name,
+          description: template.description || '',
+          weekDue: template.weekDue,
+          sortOrder: index,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      });
+      await batch.commit();
+      console.log('Auto-initialized weekly task templates from defaults');
+    } catch (error) {
+      console.error('Error auto-initializing weekly defaults:', error);
+    } finally {
+      setInitializing(false);
+    }
+  };
+
+  const initializeDailyDefaultsAuto = async () => {
+    setInitializing(true);
+    try {
+      const batch = writeBatch(db);
+      DEFAULT_DAILY_ROUTINES.forEach((routine, index) => {
+        const docRef = doc(collection(db, 'defaultTaskTemplates', 'daily', 'tasks'));
+        batch.set(docRef, {
+          id: docRef.id,
+          name: routine.name,
+          description: routine.description || '',
+          timeOfDay: routine.timeOfDay,
+          weekStart: routine.weekStart,
+          weekEnd: routine.weekEnd,
+          order: routine.order,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      });
+      await batch.commit();
+      console.log('Auto-initialized daily task templates from defaults');
+    } catch (error) {
+      console.error('Error auto-initializing daily defaults:', error);
+    } finally {
+      setInitializing(false);
+    }
+  };
 
   // Group weekly tasks by week
   const weeklyTasksByWeek = useMemo(() => {
@@ -276,6 +356,76 @@ export function DefaultTasksManager() {
       alert('Failed to initialize daily defaults');
     } finally {
       setInitializing(false);
+    }
+  };
+
+  // Reset to defaults (opens confirmation dialog)
+  const resetWeeklyToDefaults = () => {
+    setResetConfirmOpen('weekly');
+  };
+
+  const resetDailyToDefaults = () => {
+    setResetConfirmOpen('daily');
+  };
+
+  const executeReset = async () => {
+    if (!resetConfirmOpen) return;
+
+    setResetting(true);
+    try {
+      const collectionPath = resetConfirmOpen === 'weekly'
+        ? 'defaultTaskTemplates/weekly/tasks'
+        : 'defaultTaskTemplates/daily/tasks';
+      const templates = resetConfirmOpen === 'weekly' ? weeklyTasks : dailyTasks;
+
+      // Delete all existing
+      const deleteBatch = writeBatch(db);
+      templates.forEach((task) => {
+        deleteBatch.delete(doc(db, collectionPath, task.id));
+      });
+      await deleteBatch.commit();
+
+      // Re-create from hardcoded defaults
+      const createBatch = writeBatch(db);
+      if (resetConfirmOpen === 'weekly') {
+        DEFAULT_CARE_TEMPLATES.forEach((template, index) => {
+          const docRef = doc(collection(db, 'defaultTaskTemplates', 'weekly', 'tasks'));
+          createBatch.set(docRef, {
+            id: docRef.id,
+            name: template.name,
+            description: template.description || '',
+            weekDue: template.weekDue,
+            sortOrder: index,
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        });
+      } else {
+        DEFAULT_DAILY_ROUTINES.forEach((routine, index) => {
+          const docRef = doc(collection(db, 'defaultTaskTemplates', 'daily', 'tasks'));
+          createBatch.set(docRef, {
+            id: docRef.id,
+            name: routine.name,
+            description: routine.description || '',
+            timeOfDay: routine.timeOfDay,
+            weekStart: routine.weekStart,
+            weekEnd: routine.weekEnd,
+            order: routine.order,
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        });
+      }
+      await createBatch.commit();
+
+      setResetConfirmOpen(null);
+    } catch (error) {
+      console.error('Error resetting to defaults:', error);
+      alert('Failed to reset to defaults');
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -537,16 +687,18 @@ export function DefaultTasksManager() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  {weeklyTasks.length === 0 && (
+                  {weeklyTasks.length > 0 && (
                     <Button
                       variant="outline"
-                      onClick={initializeWeeklyDefaults}
-                      disabled={initializing}
+                      onClick={resetWeeklyToDefaults}
+                      disabled={initializing || resetting}
                     >
-                      {initializing ? (
+                      {resetting ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : null}
-                      Initialize Defaults
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
+                      Reset to Defaults
                     </Button>
                   )}
                   <Button onClick={() => openWeeklyDialog()}>
@@ -557,15 +709,12 @@ export function DefaultTasksManager() {
               </div>
             </CardHeader>
             <CardContent>
-              {loadingWeekly ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : weeklyTasks.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No weekly milestone templates yet.</p>
-                  <p className="text-sm">Click "Initialize Defaults" to load the standard templates.</p>
+              {loadingWeekly || (weeklyInitChecked && weeklyTasks.length === 0) ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    {weeklyTasks.length === 0 ? 'Initializing default templates...' : 'Loading...'}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -661,16 +810,18 @@ export function DefaultTasksManager() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  {dailyTasks.length === 0 && (
+                  {dailyTasks.length > 0 && (
                     <Button
                       variant="outline"
-                      onClick={initializeDailyDefaults}
-                      disabled={initializing}
+                      onClick={resetDailyToDefaults}
+                      disabled={initializing || resetting}
                     >
-                      {initializing ? (
+                      {resetting ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : null}
-                      Initialize Defaults
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
+                      Reset to Defaults
                     </Button>
                   )}
                   <Button onClick={() => openDailyDialog()}>
@@ -681,15 +832,12 @@ export function DefaultTasksManager() {
               </div>
             </CardHeader>
             <CardContent>
-              {loadingDaily ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : dailyTasks.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Sunrise className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No daily routine templates yet.</p>
-                  <p className="text-sm">Click "Initialize Defaults" to load the standard templates.</p>
+              {loadingDaily || (dailyInitChecked && dailyTasks.length === 0) ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    {dailyTasks.length === 0 ? 'Initializing default templates...' : 'Loading...'}
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1009,6 +1157,30 @@ export function DefaultTasksManager() {
             >
               {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reset Confirmation Dialog */}
+      <AlertDialog open={resetConfirmOpen !== null} onOpenChange={(open) => !open && setResetConfirmOpen(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset to Defaults?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will delete all {resetConfirmOpen === 'weekly' ? 'weekly milestone' : 'daily routine'} templates
+              and replace them with the original defaults. Your customizations will be lost.
+              Existing litter tasks are not affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeReset}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {resetting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Reset to Defaults
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
