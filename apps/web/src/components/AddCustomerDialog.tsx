@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Customer, ContactRole } from '@breeder/types';
 import { useCrmStore } from '@breeder/firebase';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogBody,
+  ResponsiveDialogFooter,
+} from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -108,12 +110,13 @@ export function AddCustomerDialog({ open, setOpen }: Props) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
-        <DialogHeader>
-          <DialogTitle>Add New Contact</DialogTitle>
-        </DialogHeader>
+    <ResponsiveDialog open={open} onOpenChange={setOpen}>
+      <ResponsiveDialogContent className='md:max-w-2xl'>
+        <ResponsiveDialogHeader onClose={() => setOpen(false)}>
+          <ResponsiveDialogTitle>Add New Contact</ResponsiveDialogTitle>
+        </ResponsiveDialogHeader>
 
+        <ResponsiveDialogBody>
         <form onSubmit={handleSubmit} className='space-y-6'>
           {/* Basic Information */}
           <div className='space-y-4'>
@@ -335,8 +338,8 @@ export function AddCustomerDialog({ open, setOpen }: Props) {
             />
           </div>
 
-          {/* Actions */}
-          <div className='flex gap-3 justify-end pt-4 border-t'>
+          {/* Desktop Actions */}
+          <div className='hidden sm:flex gap-3 justify-end pt-4 border-t'>
             <Button
               type='button'
               variant='outline'
@@ -349,7 +352,30 @@ export function AddCustomerDialog({ open, setOpen }: Props) {
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+        </ResponsiveDialogBody>
+        {/* Mobile footer with action buttons */}
+        <ResponsiveDialogFooter className='sm:hidden'>
+          <Button
+            type='button'
+            variant='outline'
+            className='flex-1'
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type='button'
+            className='flex-1'
+            disabled={loading}
+            onClick={() => {
+              const form = document.querySelector('form');
+              if (form) form.requestSubmit();
+            }}
+          >
+            {loading ? 'Adding...' : 'Add Customer'}
+          </Button>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

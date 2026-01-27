@@ -4,6 +4,9 @@ import {
   getAuth,
   GoogleAuthProvider,
   FacebookAuthProvider,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  setPersistence,
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
@@ -38,11 +41,19 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase services
-// Auth persistence is LOCAL by default in Firebase v9+
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const functions = getFunctions(app);
+
+// Set auth persistence to indexedDB (most reliable on mobile) with localStorage fallback
+// This avoids the sessionStorage issues on iOS Chrome/Safari
+setPersistence(auth, indexedDBLocalPersistence).catch(() => {
+  // Fallback to localStorage if indexedDB is not available
+  setPersistence(auth, browserLocalPersistence).catch((err) => {
+    console.warn('[Firebase] Could not set auth persistence:', err);
+  });
+});
 
 // Auth providers
 export const googleProvider = new GoogleAuthProvider();

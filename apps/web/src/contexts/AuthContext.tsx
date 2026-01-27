@@ -51,17 +51,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Decide whether to use redirect instead of popup (mobile, Safari, COOP, iframed)
+  // Decide whether to use redirect instead of popup
+  // NOTE: We now prefer popup on most devices because redirect has sessionStorage issues on iOS
+  // Only use redirect for Safari (which blocks popups) and iframes
   function shouldUseRedirect(): boolean {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') {
       return false;
     }
     const ua = navigator.userAgent;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
-    const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+    // Only Safari (not Chrome on iOS) truly needs redirect
+    const isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(ua);
     const coopBlocked = (window as any).crossOriginIsolated === true;
     const inIframe = window.self !== window.top;
-    return isMobile || isSafari || coopBlocked || inIframe;
+    // Don't force redirect on mobile Chrome - it has sessionStorage issues
+    return isSafari || coopBlocked || inIframe;
   }
 
   // Helper: create or update user profile in Firestore without read-before-write
@@ -220,19 +223,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch((error) => {
-        // Non-fatal: log for diagnostics only
-        if (error) {
+        // Handle the "missing initial state" error gracefully
+        // This happens on iOS when sessionStorage is cleared/blocked
+        if (error?.code === 'auth/missing-initial-state' ||
+            error?.message?.includes('missing initial state')) {
+          console.warn('[AuthContext] OAuth redirect state lost (common on iOS). User may need to sign in again.');
+          // Don't show error to user - they'll just see the login page
+        } else if (error) {
           console.warn('[AuthContext] Redirect sign-in failed:', error);
         }
       });
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('[AuthContext] onAuthStateChanged fired:', {
+        hasUser: !!user,
+        email: user?.email,
+        uid: user?.uid?.substring(0, 8)
+      });
       if (user) {
         // Ensure user profile exists in Firestore
         await ensureUserProfile(user, false);
       }
       setCurrentUser(user);
       setLoading(false);
+      console.log('[AuthContext] State updated: loading=false, hasUser=', !!user);
     });
 
     return unsubscribe;

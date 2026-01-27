@@ -6,6 +6,7 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogDescription,
   ResponsiveDialogBody,
+  ResponsiveDialogFooter,
 } from '@/components/ui/responsive-dialog';
 import { CollapsibleFormSection } from '@/components/ui/collapsible-form-section';
 import { Button } from '@/components/ui/button';
@@ -1337,7 +1338,8 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
             />
           </div>
 
-          <div className='flex justify-end gap-2 pt-4'>
+          {/* Desktop buttons */}
+          <div className='hidden sm:flex justify-end gap-2 pt-4'>
             <Button type='button' variant='outline' onClick={() => setOpen(false)} disabled={saving}>
               Cancel
             </Button>
@@ -1347,6 +1349,30 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
           </div>
         </form>
         </ResponsiveDialogBody>
+        {/* Mobile footer with action buttons */}
+        <ResponsiveDialogFooter className='sm:hidden'>
+          <Button
+            type='button'
+            variant='outline'
+            className='flex-1'
+            onClick={() => setOpen(false)}
+            disabled={saving}
+          >
+            Cancel
+          </Button>
+          <Button
+            type='button'
+            className='flex-1'
+            onClick={() => {
+              // Trigger form submit by clicking hidden submit button
+              const form = document.querySelector('form');
+              if (form) form.requestSubmit();
+            }}
+            disabled={saving}
+          >
+            {saving ? 'Saving...' : 'Save Puppy'}
+          </Button>
+        </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
 
       <ImageCropDialog

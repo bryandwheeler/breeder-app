@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,20 @@ export function Signup() {
   const { signup, loginWithGoogle, loginWithFacebook, currentUser } = useAuth();
   const navigate = useNavigate();
 
-  // If already logged in, redirect immediately (no useEffect to avoid loops)
+  // Fallback effect for browsers where Navigate component doesn't work (iOS Chrome)
+  useEffect(() => {
+    if (currentUser) {
+      // Use window.location as ultimate fallback for problematic browsers
+      const timer = setTimeout(() => {
+        if (window.location.pathname === '/signup') {
+          window.location.replace('/');
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [currentUser]);
+
+  // If already logged in, redirect immediately
   if (currentUser) {
     return <Navigate to='/' replace />;
   }

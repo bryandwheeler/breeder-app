@@ -13,8 +13,28 @@ export function Login() {
   const { login, loginWithGoogle, loginWithFacebook, currentUser } = useAuth();
   const navigate = useNavigate();
 
-  // If already logged in, redirect immediately (no useEffect to avoid loops)
+  // Fallback effect for browsers where Navigate component doesn't work (iOS Chrome)
+  useEffect(() => {
+    if (currentUser) {
+      console.log('[Login] User authenticated, attempting redirect to home');
+      // Use window.location as ultimate fallback for problematic browsers
+      // Try immediately, then again after a short delay
+      if (window.location.pathname === '/login') {
+        window.location.replace('/');
+      }
+      const timer = setTimeout(() => {
+        if (window.location.pathname === '/login') {
+          console.log('[Login] Still on login page after 200ms, forcing redirect');
+          window.location.href = '/';
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [currentUser]);
+
+  // If already logged in, redirect immediately
   if (currentUser) {
+    console.log('[Login] Rendering Navigate component to redirect');
     return <Navigate to='/' replace />;
   }
 

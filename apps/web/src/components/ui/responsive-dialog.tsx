@@ -106,20 +106,20 @@ function ResponsiveDialogHeader({ children, className, onClose }: ResponsiveDial
     return (
       <div
         className={cn(
-          'sticky top-0 z-10 bg-background border-b px-4 py-3 flex items-center justify-between',
+          'sticky top-0 z-10 bg-white dark:bg-zinc-950 border-b px-4 py-3 flex items-center justify-between gap-2',
           className
         )}
       >
-        <SheetHeader className="flex-1 space-y-0">
+        <SheetHeader className="flex-1 space-y-0 min-w-0">
           {children}
         </SheetHeader>
         {onClose && (
           <button
             onClick={onClose}
-            className="ml-2 rounded-full p-2 hover:bg-muted transition-colors"
+            className="flex-shrink-0 rounded-full p-3 -mr-1 hover:bg-muted active:bg-muted/80 transition-colors touch-manipulation"
+            aria-label="Close"
           >
-            <X className="h-5 w-5" />
-            <span className="sr-only">Close</span>
+            <X className="h-6 w-6" />
           </button>
         )}
       </div>
@@ -148,7 +148,7 @@ function ResponsiveDialogFooter({ children, className }: ResponsiveDialogFooterP
     return (
       <div
         className={cn(
-          'sticky bottom-0 z-10 bg-background border-t px-4 py-3 pb-safe flex gap-2',
+          'sticky bottom-0 z-10 bg-white dark:bg-zinc-950 border-t px-4 py-3 pb-safe flex gap-2',
           className
         )}
       >

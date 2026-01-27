@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogBody,
+  ResponsiveDialogFooter,
+} from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { useDogStore } from '@breeder/firebase';
 import { Litter } from '@breeder/types';
 import { searchDogs, type DogSearchResult } from '@/lib/kennelSearch';
@@ -41,8 +44,25 @@ export function LitterFormDialog({
 }: LitterFormDialogProps) {
   const { currentUser } = useAuth();
   const { dogs, addLitter, updateLitter } = useDogStore();
-  const females = dogs.filter((d) => d.sex === 'female');
-  const males = dogs.filter((d) => d.sex === 'male');
+
+  // Filter for active breeding dogs only
+  const activeDams = dogs.filter(
+    (d) => d.sex === 'female' && d.breedingStatus === 'active-dam'
+  );
+  const activeStuds = dogs.filter(
+    (d) => d.sex === 'male' && d.breedingStatus === 'active-stud'
+  );
+
+  // Create options for combobox with name and breed info
+  const damOptions = activeDams.map((dog) => ({
+    value: dog.id,
+    label: `${dog.name}${dog.breed ? ` (${dog.breed})` : ''}`,
+  }));
+
+  const studOptions = activeStuds.map((dog) => ({
+    value: dog.id,
+    label: `${dog.name}${dog.breed ? ` (${dog.breed})` : ''}`,
+  }));
 
   const [formData, setFormData] = useState<Omit<Litter, 'id'>>({
     litterName: '',
@@ -233,14 +253,15 @@ export function LitterFormDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
-        <DialogHeader>
-          <DialogTitle>
+    <ResponsiveDialog open={open} onOpenChange={setOpen}>
+      <ResponsiveDialogContent className='md:max-w-2xl'>
+        <ResponsiveDialogHeader onClose={() => setOpen(false)}>
+          <ResponsiveDialogTitle>
             {litter ? 'Edit Litter' : 'Plan New Litter'}
-          </DialogTitle>
-        </DialogHeader>
+          </ResponsiveDialogTitle>
+        </ResponsiveDialogHeader>
 
+        <ResponsiveDialogBody>
         <form onSubmit={handleSubmit} className='space-y-4'>
           <div>
             <Tooltip>
@@ -259,64 +280,60 @@ export function LitterFormDialog({
             />
           </div>
 
-          <div className='grid grid-cols-2 gap-4'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
             <div>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Label htmlFor='damId'>Dam *</Label>
+                  <Label htmlFor='damId'>Dam (Active Dams) *</Label>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Select the mother from your female dogs
+                  Select from active dams. To add more, set a female dog's breeding status to "Active Dam".
                 </TooltipContent>
               </Tooltip>
-              <Select
+              <Combobox
+                options={damOptions}
                 value={formData.damId}
                 onValueChange={(value) =>
                   setFormData({ ...formData, damId: value })
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='Select dam' />
-                </SelectTrigger>
-                <SelectContent>
-                  {females.map((dog) => (
-                    <SelectItem key={dog.id} value={dog.id}>
-                      {dog.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder='Search active dams...'
+                searchPlaceholder='Type to search...'
+                emptyText={activeDams.length === 0 ? 'No active dams. Set a female dog\'s breeding status to "Active Dam".' : 'No matching dams found.'}
+              />
+              {activeDams.length === 0 && (
+                <p className='text-xs text-amber-600 mt-1'>
+                  No active dams found. Update a female dog's breeding status to "Active Dam".
+                </p>
+              )}
             </div>
 
             <div className='space-y-2'>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Label>Sire *</Label>
+                  <Label>Sire (Active Studs) *</Label>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Choose from your males or search external sire
+                  Choose from active studs or search for an external sire
                 </TooltipContent>
               </Tooltip>
 
               {!sireSearchMode && !externalSire ? (
                 <div className='space-y-2'>
-                  <Select
+                  <Combobox
+                    options={studOptions}
                     value={formData.sireId}
                     onValueChange={(value) =>
                       setFormData({ ...formData, sireId: value })
                     }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder='Select sire from your dogs' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {males.map((dog) => (
-                        <SelectItem key={dog.id} value={dog.id}>
-                          {dog.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder='Search active studs...'
+                    searchPlaceholder='Type to search...'
+                    emptyText={activeStuds.length === 0 ? 'No active studs. Set a male dog\'s breeding status to "Active Stud".' : 'No matching studs found.'}
+                  />
+                  {activeStuds.length === 0 && (
+                    <p className='text-xs text-amber-600'>
+                      No active studs found. Update a male dog's breeding status to "Active Stud".
+                    </p>
+                  )}
                   <Button
                     type='button'
                     variant='outline'
@@ -839,7 +856,8 @@ export function LitterFormDialog({
             />
           </div>
 
-          <div className='flex justify-end gap-2 pt-4'>
+          {/* Desktop buttons */}
+          <div className='hidden sm:flex justify-end gap-2 pt-4'>
             <Button
               type='button'
               variant='outline'
@@ -852,7 +870,29 @@ export function LitterFormDialog({
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+        </ResponsiveDialogBody>
+        {/* Mobile footer with action buttons */}
+        <ResponsiveDialogFooter className='sm:hidden'>
+          <Button
+            type='button'
+            variant='outline'
+            className='flex-1'
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type='button'
+            className='flex-1'
+            onClick={() => {
+              const form = document.querySelector('form');
+              if (form) form.requestSubmit();
+            }}
+          >
+            {litter ? 'Update Litter' : 'Create Litter'}
+          </Button>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

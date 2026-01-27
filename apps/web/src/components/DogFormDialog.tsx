@@ -17,7 +17,9 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
   ResponsiveDialogBody,
+  ResponsiveDialogFooter,
 } from '@/components/ui/responsive-dialog';
+import { CollapsibleFormSection, FormSectionGroup } from '@/components/ui/collapsible-form-section';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -724,224 +726,243 @@ const DogFormContent = forwardRef<DogFormHandle, {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-          <div className='space-y-4'>
-            <FormField
-              control={form.control}
-              name='name'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name *</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder='Registered or common name'
-                      {...field}
-                      value={field.value || ''}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+        <FormSectionGroup>
+          {/* Basic Info - Always open */}
+          <CollapsibleFormSection title="Basic Information" alwaysOpen>
+            <div className='space-y-4'>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                <FormField
+                  control={form.control}
+                  name='name'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder='Registered or common name'
+                          {...field}
+                          value={field.value || ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name='callName'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Call Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder='Boots'
-                      {...field}
-                      value={field.value || ''}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name='callName'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Call Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder='Boots'
+                          {...field}
+                          value={field.value || ''}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-            <FormField
-              control={form.control}
-              name='kennelName'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Kennel Name (if outside dog)</FormLabel>
-                  <FormControl>
-                    <Input placeholder='Golden Dreams Kennel' {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                <FormField
+                  control={form.control}
+                  name='sex'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sex *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value='female'>Female</SelectItem>
+                          <SelectItem value='male'>Male</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name='breederName'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Breeder Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder='Jane Smith' {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name='dateOfBirth'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>DOB *</FormLabel>
+                      <FormControl>
+                        <Input type='date' {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-            <FormField
-              control={form.control}
-              name='breed'
-              render={({ field }) => (
-                <FormItem>
-                  <BreedAutocomplete
-                    value={field.value || ''}
-                    onChange={(v) => field.onChange(v)}
-                    placeholder='Type to search breeds...'
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name='breedGeneration'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Generation/Subcategory</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder='e.g., F1, F1B, F2BB, Multigen'
-                      {...field}
-                    />
-                  </FormControl>
-                  <p className='text-xs text-muted-foreground'>
-                    For breeds with generations (Goldendoodle, Labradoodle, etc.) or other subcategories
-                  </p>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
               <FormField
                 control={form.control}
-                name='sex'
+                name='breed'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Sex *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value='female'>Female</SelectItem>
-                        <SelectItem value='male'>Male</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <BreedAutocomplete
+                      value={field.value || ''}
+                      onChange={(v) => field.onChange(v)}
+                      placeholder='Type to search breeds...'
+                    />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
 
               <FormField
                 control={form.control}
-                name='dateOfBirth'
+                name='breedGeneration'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>DOB *</FormLabel>
+                    <FormLabel>Generation/Subcategory</FormLabel>
                     <FormControl>
-                      <Input type='date' {...field} />
+                      <Input
+                        placeholder='e.g., F1, F1B, F2BB, Multigen'
+                        {...field}
+                      />
                     </FormControl>
+                    <p className='text-xs text-muted-foreground'>
+                      For breeds with generations (Goldendoodle, Labradoodle, etc.) or other subcategories
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
+          </CollapsibleFormSection>
 
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-              <FormField
-                control={form.control}
-                name='color'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Collar Color</FormLabel>
-                    <FormControl>
-                      <Input placeholder='e.g., Red, Blue, Green' {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name='microchip'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Microchip #</FormLabel>
-                    <FormControl>
-                      <Input placeholder='Microchip number' {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-              <FormField
-                control={form.control}
-                name='marketStatus'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Market Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || ''}
-                    >
+          {/* Additional Details - Collapsed by default on mobile */}
+          <CollapsibleFormSection title="Additional Details" defaultOpen={false}>
+            <div className='space-y-4'>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                <FormField
+                  control={form.control}
+                  name='kennelName'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kennel Name (if outside dog)</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder='Select status...' />
-                        </SelectTrigger>
+                        <Input placeholder='Golden Dreams Kennel' {...field} />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value='available'>Available</SelectItem>
-                        <SelectItem value='reserved'>Reserved</SelectItem>
-                        <SelectItem value='sold'>Sold</SelectItem>
-                        <SelectItem value='not_for_sale'>Not for Sale</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name='salePrice'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Sale Price</FormLabel>
-                    <FormControl>
-                      <Input
-                        type='number'
-                        step='0.01'
-                        placeholder='0.00'
-                        {...field}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name='breederName'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Breeder Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder='Jane Smith' {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                <FormField
+                  control={form.control}
+                  name='color'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Collar Color</FormLabel>
+                      <FormControl>
+                        <Input placeholder='e.g., Red, Blue, Green' {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name='microchip'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Microchip #</FormLabel>
+                      <FormControl>
+                        <Input placeholder='Microchip number' {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                <FormField
+                  control={form.control}
+                  name='marketStatus'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Market Status</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || ''}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder='Select status...' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value='available'>Available</SelectItem>
+                          <SelectItem value='reserved'>Reserved</SelectItem>
+                          <SelectItem value='sold'>Sold</SelectItem>
+                          <SelectItem value='not_for_sale'>Not for Sale</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name='salePrice'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sale Price</FormLabel>
+                      <FormControl>
+                        <Input
+                          type='number'
+                          step='0.01'
+                          placeholder='0.00'
+                          {...field}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
-          </div>
+          </CollapsibleFormSection>
 
-          {/* Parents */}
-          <div className='space-y-4'>
-            <h3 className='font-semibold text-lg'>Parents</h3>
-
-            {/* Sire Selection */}
-            <div className='space-y-2'>
-              <Label>Sire (Father)</Label>
+          {/* Parents - Collapsed by default on mobile */}
+          <CollapsibleFormSection
+            title="Parents"
+            defaultOpen={false}
+            collapsedIndicator={
+              (form.watch('sireId') || externalSire || form.watch('damId') || externalDam)
+                ? 'Set'
+                : undefined
+            }
+          >
+            <div className='space-y-4'>
+              {/* Sire Selection */}
+              <div className='space-y-2'>
+                <Label>Sire (Father)</Label>
 
               {!sireSearchMode && !externalSire ? (
                 <div className='space-y-2'>
@@ -1363,237 +1384,248 @@ const DogFormContent = forwardRef<DogFormHandle, {
                   </Button>
                 </div>
               )}
+              </div>
             </div>
-          </div>
+          </CollapsibleFormSection>
 
-          {/* Program Status & Guardian Home */}
-          <div className='space-y-4 border-t pt-4'>
-            <h3 className='font-semibold text-lg'>Breeder Program</h3>
-
-            <div>
-              <Label>Program Status</Label>
-              <Select
-                value={programStatus || 'owned'}
-                onValueChange={(value) =>
-                  setProgramStatus(
-                    value as
-                      | 'owned'
-                      | 'guardian'
-                      | 'external_stud'
-                      | 'co-owned'
-                      | 'retired'
-                  )
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='owned'>Owned by Program</SelectItem>
-                  <SelectItem value='guardian'>Guardian Home</SelectItem>
-                  <SelectItem value='external_stud'>External Stud</SelectItem>
-                  <SelectItem value='co-owned'>Co-Owned</SelectItem>
-                  <SelectItem value='retired'>Retired</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className='text-xs text-muted-foreground mt-1'>
-                {programStatus === 'owned' &&
-                  'Dog is owned and kept at your kennel'}
-                {programStatus === 'guardian' &&
-                  'Dog lives in a guardian home with breeding rights'}
-                {programStatus === 'external_stud' &&
-                  'Stud service from another breeder'}
-                {programStatus === 'co-owned' &&
-                  'Shared ownership with another party'}
-                {programStatus === 'retired' &&
-                  'Dog is retired from breeding program'}
-              </p>
-            </div>
-
-            {programStatus === 'guardian' && (
-              <div className='space-y-2'>
-                <Button
-                  type='button'
-                  variant='default'
-                  size='sm'
-                  onClick={() => setGuardianDialogOpen(true)}
+          {/* Program Status & Guardian Home - Collapsed by default on mobile */}
+          <CollapsibleFormSection
+            title="Breeder Program"
+            defaultOpen={false}
+            collapsedIndicator={programStatus !== 'owned' ? programStatus : undefined}
+          >
+            <div className='space-y-4'>
+              <div>
+                <Label>Program Status</Label>
+                <Select
+                  value={programStatus || 'owned'}
+                  onValueChange={(value) =>
+                    setProgramStatus(
+                      value as
+                        | 'owned'
+                        | 'guardian'
+                        | 'external_stud'
+                        | 'co-owned'
+                        | 'retired'
+                    )
+                  }
                 >
-                  {guardianHome ? 'Edit Guardian Info' : 'Add Guardian Info'}
-                </Button>
-                {guardianHome && (
-                  <div className='p-3 border rounded-md bg-muted/50'>
-                    <p className='font-medium'>{guardianHome.guardianName}</p>
-                    {guardianHome.email && (
-                      <p className='text-sm text-muted-foreground'>
-                        {guardianHome.email}
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='owned'>Owned by Program</SelectItem>
+                    <SelectItem value='guardian'>Guardian Home</SelectItem>
+                    <SelectItem value='external_stud'>External Stud</SelectItem>
+                    <SelectItem value='co-owned'>Co-Owned</SelectItem>
+                    <SelectItem value='retired'>Retired</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className='text-xs text-muted-foreground mt-1'>
+                  {programStatus === 'owned' &&
+                    'Dog is owned and kept at your kennel'}
+                  {programStatus === 'guardian' &&
+                    'Dog lives in a guardian home with breeding rights'}
+                  {programStatus === 'external_stud' &&
+                    'Stud service from another breeder'}
+                  {programStatus === 'co-owned' &&
+                    'Shared ownership with another party'}
+                  {programStatus === 'retired' &&
+                    'Dog is retired from breeding program'}
+                </p>
+              </div>
+
+              {programStatus === 'guardian' && (
+                <div className='space-y-2'>
+                  <Button
+                    type='button'
+                    variant='default'
+                    size='sm'
+                    onClick={() => setGuardianDialogOpen(true)}
+                  >
+                    {guardianHome ? 'Edit Guardian Info' : 'Add Guardian Info'}
+                  </Button>
+                  {guardianHome && (
+                    <div className='p-3 border rounded-md bg-muted/50'>
+                      <p className='font-medium'>{guardianHome.guardianName}</p>
+                      {guardianHome.email && (
+                        <p className='text-sm text-muted-foreground'>
+                          {guardianHome.email}
+                        </p>
+                      )}
+                      <p className='text-sm mt-1'>
+                        Contract: {guardianHome.littersCompleted} /{' '}
+                        {guardianHome.littersAllowed} litters
                       </p>
-                    )}
-                    <p className='text-sm mt-1'>
-                      Contract: {guardianHome.littersCompleted} /{' '}
-                      {guardianHome.littersAllowed} litters
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Breeding Status & Lifecycle */}
-          <div className='space-y-4 border-t pt-4'>
-            <h3 className='font-semibold text-lg'>Breeding Status</h3>
-
-            <div>
-              <Label>Breeding Program Status</Label>
-              <Select
-                value={breedingStatus || ''}
-                onValueChange={(value) =>
-                  setBreedingStatus(
-                    value === ''
-                      ? undefined
-                      : (value as
-                          | 'future-stud'
-                          | 'future-dam'
-                          | 'active-stud'
-                          | 'active-dam'
-                          | 'retired'
-                          | 'pet'
-                          | 'guardian')
-                  )
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='future-stud'>
-                    Future Stud (Young Male)
-                  </SelectItem>
-                  <SelectItem value='future-dam'>
-                    Future Dam (Young Female)
-                  </SelectItem>
-                  <SelectItem value='active-stud'>
-                    Active Stud
-                  </SelectItem>
-                  <SelectItem value='active-dam'>
-                    Active Dam
-                  </SelectItem>
-                  <SelectItem value='retired'>
-                    Retired from Breeding
-                  </SelectItem>
-                  <SelectItem value='pet'>
-                    Pet Quality
-                  </SelectItem>
-                  <SelectItem value='guardian'>
-                    Guardian Program
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p className='text-xs text-muted-foreground mt-1'>
-                {breedingStatus === 'future-stud' &&
-                  'Young male not yet ready for breeding'}
-                {breedingStatus === 'future-dam' &&
-                  'Young female not yet ready for breeding'}
-                {breedingStatus === 'active-stud' &&
-                  'Actively breeding male dog'}
-                {breedingStatus === 'active-dam' &&
-                  'Actively breeding female dog'}
-                {breedingStatus === 'retired' &&
-                  'Retired from breeding program'}
-                {breedingStatus === 'pet' &&
-                  'Pet quality, not for breeding'}
-                {breedingStatus === 'guardian' &&
-                  'In guardian breeding program'}
-              </p>
-            </div>
-
-            {/* Pending Requirements */}
-            {(breedingStatus === 'future-stud' || breedingStatus === 'future-dam') && (
-              <div className='space-y-3 p-3 border rounded-md bg-muted/30'>
-                <p className='text-sm font-medium'>Requirements Pending:</p>
-
-                <div className='flex items-center space-x-2'>
-                  <Checkbox
-                    id='agePending'
-                    checked={agePending}
-                    onCheckedChange={(checked) => setAgePending(checked === true)}
-                  />
-                  <label
-                    htmlFor='agePending'
-                    className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
-                  >
-                    Age requirement pending
-                  </label>
-                </div>
-
-                <div className='flex items-center space-x-2'>
-                  <Checkbox
-                    id='healthTestsPending'
-                    checked={healthTestsPending}
-                    onCheckedChange={(checked) => setHealthTestsPending(checked === true)}
-                  />
-                  <label
-                    htmlFor='healthTestsPending'
-                    className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
-                  >
-                    Health tests pending
-                  </label>
-                </div>
-              </div>
-            )}
-
-            {/* Spayed/Neutered Section */}
-            <div className='space-y-3 p-3 border rounded-md'>
-              <div className='flex items-center space-x-2'>
-                <Checkbox
-                  id='spayedNeutered'
-                  checked={spayedNeutered}
-                  onCheckedChange={(checked) => setSpayedNeutered(checked === true)}
-                />
-                <label
-                  htmlFor='spayedNeutered'
-                  className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
-                >
-                  Spayed/Neutered
-                </label>
-              </div>
-
-              {spayedNeutered && (
-                <div className='space-y-3 ml-6'>
-                  <div>
-                    <Label htmlFor='spayNeuterDate'>
-                      Date of Spay/Neuter
-                    </Label>
-                    <Input
-                      id='spayNeuterDate'
-                      type='date'
-                      value={spayNeuterDate}
-                      onChange={(e) => setSpayNeuterDate(e.target.value)}
-                      className='mt-1'
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor='spayNeuterNotes'>
-                      Notes (clinic, reason, etc.)
-                    </Label>
-                    <Textarea
-                      id='spayNeuterNotes'
-                      value={spayNeuterNotes}
-                      onChange={(e) => setSpayNeuterNotes(e.target.value)}
-                      placeholder='e.g., Performed at ABC Vet Clinic, retired from breeding program'
-                      className='mt-1'
-                      rows={2}
-                    />
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          </div>
-        </div>
+          </CollapsibleFormSection>
 
-        {/* Photos */}
-        <div>
-          <Label>Photos ({photos.length})</Label>
+          {/* Breeding Status & Lifecycle - Collapsed by default on mobile */}
+          <CollapsibleFormSection
+            title="Breeding Status"
+            defaultOpen={false}
+            collapsedIndicator={breedingStatus || (spayedNeutered ? 'Spayed/Neutered' : undefined)}
+          >
+            <div className='space-y-4'>
+              <div>
+                <Label>Breeding Program Status</Label>
+                <Select
+                  value={breedingStatus || ''}
+                  onValueChange={(value) =>
+                    setBreedingStatus(
+                      value === ''
+                        ? undefined
+                        : (value as
+                            | 'future-stud'
+                            | 'future-dam'
+                            | 'active-stud'
+                            | 'active-dam'
+                            | 'retired'
+                            | 'pet'
+                            | 'guardian')
+                    )
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='future-stud'>
+                      Future Stud (Young Male)
+                    </SelectItem>
+                    <SelectItem value='future-dam'>
+                      Future Dam (Young Female)
+                    </SelectItem>
+                    <SelectItem value='active-stud'>
+                      Active Stud
+                    </SelectItem>
+                    <SelectItem value='active-dam'>
+                      Active Dam
+                    </SelectItem>
+                    <SelectItem value='retired'>
+                      Retired from Breeding
+                    </SelectItem>
+                    <SelectItem value='pet'>
+                      Pet Quality
+                    </SelectItem>
+                    <SelectItem value='guardian'>
+                      Guardian Program
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className='text-xs text-muted-foreground mt-1'>
+                  {breedingStatus === 'future-stud' &&
+                    'Young male not yet ready for breeding'}
+                  {breedingStatus === 'future-dam' &&
+                    'Young female not yet ready for breeding'}
+                  {breedingStatus === 'active-stud' &&
+                    'Actively breeding male dog'}
+                  {breedingStatus === 'active-dam' &&
+                    'Actively breeding female dog'}
+                  {breedingStatus === 'retired' &&
+                    'Retired from breeding program'}
+                  {breedingStatus === 'pet' &&
+                    'Pet quality, not for breeding'}
+                  {breedingStatus === 'guardian' &&
+                    'In guardian breeding program'}
+                </p>
+              </div>
+
+              {/* Pending Requirements */}
+              {(breedingStatus === 'future-stud' || breedingStatus === 'future-dam') && (
+                <div className='space-y-3 p-3 border rounded-md bg-muted/30'>
+                  <p className='text-sm font-medium'>Requirements Pending:</p>
+
+                  <div className='flex items-center space-x-2'>
+                    <Checkbox
+                      id='agePending'
+                      checked={agePending}
+                      onCheckedChange={(checked) => setAgePending(checked === true)}
+                    />
+                    <label
+                      htmlFor='agePending'
+                      className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+                    >
+                      Age requirement pending
+                    </label>
+                  </div>
+
+                  <div className='flex items-center space-x-2'>
+                    <Checkbox
+                      id='healthTestsPending'
+                      checked={healthTestsPending}
+                      onCheckedChange={(checked) => setHealthTestsPending(checked === true)}
+                    />
+                    <label
+                      htmlFor='healthTestsPending'
+                      className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+                    >
+                      Health tests pending
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Spayed/Neutered Section */}
+              <div className='space-y-3 p-3 border rounded-md'>
+                <div className='flex items-center space-x-2'>
+                  <Checkbox
+                    id='spayedNeutered'
+                    checked={spayedNeutered}
+                    onCheckedChange={(checked) => setSpayedNeutered(checked === true)}
+                  />
+                  <label
+                    htmlFor='spayedNeutered'
+                    className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+                  >
+                    Spayed/Neutered
+                  </label>
+                </div>
+
+                {spayedNeutered && (
+                  <div className='space-y-3 ml-6'>
+                    <div>
+                      <Label htmlFor='spayNeuterDate'>
+                        Date of Spay/Neuter
+                      </Label>
+                      <Input
+                        id='spayNeuterDate'
+                        type='date'
+                        value={spayNeuterDate}
+                        onChange={(e) => setSpayNeuterDate(e.target.value)}
+                        className='mt-1'
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor='spayNeuterNotes'>
+                        Notes (clinic, reason, etc.)
+                      </Label>
+                      <Textarea
+                        id='spayNeuterNotes'
+                        value={spayNeuterNotes}
+                        onChange={(e) => setSpayNeuterNotes(e.target.value)}
+                        placeholder='e.g., Performed at ABC Vet Clinic, retired from breeding program'
+                        className='mt-1'
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CollapsibleFormSection>
+
+          {/* Photos - Collapsed by default on mobile */}
+          <CollapsibleFormSection
+            title="Photos"
+            defaultOpen={false}
+            collapsedIndicator={photos.length > 0 ? `${photos.length} photo${photos.length !== 1 ? 's' : ''}` : undefined}
+          >
           <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2'>
             {photos.map((p, i) => (
               <div key={i} className='relative group'>
@@ -1640,155 +1672,173 @@ const DogFormContent = forwardRef<DogFormHandle, {
               />
             </label>
           </div>
-        </div>
+          </CollapsibleFormSection>
 
-        {/* Shot Records */}
-        <div>
-          <div className='flex items-center justify-between mb-4'>
-            <h3 className='font-semibold flex items-center gap-2'>
-              Shot & Vaccination Records
-            </h3>
-            <Button type='button' size='sm' onClick={addShot}>
-              <Plus className='h-4 w-4' /> Add Shot
-            </Button>
-          </div>
-          {shotRecords.length === 0 ? (
-            <p className='text-muted-foreground'>No shot records</p>
-          ) : (
+          {/* Shot Records - Collapsed by default on mobile */}
+          <CollapsibleFormSection
+            title="Shot & Vaccination Records"
+            defaultOpen={false}
+            collapsedIndicator={shotRecords.length > 0 ? `${shotRecords.length} record${shotRecords.length !== 1 ? 's' : ''}` : undefined}
+          >
             <div className='space-y-3'>
-              {shotRecords.map((shot, i) => (
-                <div
-                  key={shot.id}
-                  className='flex gap-3 items-end border-b pb-3'
-                >
-                  <Input
-                    placeholder='Vaccine name'
-                    value={shot.vaccine}
-                    onChange={(e) => {
-                      const newRecords = [...shotRecords];
-                      newRecords[i].vaccine = e.target.value;
-                      setShotRecords(newRecords);
-                    }}
-                  />
-                  <Input
-                    type='date'
-                    value={shot.dateGiven}
-                    onChange={(e) => {
-                      const newRecords = [...shotRecords];
-                      newRecords[i].dateGiven = e.target.value;
-                      setShotRecords(newRecords);
-                    }}
-                  />
-                  <Input
-                    type='date'
-                    placeholder='Due'
-                    value={shot.dueDate || ''}
-                    onChange={(e) => {
-                      const newRecords = [...shotRecords];
-                      newRecords[i].dueDate = e.target.value;
-                      setShotRecords(newRecords);
-                    }}
-                  />
-                  <Input
-                    placeholder='Notes'
-                    value={shot.notes || ''}
-                    onChange={(e) => {
-                      const newRecords = [...shotRecords];
-                      newRecords[i].notes = e.target.value;
-                      setShotRecords(newRecords);
-                    }}
-                  />
-                  <Button
-                    type='button'
-                    variant='destructive'
-                    size='icon'
-                    onClick={() =>
-                      setShotRecords((prev) =>
-                        prev.filter((_, idx) => idx !== i)
-                      )
-                    }
-                  >
-                    <Trash2 className='h-4 w-4' />
-                  </Button>
+              <div className='flex justify-end'>
+                <Button type='button' size='sm' onClick={addShot}>
+                  <Plus className='h-4 w-4 mr-1' /> Add Shot
+                </Button>
+              </div>
+              {shotRecords.length === 0 ? (
+                <p className='text-muted-foreground text-sm'>No shot records yet. Click "Add Shot" to add one.</p>
+              ) : (
+                <div className='space-y-3'>
+                  {shotRecords.map((shot, i) => (
+                    <div
+                      key={shot.id}
+                      className='grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border rounded-md bg-muted/30'
+                    >
+                      <Input
+                        placeholder='Vaccine name'
+                        value={shot.vaccine}
+                        onChange={(e) => {
+                          const newRecords = [...shotRecords];
+                          newRecords[i].vaccine = e.target.value;
+                          setShotRecords(newRecords);
+                        }}
+                      />
+                      <Input
+                        type='date'
+                        value={shot.dateGiven}
+                        onChange={(e) => {
+                          const newRecords = [...shotRecords];
+                          newRecords[i].dateGiven = e.target.value;
+                          setShotRecords(newRecords);
+                        }}
+                      />
+                      <Input
+                        type='date'
+                        placeholder='Due date'
+                        value={shot.dueDate || ''}
+                        onChange={(e) => {
+                          const newRecords = [...shotRecords];
+                          newRecords[i].dueDate = e.target.value;
+                          setShotRecords(newRecords);
+                        }}
+                      />
+                      <div className='flex gap-2'>
+                        <Input
+                          placeholder='Notes'
+                          value={shot.notes || ''}
+                          className='flex-1'
+                          onChange={(e) => {
+                            const newRecords = [...shotRecords];
+                            newRecords[i].notes = e.target.value;
+                            setShotRecords(newRecords);
+                          }}
+                        />
+                        <Button
+                          type='button'
+                          variant='destructive'
+                          size='icon'
+                          className='flex-shrink-0'
+                          onClick={() =>
+                            setShotRecords((prev) =>
+                              prev.filter((_, idx) => idx !== i)
+                            )
+                          }
+                        >
+                          <Trash2 className='h-4 w-4' />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
+          </CollapsibleFormSection>
 
-        {/* Health Tests */}
-        <div>
-          <div className='flex items-center justify-between mb-4'>
-            <h3 className='font-semibold flex items-center gap-2'>
-              Health Tests
-            </h3>
-            <Button type='button' size='sm' onClick={addHealthTest}>
-              <Plus className='h-4 w-4' /> Add Test
-            </Button>
-          </div>
-          {healthTests.length === 0 ? (
-            <p className='text-muted-foreground'>No health tests recorded</p>
-          ) : (
+          {/* Health Tests - Collapsed by default on mobile */}
+          <CollapsibleFormSection
+            title="Health Tests"
+            defaultOpen={false}
+            collapsedIndicator={healthTests.length > 0 ? `${healthTests.length} test${healthTests.length !== 1 ? 's' : ''}` : undefined}
+          >
             <div className='space-y-3'>
-              {healthTests.map((test, i) => (
-                <div
-                  key={test.id}
-                  className='flex gap-3 items-end border-b pb-3'
-                >
-                  <Input
-                    placeholder='Test (OFA, PennHIP, DNA...)'
-                    value={test.test}
-                    onChange={(e) => {
-                      const newTests = [...healthTests];
-                      newTests[i].test = e.target.value;
-                      setHealthTests(newTests);
-                    }}
-                  />
-                  <Input
-                    placeholder='Result'
-                    value={test.result}
-                    onChange={(e) => {
-                      const newTests = [...healthTests];
-                      newTests[i].result = e.target.value;
-                      setHealthTests(newTests);
-                    }}
-                  />
-                  <Input
-                    type='date'
-                    value={test.date}
-                    onChange={(e) => {
-                      const newTests = [...healthTests];
-                      newTests[i].date = e.target.value;
-                      setHealthTests(newTests);
-                    }}
-                  />
-                  <Button
-                    type='button'
-                    variant='destructive'
-                    size='icon'
-                    onClick={() =>
-                      setHealthTests((prev) =>
-                        prev.filter((_, idx) => idx !== i)
-                      )
-                    }
-                  >
-                    <Trash2 className='h-4 w-4' />
-                  </Button>
+              <div className='flex justify-end'>
+                <Button type='button' size='sm' onClick={addHealthTest}>
+                  <Plus className='h-4 w-4 mr-1' /> Add Test
+                </Button>
+              </div>
+              {healthTests.length === 0 ? (
+                <p className='text-muted-foreground text-sm'>No health tests recorded yet. Click "Add Test" to add one.</p>
+              ) : (
+                <div className='space-y-3'>
+                  {healthTests.map((test, i) => (
+                    <div
+                      key={test.id}
+                      className='grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border rounded-md bg-muted/30'
+                    >
+                      <Input
+                        placeholder='Test (OFA, PennHIP, DNA...)'
+                        value={test.test}
+                        onChange={(e) => {
+                          const newTests = [...healthTests];
+                          newTests[i].test = e.target.value;
+                          setHealthTests(newTests);
+                        }}
+                      />
+                      <Input
+                        placeholder='Result'
+                        value={test.result}
+                        onChange={(e) => {
+                          const newTests = [...healthTests];
+                          newTests[i].result = e.target.value;
+                          setHealthTests(newTests);
+                        }}
+                      />
+                      <Input
+                        type='date'
+                        value={test.date}
+                        onChange={(e) => {
+                          const newTests = [...healthTests];
+                          newTests[i].date = e.target.value;
+                          setHealthTests(newTests);
+                        }}
+                      />
+                      <div className='flex justify-end'>
+                        <Button
+                          type='button'
+                          variant='destructive'
+                          size='icon'
+                          onClick={() =>
+                            setHealthTests((prev) =>
+                              prev.filter((_, idx) => idx !== i)
+                            )
+                          }
+                        >
+                          <Trash2 className='h-4 w-4' />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
+          </CollapsibleFormSection>
 
-        {/* Registration Tracking */}
-        <div className='space-y-4 border-t pt-4'>
-          <MultiRegistrationManager
-            registrations={registrations}
-            onChange={setRegistrations}
-          />
-        </div>
+          {/* Registration Tracking - Collapsed by default on mobile */}
+          <CollapsibleFormSection
+            title="Registration & Pedigree"
+            defaultOpen={false}
+            collapsedIndicator={registrations.length > 0 ? `${registrations.length} registration${registrations.length !== 1 ? 's' : ''}` : undefined}
+          >
+            <MultiRegistrationManager
+              registrations={registrations}
+              onChange={setRegistrations}
+            />
+          </CollapsibleFormSection>
+        </FormSectionGroup>
 
-        <div className='flex justify-end gap-3'>
+        {/* Desktop-only inline buttons - mobile uses sticky footer */}
+        <div className='hidden sm:flex justify-end gap-3 pt-4'>
           <Button
             type='button'
             variant='outline'
@@ -1826,30 +1876,29 @@ export function DogFormDialog({ open, setOpen, dog }: DogFormDialogProps) {
     <ResponsiveDialog open={open} onOpenChange={setOpen}>
       <ResponsiveDialogContent className='md:max-w-5xl'>
         <ResponsiveDialogHeader onClose={() => setOpen(false)}>
-          <div className='flex items-center justify-between w-full'>
-            <ResponsiveDialogTitle>{dog ? `Edit ${dog.name}` : 'Add New Dog'}</ResponsiveDialogTitle>
-            <div className='hidden sm:flex items-center gap-2'>
-              <Button
-                type='button'
-                variant='outline'
-                size='sm'
-                onClick={() => setOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type='button'
-                size='sm'
-                onClick={() => formRef.current?.submit()}
-              >
-                {dog ? 'Save' : 'Add Dog'}
-              </Button>
-            </div>
-          </div>
+          <ResponsiveDialogTitle>{dog ? `Edit ${dog.name}` : 'Add New Dog'}</ResponsiveDialogTitle>
         </ResponsiveDialogHeader>
         <ResponsiveDialogBody>
           <DogFormContent ref={formRef} key={dog?.id || 'new'} dog={dog} setOpen={setOpen} />
         </ResponsiveDialogBody>
+        {/* Mobile-only sticky footer with action buttons */}
+        <ResponsiveDialogFooter className='sm:hidden'>
+          <Button
+            type='button'
+            variant='outline'
+            className='flex-1 h-12'
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type='button'
+            className='flex-1 h-12'
+            onClick={() => formRef.current?.submit()}
+          >
+            {dog ? 'Save' : 'Add Dog'}
+          </Button>
+        </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   );

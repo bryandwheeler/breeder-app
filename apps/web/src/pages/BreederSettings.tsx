@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { ScrollableTabsList, ScrollableTabsTrigger } from '@/components/ui/scrollable-tabs';
 import { ExternalLink, Save, Eye } from 'lucide-react';
 import { BreederProfile } from '@breeder/types';
 import { CareScheduleEditor } from '@/components/CareScheduleEditor';
@@ -154,39 +155,42 @@ export function BreederSettings() {
 
   return (
     <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
+      <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
         <div>
-          <h1 className='text-3xl font-bold'>Breeder Website Settings</h1>
-          <p className='text-muted-foreground'>
+          <h1 className='text-2xl sm:text-3xl font-bold'>Breeder Website Settings</h1>
+          <p className='text-sm sm:text-base text-muted-foreground'>
             Manage your public breeder profile and website
           </p>
         </div>
-        <div className='flex gap-3'>
+        <div className='flex gap-2 sm:gap-3'>
           {profile && (
-            <a href={publicUrl} target='_blank' rel='noopener noreferrer'>
-              <Button variant='outline'>
+            <a href={publicUrl} target='_blank' rel='noopener noreferrer' className='flex-1 sm:flex-none'>
+              <Button variant='outline' className='w-full sm:w-auto'>
                 <Eye className='h-4 w-4 mr-2' />
-                View Public Site
+                <span className='hidden sm:inline'>View Public Site</span>
+                <span className='sm:hidden'>View Site</span>
               </Button>
             </a>
           )}
-          <Button onClick={handleSave} disabled={loading}>
+          <Button onClick={handleSave} disabled={loading} className='flex-1 sm:flex-none'>
             <Save className='h-4 w-4 mr-2' />
-            Save Changes
+            Save
           </Button>
         </div>
       </div>
 
       {publicUrl && (
         <Card className='p-4 bg-primary/5'>
-          <div className='flex items-center gap-2'>
-            <ExternalLink className='h-4 w-4 text-primary' />
-            <span className='text-sm font-medium'>Your Public URL:</span>
+          <div className='flex flex-col sm:flex-row sm:items-center gap-2'>
+            <div className='flex items-center gap-2'>
+              <ExternalLink className='h-4 w-4 text-primary flex-shrink-0' />
+              <span className='text-sm font-medium'>Your Public URL:</span>
+            </div>
             <a
               href={publicUrl}
               target='_blank'
               rel='noopener noreferrer'
-              className='text-sm text-primary hover:underline'
+              className='text-sm text-primary hover:underline break-all'
             >
               {publicUrl}
             </a>
@@ -195,21 +199,21 @@ export function BreederSettings() {
       )}
 
       <Tabs defaultValue='basic' className='space-y-6'>
-        <TabsList>
-          <TabsTrigger value='basic'>Basic Info</TabsTrigger>
-          <TabsTrigger value='contact'>Contact & Social</TabsTrigger>
-          <TabsTrigger value='about'>About & Philosophy</TabsTrigger>
-          <TabsTrigger value='health'>Health Testing</TabsTrigger>
-          <TabsTrigger value='credentials'>Credentials</TabsTrigger>
-          <TabsTrigger value='care'>Care Schedule</TabsTrigger>
-          <TabsTrigger value='email'>Email Configuration</TabsTrigger>
-          <TabsTrigger value='emailIntegration'>Email Integration</TabsTrigger>
-          <TabsTrigger value='emailTemplates'>Email Templates</TabsTrigger>
-          <TabsTrigger value='workflows'>Workflows</TabsTrigger>
-          <TabsTrigger value='scheduledEmails'>Scheduled Emails</TabsTrigger>
-          <TabsTrigger value='migration'>Data Migration</TabsTrigger>
-          <TabsTrigger value='settings'>Settings</TabsTrigger>
-        </TabsList>
+        <ScrollableTabsList>
+          <ScrollableTabsTrigger value='basic'>Basic Info</ScrollableTabsTrigger>
+          <ScrollableTabsTrigger value='contact'>Contact</ScrollableTabsTrigger>
+          <ScrollableTabsTrigger value='about'>About</ScrollableTabsTrigger>
+          <ScrollableTabsTrigger value='health'>Health</ScrollableTabsTrigger>
+          <ScrollableTabsTrigger value='credentials'>Credentials</ScrollableTabsTrigger>
+          <ScrollableTabsTrigger value='care'>Care</ScrollableTabsTrigger>
+          <ScrollableTabsTrigger value='email'>Email Config</ScrollableTabsTrigger>
+          <ScrollableTabsTrigger value='emailIntegration'>Integration</ScrollableTabsTrigger>
+          <ScrollableTabsTrigger value='emailTemplates'>Templates</ScrollableTabsTrigger>
+          <ScrollableTabsTrigger value='workflows'>Workflows</ScrollableTabsTrigger>
+          <ScrollableTabsTrigger value='scheduledEmails'>Scheduled</ScrollableTabsTrigger>
+          <ScrollableTabsTrigger value='migration'>Migration</ScrollableTabsTrigger>
+          <ScrollableTabsTrigger value='settings'>Settings</ScrollableTabsTrigger>
+        </ScrollableTabsList>
 
         {/* Basic Info */}
         <TabsContent value='basic'>
@@ -299,7 +303,7 @@ export function BreederSettings() {
               />
             </div>
 
-            <div className='grid grid-cols-2 gap-4'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
               <div>
                 <Label htmlFor='city'>City</Label>
                 <Input
@@ -966,7 +970,7 @@ export function BreederSettings() {
               {migrationStats && (
                 <div className='mt-6 p-4 bg-green-50 border border-green-200 rounded-md'>
                   <h4 className='font-semibold text-green-800 mb-2'>Migration Results</h4>
-                  <div className='grid grid-cols-2 gap-4 text-sm'>
+                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm'>
                     <div>
                       <div className='font-medium'>Guardian Homes</div>
                       <div className='text-muted-foreground'>
@@ -1029,7 +1033,7 @@ export function BreederSettings() {
               {waitlistMigrationStats && (
                 <div className='mt-6 p-4 bg-green-50 border border-green-200 rounded-md'>
                   <h4 className='font-semibold text-green-800 mb-2'>Waitlist Migration Results</h4>
-                  <div className='grid grid-cols-3 gap-4 text-sm'>
+                  <div className='grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm'>
                     <div>
                       <div className='font-medium'>Entries Processed</div>
                       <div className='text-muted-foreground'>
@@ -1187,8 +1191,8 @@ export function BreederSettings() {
         {/* REMOVED - Now in /website-design route */}
       </Tabs>
 
-      <div className='flex justify-end'>
-        <Button onClick={handleSave} disabled={loading} size='lg'>
+      <div className='flex justify-center sm:justify-end'>
+        <Button onClick={handleSave} disabled={loading} size='lg' className='w-full sm:w-auto'>
           <Save className='h-4 w-4 mr-2' />
           Save All Changes
         </Button>
