@@ -282,5 +282,17 @@ service cloud.firestore {
       // Prevent client-side updates or deletions of audit logs
       allow update, delete: if false;
     }
+
+    // Default task templates - admin-managed templates for litter care tasks
+    // Structure: defaultTaskTemplates/{type}/tasks/{taskId}
+    match /defaultTaskTemplates/{type} {
+      // Allow admins full access to the type documents (weekly/daily)
+      allow read, write: if isAdmin();
+
+      // Subcollection for the actual task documents
+      match /tasks/{taskId} {
+        allow read, write: if isAdmin();
+      }
+    }
   }
 }
