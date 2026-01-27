@@ -43,7 +43,7 @@ export interface LitterTask {
   notes?: string;
   createdAt: string;
   taskType?: TaskType; // 'weekly' for milestones, 'daily' for routines
-  timeOfDay?: 'morning' | 'evening'; // For daily tasks only
+  timeOfDay?: 'morning' | 'midday' | 'evening'; // For daily tasks only
 }
 
 export interface TaskStats {

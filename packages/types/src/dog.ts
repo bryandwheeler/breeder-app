@@ -524,6 +524,8 @@ export interface Litter {
   expenses?: Expense[];
   milestones?: Milestone[];
   careTasks?: CareTask[];
+  dailyTasks?: DailyRoutineTask[]; // Daily routine tasks for this litter
+  dailyTaskCompletions?: DailyTaskCompletion[]; // Tracks which daily tasks have been completed on which dates
 
   // Litter-level registration
   litterRegistration?: LitterRegistration;
@@ -842,15 +844,25 @@ export interface CareTask {
   notes?: string;
 }
 
-// Daily Routine Task
+// Daily Routine Task (template)
 export interface DailyRoutineTask {
   id: string;
   name: string;
   description?: string;
-  timeOfDay: 'morning' | 'evening' | 'both';
+  timeOfDay: 'morning' | 'midday' | 'evening' | 'both';
   weekStart: number; // Week to start this routine
   weekEnd?: number; // Week to end this routine (optional, continues indefinitely if not set)
   order: number; // Order within the time of day
+}
+
+// Daily Task Completion (tracks completion of a daily task on a specific date)
+export interface DailyTaskCompletion {
+  taskId: string; // Reference to the DailyRoutineTask id
+  date: string; // ISO date string (YYYY-MM-DD)
+  timeOfDay: 'morning' | 'midday' | 'evening';
+  completed: boolean;
+  completedAt?: string; // ISO datetime when completed
+  notes?: string;
 }
 
 export const DEFAULT_CARE_TEMPLATES: Omit<

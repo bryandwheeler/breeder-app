@@ -30,6 +30,7 @@ import {
   Calendar,
   Flame,
   ArrowRight,
+  Sunrise,
   Sun,
   Moon,
 } from 'lucide-react';
@@ -202,7 +203,7 @@ export function Dashboard() {
 
   const {
     overdueDailyTasks,
-    todaysDailyTasks,
+    todaysDailyTasksByTime,
     weeklyTasksByDate,
     overdueDailyCount,
     todayDailyCount,
@@ -228,6 +229,20 @@ export function Dashboard() {
       } else if (!isAfter(due, endToday)) {
         todayDailyList.push(task);
       }
+    });
+
+    // Group today's tasks by time of day
+    const timeOrder = { morning: 0, midday: 1, evening: 2 };
+    const todaysByTime: { timeOfDay: 'morning' | 'midday' | 'evening'; tasks: typeof litterTasks }[] = [
+      { timeOfDay: 'morning', tasks: [] },
+      { timeOfDay: 'midday', tasks: [] },
+      { timeOfDay: 'evening', tasks: [] },
+    ];
+
+    todayDailyList.forEach((task) => {
+      const time = task.timeOfDay || 'morning';
+      const index = timeOrder[time] ?? 0;
+      todaysByTime[index].tasks.push(task);
     });
 
     // Weekly tasks: due this week (including today and upcoming)
@@ -267,7 +282,7 @@ export function Dashboard() {
 
     return {
       overdueDailyTasks: overdueDailyList,
-      todaysDailyTasks: todayDailyList,
+      todaysDailyTasksByTime: todaysByTime,
       weeklyTasksByDate,
       overdueDailyCount,
       todayDailyCount,
@@ -283,12 +298,17 @@ export function Dashboard() {
     [showCompletedTasks, overdueDailyTasks]
   );
 
-  const visibleTodaysDailyTasks = useMemo(
+  const visibleTodaysDailyTasksByTime = useMemo(
     () =>
-      showCompletedTasks
-        ? todaysDailyTasks
-        : todaysDailyTasks.filter((t) => t.status === 'pending'),
-    [showCompletedTasks, todaysDailyTasks]
+      todaysDailyTasksByTime
+        .map((group) => ({
+          ...group,
+          tasks: showCompletedTasks
+            ? group.tasks
+            : group.tasks.filter((t) => t.status === 'pending'),
+        }))
+        .filter((group) => group.tasks.length > 0),
+    [showCompletedTasks, todaysDailyTasksByTime]
   );
 
   const visibleWeeklyGroups = useMemo(
@@ -625,7 +645,7 @@ export function Dashboard() {
           <CardContent className='p-3 flex-1 overflow-hidden'>
             <div className='max-h-48 overflow-y-auto space-y-3'>
               {visibleOverdueDailyTasks.length === 0 &&
-              visibleTodaysDailyTasks.length === 0 ? (
+              visibleTodaysDailyTasksByTime.length === 0 ? (
                 <p className='text-sm text-muted-foreground text-center py-4'>
                   No daily tasks due today.
                 </p>
@@ -655,18 +675,6 @@ export function Dashboard() {
                                   );
                                 }}
                               />
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  {task.timeOfDay === 'morning' ? (
-                                    <Sun className='h-3.5 w-3.5 text-amber-500' />
-                                  ) : (
-                                    <Moon className='h-3.5 w-3.5 text-indigo-500' />
-                                  )}
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  {task.timeOfDay === 'morning' ? 'Morning' : 'Evening'}
-                                </TooltipContent>
-                              </Tooltip>
                               <button
                                 type='button'
                                 className={cn(
@@ -689,13 +697,24 @@ export function Dashboard() {
                     </div>
                   )}
 
-                  {visibleTodaysDailyTasks.length > 0 && (
-                    <div className='space-y-1'>
-                      <p className='text-xs font-semibold text-muted-foreground uppercase tracking-wide'>
-                        Today
+                  {visibleTodaysDailyTasksByTime.map((group) => (
+                    <div key={group.timeOfDay} className='space-y-1'>
+                      <p className='text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5'>
+                        {group.timeOfDay === 'morning' && (
+                          <Sunrise className='h-3.5 w-3.5 text-amber-500' />
+                        )}
+                        {group.timeOfDay === 'midday' && (
+                          <Sun className='h-3.5 w-3.5 text-orange-500' />
+                        )}
+                        {group.timeOfDay === 'evening' && (
+                          <Moon className='h-3.5 w-3.5 text-indigo-500' />
+                        )}
+                        {group.timeOfDay === 'morning' && 'Morning'}
+                        {group.timeOfDay === 'midday' && 'Midday'}
+                        {group.timeOfDay === 'evening' && 'Evening'}
                       </p>
                       <div className='space-y-1'>
-                        {visibleTodaysDailyTasks.map((task) => {
+                        {group.tasks.map((task) => {
                           const litter = littersById.get(task.litterId);
                           const isCompleted = task.status === 'completed';
                           return (
@@ -713,18 +732,6 @@ export function Dashboard() {
                                   );
                                 }}
                               />
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  {task.timeOfDay === 'morning' ? (
-                                    <Sun className='h-3.5 w-3.5 text-amber-500' />
-                                  ) : (
-                                    <Moon className='h-3.5 w-3.5 text-indigo-500' />
-                                  )}
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  {task.timeOfDay === 'morning' ? 'Morning' : 'Evening'}
-                                </TooltipContent>
-                              </Tooltip>
                               <button
                                 type='button'
                                 className={cn(
@@ -745,7 +752,7 @@ export function Dashboard() {
                         })}
                       </div>
                     </div>
-                  )}
+                  ))}
                 </>
               )}
             </div>

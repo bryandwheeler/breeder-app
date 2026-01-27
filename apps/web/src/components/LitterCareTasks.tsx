@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle2, Circle, ListTodo, Plus, Sun, Moon, Calendar, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Circle, ListTodo, Plus, Sunrise, Sun, Moon, Calendar, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import { format, startOfDay, endOfDay, isBefore, isAfter, addDays } from 'date-fns';
 import { Litter, LitterTask } from '@breeder/types';
 import { cn } from '@/lib/utils';
@@ -90,13 +90,15 @@ export function LitterCareTasks({ litter, onUpdate }: LitterCareTasksProps) {
 
   // Group today's daily tasks by time of day
   const morningTasks = todaysDailyTasks.filter(t => t.timeOfDay === 'morning');
+  const middayTasks = todaysDailyTasks.filter(t => t.timeOfDay === 'midday');
   const eveningTasks = todaysDailyTasks.filter(t => t.timeOfDay === 'evening');
 
   // Count completed
   const morningComplete = morningTasks.filter(t => t.status === 'completed').length;
+  const middayComplete = middayTasks.filter(t => t.status === 'completed').length;
   const eveningComplete = eveningTasks.filter(t => t.status === 'completed').length;
-  const totalDailyTasks = morningTasks.length + eveningTasks.length;
-  const totalDailyComplete = morningComplete + eveningComplete;
+  const totalDailyTasks = morningTasks.length + middayTasks.length + eveningTasks.length;
+  const totalDailyComplete = morningComplete + middayComplete + eveningComplete;
 
   const weeklyCompleted = weeklyTasks.filter(t => t.status === 'completed').length;
   const weeklyProgress = weeklyTasks.length > 0
@@ -504,7 +506,7 @@ export function LitterCareTasks({ litter, onUpdate }: LitterCareTasksProps) {
                 {morningTasks.length > 0 && (
                   <div className="border rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <Sun className="h-5 w-5 text-amber-500" />
+                      <Sunrise className="h-5 w-5 text-amber-500" />
                       <h3 className="font-semibold">Morning</h3>
                       <Badge variant={morningComplete === morningTasks.length ? 'default' : 'outline'} className="ml-auto">
                         {morningComplete}/{morningTasks.length}
@@ -529,6 +531,56 @@ export function LitterCareTasks({ litter, onUpdate }: LitterCareTasksProps) {
                               <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
                             ) : (
                               <Circle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className={cn(
+                                "font-medium text-sm",
+                                isCompleted && "line-through text-muted-foreground"
+                              )}>
+                                {task.title}
+                              </p>
+                              {task.description && (
+                                <p className="text-xs text-muted-foreground">
+                                  {task.description}
+                                </p>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Midday Tasks */}
+                {middayTasks.length > 0 && (
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sun className="h-5 w-5 text-orange-500" />
+                      <h3 className="font-semibold">Midday</h3>
+                      <Badge variant={middayComplete === middayTasks.length ? 'default' : 'outline'} className="ml-auto">
+                        {middayComplete}/{middayTasks.length}
+                      </Badge>
+                    </div>
+                    <div className="space-y-2">
+                      {middayTasks.map(task => {
+                        const isCompleted = task.status === 'completed';
+                        const isSaving = saving === task.id;
+                        return (
+                          <button
+                            key={task.id}
+                            onClick={() => handleToggleTask(task.id, task.status)}
+                            disabled={isSaving}
+                            className={cn(
+                              "w-full flex items-start gap-3 p-2 rounded-lg text-left transition-all",
+                              "hover:bg-muted/50 disabled:opacity-50",
+                              isCompleted && "bg-green-500/10"
+                            )}
+                          >
+                            {isCompleted ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                            ) : (
+                              <Circle className="h-5 w-5 text-orange-400 mt-0.5 flex-shrink-0" />
                             )}
                             <div className="flex-1 min-w-0">
                               <p className={cn(

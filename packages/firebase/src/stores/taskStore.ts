@@ -414,10 +414,13 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
           if (!isActive || !notEnded) return;
 
-          // Create tasks for morning and/or evening based on timeOfDay
-          const timesOfDay: Array<'morning' | 'evening'> = [];
+          // Create tasks for morning, midday, and/or evening based on timeOfDay
+          const timesOfDay: Array<'morning' | 'midday' | 'evening'> = [];
           if (routine.timeOfDay === 'morning' || routine.timeOfDay === 'both') {
             timesOfDay.push('morning');
+          }
+          if (routine.timeOfDay === 'midday') {
+            timesOfDay.push('midday');
           }
           if (routine.timeOfDay === 'evening' || routine.timeOfDay === 'both') {
             timesOfDay.push('evening');
