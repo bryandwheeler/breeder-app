@@ -656,17 +656,17 @@ export function Dashboard() {
                       <p className='text-xs font-semibold text-destructive uppercase tracking-wide'>
                         Overdue
                       </p>
-                      <div className='space-y-1'>
+                      <div className='space-y-1.5'>
                         {visibleOverdueDailyTasks.map((task) => {
                           const litter = littersById.get(task.litterId);
                           const isCompleted = task.status === 'completed';
                           return (
                             <div
                               key={task.id}
-                              className='flex items-center gap-2 rounded border p-1.5 text-sm'
+                              className='flex items-start gap-2 rounded border p-2 text-sm'
                             >
                               <Checkbox
-                                className='h-4 w-4'
+                                className='h-5 w-5 flex-shrink-0 mt-0.5'
                                 checked={isCompleted}
                                 onCheckedChange={async (checked) => {
                                   await updateTaskStatus(
@@ -677,19 +677,21 @@ export function Dashboard() {
                               />
                               <button
                                 type='button'
-                                className={cn(
-                                  'flex-1 text-left text-sm truncate hover:underline',
-                                  isCompleted && 'line-through text-muted-foreground'
-                                )}
+                                className='flex-1 text-left min-w-0'
                                 onClick={() => navigate(`/litters/${task.litterId}`)}
                               >
-                                {task.title}
-                              </button>
-                              {litter && (
-                                <span className='text-xs text-muted-foreground truncate max-w-20'>
-                                  {litter.litterName || 'Litter'}
+                                <span className={cn(
+                                  'block text-sm hover:underline',
+                                  isCompleted && 'line-through text-muted-foreground'
+                                )}>
+                                  {task.title}
                                 </span>
-                              )}
+                                {litter && (
+                                  <span className='text-xs text-muted-foreground'>
+                                    {litter.litterName || 'Litter'}
+                                  </span>
+                                )}
+                              </button>
                             </div>
                           );
                         })}
@@ -713,17 +715,17 @@ export function Dashboard() {
                         {group.timeOfDay === 'midday' && 'Midday'}
                         {group.timeOfDay === 'evening' && 'Evening'}
                       </p>
-                      <div className='space-y-1'>
+                      <div className='space-y-1.5'>
                         {group.tasks.map((task) => {
                           const litter = littersById.get(task.litterId);
                           const isCompleted = task.status === 'completed';
                           return (
                             <div
                               key={task.id}
-                              className='flex items-center gap-2 rounded border p-1.5 text-sm'
+                              className='flex items-start gap-2 rounded border p-2 text-sm'
                             >
                               <Checkbox
-                                className='h-4 w-4'
+                                className='h-5 w-5 flex-shrink-0 mt-0.5'
                                 checked={isCompleted}
                                 onCheckedChange={async (checked) => {
                                   await updateTaskStatus(
@@ -734,19 +736,21 @@ export function Dashboard() {
                               />
                               <button
                                 type='button'
-                                className={cn(
-                                  'flex-1 text-left text-sm truncate hover:underline',
-                                  isCompleted && 'line-through text-muted-foreground'
-                                )}
+                                className='flex-1 text-left min-w-0'
                                 onClick={() => navigate(`/litters/${task.litterId}`)}
                               >
-                                {task.title}
-                              </button>
-                              {litter && (
-                                <span className='text-xs text-muted-foreground truncate max-w-20'>
-                                  {litter.litterName || 'Litter'}
+                                <span className={cn(
+                                  'block text-sm hover:underline',
+                                  isCompleted && 'line-through text-muted-foreground'
+                                )}>
+                                  {task.title}
                                 </span>
-                              )}
+                                {litter && (
+                                  <span className='text-xs text-muted-foreground'>
+                                    {litter.litterName || 'Litter'}
+                                  </span>
+                                )}
+                              </button>
                             </div>
                           );
                         })}
@@ -787,17 +791,17 @@ export function Dashboard() {
                     )}>
                       {group.label}
                     </p>
-                    <div className='space-y-1'>
+                    <div className='space-y-1.5'>
                       {group.tasks.map((task) => {
                         const litter = littersById.get(task.litterId);
                         const isCompleted = task.status === 'completed';
                         return (
                           <div
                             key={task.id}
-                            className='flex items-center gap-2 rounded border p-1.5 text-sm'
+                            className='flex items-start gap-2 rounded border p-2 text-sm'
                           >
                             <Checkbox
-                              className='h-4 w-4'
+                              className='h-5 w-5 flex-shrink-0 mt-0.5'
                               checked={isCompleted}
                               onCheckedChange={async (checked) => {
                                 await updateTaskStatus(
@@ -808,22 +812,24 @@ export function Dashboard() {
                             />
                             <button
                               type='button'
-                              className={cn(
-                                'flex-1 text-left text-sm truncate hover:underline',
-                                isCompleted && 'line-through text-muted-foreground'
-                              )}
+                              className='flex-1 text-left min-w-0'
                               onClick={() => navigate(`/litters/${task.litterId}`)}
                             >
-                              {task.title}
-                            </button>
-                            {litter && (
-                              <span className='text-xs text-muted-foreground truncate max-w-20'>
-                                {litter.litterName || 'Litter'}
+                              <span className={cn(
+                                'block text-sm hover:underline',
+                                isCompleted && 'line-through text-muted-foreground'
+                              )}>
+                                {task.title}
                               </span>
-                            )}
+                              {litter && (
+                                <span className='text-xs text-muted-foreground'>
+                                  {litter.litterName || 'Litter'}
+                                </span>
+                              )}
+                            </button>
                             <Badge
                               variant={group.isOverdue ? 'destructive' : 'outline'}
-                              className='text-xs px-1.5 py-0'
+                              className='text-xs px-1.5 py-0 flex-shrink-0'
                             >
                               {format(new Date(task.dueDate), 'MMM d')}
                             </Badge>
