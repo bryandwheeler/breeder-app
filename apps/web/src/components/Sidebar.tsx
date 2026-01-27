@@ -13,6 +13,7 @@ import {
   ListOrdered,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Pin,
   PinOff,
   LayoutDashboard,
@@ -21,6 +22,7 @@ import {
   Briefcase,
   TrendingUp,
   Calculator,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
@@ -121,6 +123,7 @@ export function Sidebar({
   const { currentUser } = useAuth();
   const { checkIsAdmin, impersonatedUserId } = useAdminStore();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminExpanded, setAdminExpanded] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -143,12 +146,8 @@ export function Sidebar({
   }, [currentUser, checkIsAdmin]);
 
   const isImpersonating = !!impersonatedUserId;
-  // Show both admin and breeder navigation for admins (admin first, then breeder)
   // When impersonating, only show breeder navigation
-  const navToRender =
-    isAdmin && !isImpersonating
-      ? [...adminNavigation, ...breederNavigation]
-      : breederNavigation;
+  // For admins, show breeder navigation always, with collapsible admin section
   const topClass = isImpersonating ? 'top-28' : 'top-16';
 
   return (
@@ -215,7 +214,87 @@ export function Sidebar({
 
         {/* Navigation */}
         <nav className='flex-1 overflow-y-auto py-6 px-3 space-y-8'>
-          {navToRender.map((group) => (
+          {/* Collapsible Admin Section for admin users */}
+          {isAdmin && !isImpersonating && (
+            <div>
+              {isOpen ? (
+                <button
+                  onClick={() => setAdminExpanded(!adminExpanded)}
+                  className='flex items-center justify-between w-full px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors'
+                >
+                  <span className='flex items-center gap-2'>
+                    <Shield className='h-3.5 w-3.5' />
+                    Admin
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      'h-4 w-4 transition-transform duration-200',
+                      adminExpanded ? 'rotate-180' : ''
+                    )}
+                  />
+                </button>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setAdminExpanded(!adminExpanded)}
+                      className='flex items-center justify-center w-full px-3 py-2 mb-2 rounded-md text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors'
+                    >
+                      <Shield className='h-5 w-5' />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Toggle Admin Menu</TooltipContent>
+                </Tooltip>
+              )}
+              {adminExpanded && (
+                <div className='space-y-1'>
+                  {adminNavigation[0].items.map((item) => {
+                    const isActive = location.pathname === item.path;
+                    const Icon = item.icon;
+
+                    return (
+                      <Tooltip key={item.path}>
+                        <TooltipTrigger asChild>
+                          <Link
+                            to={item.path}
+                            onClick={() => {
+                              if (window.innerWidth < 1024 && !isPinned) {
+                                setIsOpen(false);
+                              }
+                            }}
+                            className={cn(
+                              'flex items-center gap-3 px-3 py-2 rounded-md transition-colors',
+                              isActive
+                                ? 'bg-orange-600 text-white'
+                                : 'text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30',
+                              !isOpen && 'justify-center'
+                            )}
+                            title={!isOpen ? item.name : undefined}
+                          >
+                            <Icon
+                              className={cn(
+                                'h-5 w-5 flex-shrink-0',
+                                !isOpen && 'mx-auto'
+                              )}
+                            />
+                            {isOpen && (
+                              <span className='text-sm font-medium'>
+                                {item.name}
+                              </span>
+                            )}
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent>{`Go to ${item.name}`}</TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Breeder Navigation */}
+          {breederNavigation.map((group) => (
             <div key={group.title}>
               {isOpen && (
                 <h3 className='px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider'>
