@@ -400,12 +400,20 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       });
 
       // Generate daily tasks - create for the next 10 weeks (70 days)
+      // But skip days that are in the past (don't create overdue daily tasks)
       const totalDays = 70; // ~10 weeks of daily tasks
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Start of today
+
       for (let day = 0; day < totalDays; day++) {
         const taskDate = new Date(birthDateObj);
         taskDate.setDate(taskDate.getDate() + day);
+        taskDate.setHours(0, 0, 0, 0); // Normalize to start of day
+
+        // Skip past dates - don't create overdue daily tasks
+        if (taskDate < today) continue;
+
         const currentWeek = Math.floor(day / 7);
-        const dateStr = taskDate.toISOString().split('T')[0];
 
         DEFAULT_DAILY_ROUTINES.forEach((routine) => {
           // Check if this routine applies to the current week
