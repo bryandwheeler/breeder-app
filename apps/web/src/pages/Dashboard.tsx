@@ -53,7 +53,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { useTaskStore } from '@breeder/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { ListChecks } from 'lucide-react';
 
 type PreviewType =
   | 'dogs'
@@ -202,88 +201,99 @@ export function Dashboard() {
   }, [litters]);
 
   const {
-    overdueTasks,
-    todaysTasks,
-    upcomingWeekTasksByDate,
-    overdueCount,
-    todayCount,
-    upcomingWeekCount,
+    overdueDailyTasks,
+    todaysDailyTasks,
+    weeklyTasksByDate,
+    overdueDailyCount,
+    todayDailyCount,
+    weeklyCount,
   } = useMemo(() => {
     const today = new Date();
     const startToday = startOfDay(today);
     const endToday = endOfDay(today);
     const weekEnd = endOfDay(addDays(startToday, 6));
 
-    const overdue: typeof litterTasks = [];
-    const todayList: typeof litterTasks = [];
-    const upcomingWeek: typeof litterTasks = [];
+    // Separate daily and weekly tasks
+    const dailyTasks = litterTasks.filter((t) => t.taskType === 'daily');
+    const weeklyTasks = litterTasks.filter((t) => t.taskType === 'weekly' || !t.taskType);
 
-    litterTasks.forEach((task) => {
+    // Daily tasks: overdue and today
+    const overdueDailyList: typeof litterTasks = [];
+    const todayDailyList: typeof litterTasks = [];
+
+    dailyTasks.forEach((task) => {
       const due = new Date(task.dueDate);
-
       if (isBefore(due, startToday)) {
-        overdue.push(task);
+        overdueDailyList.push(task);
       } else if (!isAfter(due, endToday)) {
-        todayList.push(task);
-      } else if (!isAfter(due, weekEnd)) {
-        upcomingWeek.push(task);
+        todayDailyList.push(task);
       }
     });
 
+    // Weekly tasks: due this week (including today and upcoming)
+    const weeklyThisWeek: typeof litterTasks = [];
+    weeklyTasks.forEach((task) => {
+      const due = new Date(task.dueDate);
+      // Include overdue weekly tasks and tasks due within the week
+      if (!isAfter(due, weekEnd)) {
+        weeklyThisWeek.push(task);
+      }
+    });
+
+    // Group weekly tasks by due date
     const groupedByDate = new Map<
       string,
-      { label: string; tasks: typeof litterTasks }
+      { label: string; tasks: typeof litterTasks; isOverdue: boolean }
     >();
 
-    upcomingWeek.forEach((task) => {
+    weeklyThisWeek.forEach((task) => {
       const due = new Date(task.dueDate);
       const key = format(due, 'yyyy-MM-dd');
-      const label = format(due, 'EEE MMM d');
+      const isOverdue = isBefore(due, startToday);
+      const label = isOverdue ? `Overdue - ${format(due, 'MMM d')}` : format(due, 'EEE MMM d');
       if (!groupedByDate.has(key)) {
-        groupedByDate.set(key, { label, tasks: [] });
+        groupedByDate.set(key, { label, tasks: [], isOverdue });
       }
       groupedByDate.get(key)!.tasks.push(task);
     });
 
-    const upcomingWeekTasksByDate = Array.from(groupedByDate.entries())
+    const weeklyTasksByDate = Array.from(groupedByDate.entries())
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
       .map(([, value]) => value);
 
-    const overdueCount = overdue.filter((t) => t.status === 'pending').length;
-    const todayCount = todayList.filter((t) => t.status === 'pending').length;
-    const upcomingWeekCount = upcomingWeek.filter(
-      (t) => t.status === 'pending'
-    ).length;
+    const overdueDailyCount = overdueDailyList.filter((t) => t.status === 'pending').length;
+    const todayDailyCount = todayDailyList.filter((t) => t.status === 'pending').length;
+    const weeklyCount = weeklyThisWeek.filter((t) => t.status === 'pending').length;
 
     return {
-      overdueTasks: overdue,
-      todaysTasks: todayList,
-      upcomingWeekTasksByDate,
-      overdueCount,
-      todayCount,
-      upcomingWeekCount,
+      overdueDailyTasks: overdueDailyList,
+      todaysDailyTasks: todayDailyList,
+      weeklyTasksByDate,
+      overdueDailyCount,
+      todayDailyCount,
+      weeklyCount,
     };
   }, [litterTasks]);
 
-  const visibleOverdueTasks = useMemo(
+  const visibleOverdueDailyTasks = useMemo(
     () =>
       showCompletedTasks
-        ? overdueTasks
-        : overdueTasks.filter((t) => t.status === 'pending'),
-    [showCompletedTasks, overdueTasks]
+        ? overdueDailyTasks
+        : overdueDailyTasks.filter((t) => t.status === 'pending'),
+    [showCompletedTasks, overdueDailyTasks]
   );
 
-  const visibleTodaysTasks = useMemo(
+  const visibleTodaysDailyTasks = useMemo(
     () =>
       showCompletedTasks
-        ? todaysTasks
-        : todaysTasks.filter((t) => t.status === 'pending'),
-    [showCompletedTasks, todaysTasks]
+        ? todaysDailyTasks
+        : todaysDailyTasks.filter((t) => t.status === 'pending'),
+    [showCompletedTasks, todaysDailyTasks]
   );
 
-  const visibleUpcomingWeekGroups = useMemo(
+  const visibleWeeklyGroups = useMemo(
     () =>
-      upcomingWeekTasksByDate
+      weeklyTasksByDate
         .map((group) => {
           const tasks = showCompletedTasks
             ? group.tasks
@@ -291,7 +301,7 @@ export function Dashboard() {
           return { ...group, tasks };
         })
         .filter((group) => group.tasks.length > 0),
-    [showCompletedTasks, upcomingWeekTasksByDate]
+    [showCompletedTasks, weeklyTasksByDate]
   );
 
   const handleCardClick = (type: PreviewType, route?: string) => {
@@ -598,219 +608,189 @@ export function Dashboard() {
       </div>
 
       {/* Task Checklists */}
-      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-        <Card>
-          <CardHeader className='bg-gradient-to-r from-sky-600 to-sky-700 text-white'>
-            <CardTitle className='flex items-center justify-between gap-2'>
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
+        {/* Daily Tasks - Today's Checklist */}
+        <Card className='flex flex-col'>
+          <CardHeader className='bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3'>
+            <CardTitle className='flex items-center justify-between gap-2 text-base'>
               <span className='flex items-center gap-2'>
-                <ListChecks className='h-5 w-5' />
-                Today&apos;s Checklist
+                <Sun className='h-4 w-4' />
+                Daily Routines
               </span>
-              <span className='text-sm font-normal'>
-                {overdueCount} overdue · {todayCount} today
+              <span className='text-xs font-normal opacity-90'>
+                {overdueDailyCount > 0 && `${overdueDailyCount} overdue · `}{todayDailyCount} today
               </span>
             </CardTitle>
           </CardHeader>
-          <CardContent className='p-4 space-y-4'>
-            {visibleOverdueTasks.length === 0 &&
-            visibleTodaysTasks.length === 0 ? (
-              <p className='text-sm text-muted-foreground'>
-                No tasks due today.
-              </p>
-            ) : (
-              <div className='space-y-4'>
-                {visibleOverdueTasks.length > 0 && (
-                  <div className='space-y-2'>
-                    <p className='text-xs font-semibold text-destructive uppercase tracking-wide'>
-                      Overdue
-                    </p>
-                    <div className='space-y-2'>
-                      {visibleOverdueTasks.map((task) => {
-                        const litter = littersById.get(task.litterId);
-                        const isCompleted = task.status === 'completed';
-                        const isDaily = task.taskType === 'daily';
-                        return (
-                          <div
-                            key={task.id}
-                            className='flex items-start gap-3 rounded-md border p-2'
-                          >
-                            <Checkbox
-                              className='mt-1'
-                              checked={isCompleted}
-                              onCheckedChange={async (checked) => {
-                                await updateTaskStatus(
-                                  task.id,
-                                  checked === true ? 'completed' : 'pending'
-                                );
-                              }}
-                            />
-                            <div className='flex-1 min-w-0'>
-                              <div className='flex items-center justify-between gap-2'>
-                                <div className='flex items-center gap-2'>
-                                  {isDaily && (
-                                    <Tooltip>
-                                      <TooltipTrigger>
-                                        {task.timeOfDay === 'morning' ? (
-                                          <Sun className='h-4 w-4 text-amber-500' />
-                                        ) : (
-                                          <Moon className='h-4 w-4 text-indigo-500' />
-                                        )}
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        {task.timeOfDay === 'morning' ? 'Morning routine' : 'Evening routine'}
-                                      </TooltipContent>
-                                    </Tooltip>
+          <CardContent className='p-3 flex-1 overflow-hidden'>
+            <div className='max-h-48 overflow-y-auto space-y-3'>
+              {visibleOverdueDailyTasks.length === 0 &&
+              visibleTodaysDailyTasks.length === 0 ? (
+                <p className='text-sm text-muted-foreground text-center py-4'>
+                  No daily tasks due today.
+                </p>
+              ) : (
+                <>
+                  {visibleOverdueDailyTasks.length > 0 && (
+                    <div className='space-y-1'>
+                      <p className='text-xs font-semibold text-destructive uppercase tracking-wide'>
+                        Overdue
+                      </p>
+                      <div className='space-y-1'>
+                        {visibleOverdueDailyTasks.map((task) => {
+                          const litter = littersById.get(task.litterId);
+                          const isCompleted = task.status === 'completed';
+                          return (
+                            <div
+                              key={task.id}
+                              className='flex items-center gap-2 rounded border p-1.5 text-sm'
+                            >
+                              <Checkbox
+                                className='h-4 w-4'
+                                checked={isCompleted}
+                                onCheckedChange={async (checked) => {
+                                  await updateTaskStatus(
+                                    task.id,
+                                    checked === true ? 'completed' : 'pending'
+                                  );
+                                }}
+                              />
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  {task.timeOfDay === 'morning' ? (
+                                    <Sun className='h-3.5 w-3.5 text-amber-500' />
+                                  ) : (
+                                    <Moon className='h-3.5 w-3.5 text-indigo-500' />
                                   )}
-                                  <button
-                                    type='button'
-                                    className={cn(
-                                      'text-sm font-medium text-left hover:underline',
-                                      isCompleted &&
-                                        'line-through text-muted-foreground'
-                                    )}
-                                    onClick={() =>
-                                      navigate(`/litters/${task.litterId}`)
-                                    }
-                                  >
-                                    {task.title}
-                                  </button>
-                                </div>
-                                <Badge
-                                  variant='destructive'
-                                  className='whitespace-nowrap'
-                                >
-                                  {format(new Date(task.dueDate), 'MMM d')}
-                                </Badge>
-                              </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {task.timeOfDay === 'morning' ? 'Morning' : 'Evening'}
+                                </TooltipContent>
+                              </Tooltip>
+                              <button
+                                type='button'
+                                className={cn(
+                                  'flex-1 text-left text-sm truncate hover:underline',
+                                  isCompleted && 'line-through text-muted-foreground'
+                                )}
+                                onClick={() => navigate(`/litters/${task.litterId}`)}
+                              >
+                                {task.title}
+                              </button>
                               {litter && (
-                                <p className='text-xs text-muted-foreground truncate'>
-                                  Litter: {litter.litterName || 'Untitled'}
-                                </p>
+                                <span className='text-xs text-muted-foreground truncate max-w-20'>
+                                  {litter.litterName || 'Litter'}
+                                </span>
                               )}
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {todaysTasks.length > 0 && (
-                  <div className='space-y-2'>
-                    <p className='text-xs font-semibold text-muted-foreground uppercase tracking-wide'>
-                      Due Today
-                    </p>
-                    <div className='space-y-2'>
-                      {visibleTodaysTasks.map((task) => {
-                        const litter = littersById.get(task.litterId);
-                        const isCompleted = task.status === 'completed';
-                        const isDaily = task.taskType === 'daily';
-                        return (
-                          <div
-                            key={task.id}
-                            className='flex items-start gap-3 rounded-md border p-2'
-                          >
-                            <Checkbox
-                              className='mt-1'
-                              checked={isCompleted}
-                              onCheckedChange={async (checked) => {
-                                await updateTaskStatus(
-                                  task.id,
-                                  checked === true ? 'completed' : 'pending'
-                                );
-                              }}
-                            />
-                            <div className='flex-1 min-w-0'>
-                              <div className='flex items-center justify-between gap-2'>
-                                <div className='flex items-center gap-2'>
-                                  {isDaily && (
-                                    <Tooltip>
-                                      <TooltipTrigger>
-                                        {task.timeOfDay === 'morning' ? (
-                                          <Sun className='h-4 w-4 text-amber-500' />
-                                        ) : (
-                                          <Moon className='h-4 w-4 text-indigo-500' />
-                                        )}
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        {task.timeOfDay === 'morning' ? 'Morning routine' : 'Evening routine'}
-                                      </TooltipContent>
-                                    </Tooltip>
+                  {visibleTodaysDailyTasks.length > 0 && (
+                    <div className='space-y-1'>
+                      <p className='text-xs font-semibold text-muted-foreground uppercase tracking-wide'>
+                        Today
+                      </p>
+                      <div className='space-y-1'>
+                        {visibleTodaysDailyTasks.map((task) => {
+                          const litter = littersById.get(task.litterId);
+                          const isCompleted = task.status === 'completed';
+                          return (
+                            <div
+                              key={task.id}
+                              className='flex items-center gap-2 rounded border p-1.5 text-sm'
+                            >
+                              <Checkbox
+                                className='h-4 w-4'
+                                checked={isCompleted}
+                                onCheckedChange={async (checked) => {
+                                  await updateTaskStatus(
+                                    task.id,
+                                    checked === true ? 'completed' : 'pending'
+                                  );
+                                }}
+                              />
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  {task.timeOfDay === 'morning' ? (
+                                    <Sun className='h-3.5 w-3.5 text-amber-500' />
+                                  ) : (
+                                    <Moon className='h-3.5 w-3.5 text-indigo-500' />
                                   )}
-                                  <button
-                                    type='button'
-                                    className={cn(
-                                      'text-sm font-medium text-left hover:underline',
-                                      isCompleted &&
-                                        'line-through text-muted-foreground'
-                                    )}
-                                    onClick={() =>
-                                      navigate(`/litters/${task.litterId}`)
-                                    }
-                                  >
-                                    {task.title}
-                                  </button>
-                                </div>
-                                <Badge
-                                  variant='secondary'
-                                  className='whitespace-nowrap'
-                                >
-                                  Today
-                                </Badge>
-                              </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {task.timeOfDay === 'morning' ? 'Morning' : 'Evening'}
+                                </TooltipContent>
+                              </Tooltip>
+                              <button
+                                type='button'
+                                className={cn(
+                                  'flex-1 text-left text-sm truncate hover:underline',
+                                  isCompleted && 'line-through text-muted-foreground'
+                                )}
+                                onClick={() => navigate(`/litters/${task.litterId}`)}
+                              >
+                                {task.title}
+                              </button>
                               {litter && (
-                                <p className='text-xs text-muted-foreground truncate'>
-                                  Litter: {litter.litterName || 'Untitled'}
-                                </p>
+                                <span className='text-xs text-muted-foreground truncate max-w-20'>
+                                  {litter.litterName || 'Litter'}
+                                </span>
                               )}
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </>
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className='bg-gradient-to-r from-indigo-600 to-indigo-700 text-white'>
-            <CardTitle className='flex items-center justify-between gap-2'>
+        {/* Weekly Milestones */}
+        <Card className='flex flex-col'>
+          <CardHeader className='bg-gradient-to-r from-indigo-600 to-indigo-700 text-white py-3'>
+            <CardTitle className='flex items-center justify-between gap-2 text-base'>
               <span className='flex items-center gap-2'>
-                <Calendar className='h-5 w-5' />
-                This Week
+                <Calendar className='h-4 w-4' />
+                Weekly Milestones
               </span>
-              <span className='text-sm font-normal'>
-                {upcomingWeekCount} this week
+              <span className='text-xs font-normal opacity-90'>
+                {weeklyCount} this week
               </span>
             </CardTitle>
           </CardHeader>
-          <CardContent className='p-4 space-y-4'>
-            {visibleUpcomingWeekGroups.length === 0 ? (
-              <p className='text-sm text-muted-foreground'>
-                No upcoming tasks in the next 7 days.
-              </p>
-            ) : (
-              <div className='space-y-4'>
-                {visibleUpcomingWeekGroups.map((group) => (
-                  <div key={group.label} className='space-y-2'>
-                    <p className='text-xs font-semibold text-muted-foreground uppercase tracking-wide'>
+          <CardContent className='p-3 flex-1 overflow-hidden'>
+            <div className='max-h-48 overflow-y-auto space-y-3'>
+              {visibleWeeklyGroups.length === 0 ? (
+                <p className='text-sm text-muted-foreground text-center py-4'>
+                  No weekly milestones this week.
+                </p>
+              ) : (
+                visibleWeeklyGroups.map((group) => (
+                  <div key={group.label} className='space-y-1'>
+                    <p className={cn(
+                      'text-xs font-semibold uppercase tracking-wide',
+                      group.isOverdue ? 'text-destructive' : 'text-muted-foreground'
+                    )}>
                       {group.label}
                     </p>
-                    <div className='space-y-2'>
+                    <div className='space-y-1'>
                       {group.tasks.map((task) => {
                         const litter = littersById.get(task.litterId);
                         const isCompleted = task.status === 'completed';
-                        const isDaily = task.taskType === 'daily';
                         return (
                           <div
                             key={task.id}
-                            className='flex items-start gap-3 rounded-md border p-2'
+                            className='flex items-center gap-2 rounded border p-1.5 text-sm'
                           >
                             <Checkbox
-                              className='mt-1'
+                              className='h-4 w-4'
                               checked={isCompleted}
                               onCheckedChange={async (checked) => {
                                 await updateTaskStatus(
@@ -819,58 +799,35 @@ export function Dashboard() {
                                 );
                               }}
                             />
-                            <div className='flex-1 min-w-0'>
-                              <div className='flex items-center justify-between gap-2'>
-                                <div className='flex items-center gap-2'>
-                                  {isDaily && (
-                                    <Tooltip>
-                                      <TooltipTrigger>
-                                        {task.timeOfDay === 'morning' ? (
-                                          <Sun className='h-4 w-4 text-amber-500' />
-                                        ) : (
-                                          <Moon className='h-4 w-4 text-indigo-500' />
-                                        )}
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        {task.timeOfDay === 'morning' ? 'Morning routine' : 'Evening routine'}
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  )}
-                                  <button
-                                    type='button'
-                                    className={cn(
-                                      'text-sm font-medium text-left hover:underline',
-                                      isCompleted &&
-                                        'line-through text-muted-foreground'
-                                    )}
-                                    onClick={() =>
-                                      navigate(`/litters/${task.litterId}`)
-                                    }
-                                  >
-                                    {task.title}
-                                  </button>
-                                </div>
-                                <Badge
-                                  variant='outline'
-                                  className='whitespace-nowrap'
-                                >
-                                  {format(new Date(task.dueDate), 'MMM d')}
-                                </Badge>
-                              </div>
-                              {litter && (
-                                <p className='text-xs text-muted-foreground truncate'>
-                                  Litter: {litter.litterName || 'Untitled'}
-                                </p>
+                            <button
+                              type='button'
+                              className={cn(
+                                'flex-1 text-left text-sm truncate hover:underline',
+                                isCompleted && 'line-through text-muted-foreground'
                               )}
-                            </div>
+                              onClick={() => navigate(`/litters/${task.litterId}`)}
+                            >
+                              {task.title}
+                            </button>
+                            {litter && (
+                              <span className='text-xs text-muted-foreground truncate max-w-20'>
+                                {litter.litterName || 'Litter'}
+                              </span>
+                            )}
+                            <Badge
+                              variant={group.isOverdue ? 'destructive' : 'outline'}
+                              className='text-xs px-1.5 py-0'
+                            >
+                              {format(new Date(task.dueDate), 'MMM d')}
+                            </Badge>
                           </div>
                         );
                       })}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                ))
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
