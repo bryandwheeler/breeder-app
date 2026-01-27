@@ -30,6 +30,8 @@ import {
   Calendar,
   Flame,
   ArrowRight,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import {
   differenceInDays,
@@ -626,6 +628,7 @@ export function Dashboard() {
                       {visibleOverdueTasks.map((task) => {
                         const litter = littersById.get(task.litterId);
                         const isCompleted = task.status === 'completed';
+                        const isDaily = task.taskType === 'daily';
                         return (
                           <div
                             key={task.id}
@@ -643,19 +646,35 @@ export function Dashboard() {
                             />
                             <div className='flex-1 min-w-0'>
                               <div className='flex items-center justify-between gap-2'>
-                                <button
-                                  type='button'
-                                  className={cn(
-                                    'text-sm font-medium text-left hover:underline',
-                                    isCompleted &&
-                                      'line-through text-muted-foreground'
+                                <div className='flex items-center gap-2'>
+                                  {isDaily && (
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        {task.timeOfDay === 'morning' ? (
+                                          <Sun className='h-4 w-4 text-amber-500' />
+                                        ) : (
+                                          <Moon className='h-4 w-4 text-indigo-500' />
+                                        )}
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        {task.timeOfDay === 'morning' ? 'Morning routine' : 'Evening routine'}
+                                      </TooltipContent>
+                                    </Tooltip>
                                   )}
-                                  onClick={() =>
-                                    navigate(`/litters/${task.litterId}`)
-                                  }
-                                >
-                                  {task.title}
-                                </button>
+                                  <button
+                                    type='button'
+                                    className={cn(
+                                      'text-sm font-medium text-left hover:underline',
+                                      isCompleted &&
+                                        'line-through text-muted-foreground'
+                                    )}
+                                    onClick={() =>
+                                      navigate(`/litters/${task.litterId}`)
+                                    }
+                                  >
+                                    {task.title}
+                                  </button>
+                                </div>
                                 <Badge
                                   variant='destructive'
                                   className='whitespace-nowrap'
@@ -685,6 +704,7 @@ export function Dashboard() {
                       {visibleTodaysTasks.map((task) => {
                         const litter = littersById.get(task.litterId);
                         const isCompleted = task.status === 'completed';
+                        const isDaily = task.taskType === 'daily';
                         return (
                           <div
                             key={task.id}
@@ -702,19 +722,35 @@ export function Dashboard() {
                             />
                             <div className='flex-1 min-w-0'>
                               <div className='flex items-center justify-between gap-2'>
-                                <button
-                                  type='button'
-                                  className={cn(
-                                    'text-sm font-medium text-left hover:underline',
-                                    isCompleted &&
-                                      'line-through text-muted-foreground'
+                                <div className='flex items-center gap-2'>
+                                  {isDaily && (
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        {task.timeOfDay === 'morning' ? (
+                                          <Sun className='h-4 w-4 text-amber-500' />
+                                        ) : (
+                                          <Moon className='h-4 w-4 text-indigo-500' />
+                                        )}
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        {task.timeOfDay === 'morning' ? 'Morning routine' : 'Evening routine'}
+                                      </TooltipContent>
+                                    </Tooltip>
                                   )}
-                                  onClick={() =>
-                                    navigate(`/litters/${task.litterId}`)
-                                  }
-                                >
-                                  {task.title}
-                                </button>
+                                  <button
+                                    type='button'
+                                    className={cn(
+                                      'text-sm font-medium text-left hover:underline',
+                                      isCompleted &&
+                                        'line-through text-muted-foreground'
+                                    )}
+                                    onClick={() =>
+                                      navigate(`/litters/${task.litterId}`)
+                                    }
+                                  >
+                                    {task.title}
+                                  </button>
+                                </div>
                                 <Badge
                                   variant='secondary'
                                   className='whitespace-nowrap'
@@ -767,6 +803,7 @@ export function Dashboard() {
                       {group.tasks.map((task) => {
                         const litter = littersById.get(task.litterId);
                         const isCompleted = task.status === 'completed';
+                        const isDaily = task.taskType === 'daily';
                         return (
                           <div
                             key={task.id}
@@ -784,19 +821,35 @@ export function Dashboard() {
                             />
                             <div className='flex-1 min-w-0'>
                               <div className='flex items-center justify-between gap-2'>
-                                <button
-                                  type='button'
-                                  className={cn(
-                                    'text-sm font-medium text-left hover:underline',
-                                    isCompleted &&
-                                      'line-through text-muted-foreground'
+                                <div className='flex items-center gap-2'>
+                                  {isDaily && (
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        {task.timeOfDay === 'morning' ? (
+                                          <Sun className='h-4 w-4 text-amber-500' />
+                                        ) : (
+                                          <Moon className='h-4 w-4 text-indigo-500' />
+                                        )}
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        {task.timeOfDay === 'morning' ? 'Morning routine' : 'Evening routine'}
+                                      </TooltipContent>
+                                    </Tooltip>
                                   )}
-                                  onClick={() =>
-                                    navigate(`/litters/${task.litterId}`)
-                                  }
-                                >
-                                  {task.title}
-                                </button>
+                                  <button
+                                    type='button'
+                                    className={cn(
+                                      'text-sm font-medium text-left hover:underline',
+                                      isCompleted &&
+                                        'line-through text-muted-foreground'
+                                    )}
+                                    onClick={() =>
+                                      navigate(`/litters/${task.litterId}`)
+                                    }
+                                  >
+                                    {task.title}
+                                  </button>
+                                </div>
                                 <Badge
                                   variant='outline'
                                   className='whitespace-nowrap'

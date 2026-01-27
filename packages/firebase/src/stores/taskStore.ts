@@ -21,6 +21,8 @@ import {
   LitterTask,
   TaskStats,
   TaskStatus,
+  DEFAULT_CARE_TEMPLATES,
+  DEFAULT_DAILY_ROUTINES,
 } from '@breeder/types';
 
 interface TaskState {
@@ -59,6 +61,12 @@ interface TaskState {
     litterId: string,
     breederId: string,
     birthDate: string
+  ) => Promise<void>;
+  generateAllLitterTasks: (
+    litterId: string,
+    breederId: string,
+    birthDate: string,
+    litterName?: string
   ) => Promise<void>;
   updateTaskStatus: (
     taskId: string,
@@ -354,6 +362,92 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       await batch.commit();
     } catch (error) {
       console.error('Error generating litter tasks:', error);
+      throw error;
+    }
+  },
+
+  generateAllLitterTasks: async (
+    litterId: string,
+    breederId: string,
+    birthDate: string,
+    litterName?: string
+  ) => {
+    try {
+      const birthDateObj = new Date(birthDate);
+      const batch = writeBatch(db);
+
+      // Generate weekly milestone tasks from DEFAULT_CARE_TEMPLATES
+      DEFAULT_CARE_TEMPLATES.forEach((template) => {
+        const dueDate = new Date(birthDateObj);
+        dueDate.setDate(dueDate.getDate() + template.weekDue * 7);
+
+        const taskRef = doc(collection(db, 'litterTasks'));
+        batch.set(taskRef, {
+          id: taskRef.id,
+          litterId,
+          breederId,
+          templateId: `default-weekly-${template.weekDue}-${template.name.replace(/\s+/g, '-').toLowerCase()}`,
+          title: template.name,
+          description: template.description || '',
+          dueDate: dueDate.toISOString(),
+          dayOrWeek: template.weekDue,
+          frequency: 'once' as const,
+          category: 'care' as const,
+          status: 'pending' as const,
+          taskType: 'weekly' as const,
+          createdAt: new Date().toISOString(),
+        });
+      });
+
+      // Generate daily tasks - create for the next 10 weeks (70 days)
+      const totalDays = 70; // ~10 weeks of daily tasks
+      for (let day = 0; day < totalDays; day++) {
+        const taskDate = new Date(birthDateObj);
+        taskDate.setDate(taskDate.getDate() + day);
+        const currentWeek = Math.floor(day / 7);
+        const dateStr = taskDate.toISOString().split('T')[0];
+
+        DEFAULT_DAILY_ROUTINES.forEach((routine) => {
+          // Check if this routine applies to the current week
+          const isActive = routine.weekStart <= currentWeek;
+          const notEnded = routine.weekEnd === undefined || routine.weekEnd >= currentWeek;
+
+          if (!isActive || !notEnded) return;
+
+          // Create tasks for morning and/or evening based on timeOfDay
+          const timesOfDay: Array<'morning' | 'evening'> = [];
+          if (routine.timeOfDay === 'morning' || routine.timeOfDay === 'both') {
+            timesOfDay.push('morning');
+          }
+          if (routine.timeOfDay === 'evening' || routine.timeOfDay === 'both') {
+            timesOfDay.push('evening');
+          }
+
+          timesOfDay.forEach((timeOfDay) => {
+            const taskRef = doc(collection(db, 'litterTasks'));
+            batch.set(taskRef, {
+              id: taskRef.id,
+              litterId,
+              breederId,
+              templateId: `default-daily-${routine.name.replace(/\s+/g, '-').toLowerCase()}-${timeOfDay}`,
+              title: routine.name,
+              description: routine.description || '',
+              dueDate: taskDate.toISOString(),
+              dayOrWeek: day,
+              frequency: 'daily' as const,
+              category: 'care' as const,
+              status: 'pending' as const,
+              taskType: 'daily' as const,
+              timeOfDay,
+              createdAt: new Date().toISOString(),
+            });
+          });
+        });
+      }
+
+      await batch.commit();
+    } catch (error) {
+      console.error('Error generating all litter tasks:', error);
       throw error;
     }
   },

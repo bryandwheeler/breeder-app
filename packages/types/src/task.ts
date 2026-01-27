@@ -1,5 +1,6 @@
 export type TaskFrequency = 'once' | 'daily' | 'weekly';
 export type TaskStatus = 'pending' | 'completed' | 'skipped';
+export type TaskType = 'weekly' | 'daily'; // Weekly milestones vs daily routines
 
 export interface TaskTemplate {
   id: string;
@@ -41,6 +42,8 @@ export interface LitterTask {
   completedBy?: string;
   notes?: string;
   createdAt: string;
+  taskType?: TaskType; // 'weekly' for milestones, 'daily' for routines
+  timeOfDay?: 'morning' | 'evening'; // For daily tasks only
 }
 
 export interface TaskStats {
