@@ -57,10 +57,12 @@ export function AdminCustomers() {
 
         for (const userDoc of snapshot.docs) {
           const data = userDoc.data();
+          // Try to get breeder profile using the user's uid as document ID or userId field
           const breederDocs = await getDocs(
-            query(collection(db, 'breeders'), where('uid', '==', userDoc.id))
+            query(collection(db, 'breederProfiles'), where('userId', '==', userDoc.id))
           );
-          const breederName = breederDocs.docs[0]?.data()?.breederName || 'N/A';
+          const breederData = breederDocs.docs[0]?.data();
+          const breederName = breederData?.breederName || breederData?.kennelName || data.displayName || 'N/A';
 
           customerList.push({
             uid: userDoc.id,
