@@ -72,7 +72,7 @@ export function AdminCustomers() {
             subscriptionStatus: data.subscriptionStatus || 'active',
             currentPeriodEnd: data.currentPeriodEnd || 0,
             stripeCustomerId: data.stripeCustomerId || 'N/A',
-            createdAt: data.createdAt?.toDate() || new Date(),
+            createdAt: data.createdAt?.toDate?.() || (data.createdAt ? new Date(data.createdAt) : new Date()),
           });
         }
 
