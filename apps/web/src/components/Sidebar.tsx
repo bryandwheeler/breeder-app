@@ -24,6 +24,7 @@ import {
   Calculator,
   Shield,
   ListTodo,
+  Mail,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
@@ -103,6 +104,7 @@ const adminNavigation: NavGroup[] = [
     items: [
       { name: 'Admin Dashboard', path: '/admin', icon: LayoutDashboard },
       { name: 'Contacts', path: '/admin/customers', icon: Users },
+      { name: 'Newsletter', path: '/admin/newsletter', icon: Mail },
       { name: 'Admin Settings', path: '/admin/settings', icon: Settings },
     ],
   },

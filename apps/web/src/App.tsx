@@ -34,6 +34,7 @@ import { Signup } from '@/pages/Signup';
 import { AdminDashboard } from '@/pages/AdminDashboard';
 import { AdminSettings } from '@/pages/AdminSettings';
 import { AdminCustomers } from '@/pages/AdminCustomers';
+import { AdminNewsletter } from '@/pages/admin/Newsletter';
 import { GmailCallback } from '@/pages/auth/GmailCallback';
 import { OutlookCallback } from '@/pages/auth/OutlookCallback';
 import { MessagingInbox } from '@/pages/MessagingInbox';
@@ -456,6 +457,22 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <AdminCustomers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/admin/newsletter'
+                element={
+                  <ProtectedRoute>
+                    <AdminNewsletter />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/admin/newsletter/*'
+                element={
+                  <ProtectedRoute>
+                    <AdminNewsletter />
                   </ProtectedRoute>
                 }
               />

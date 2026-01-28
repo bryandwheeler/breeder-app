@@ -294,5 +294,106 @@ service cloud.firestore {
         allow read, write: if isAdmin();
       }
     }
+
+    // ============================================================================
+    // Newsletter & Email Marketing Collections
+    // ============================================================================
+
+    // Newsletter lists - admin only for platform newsletter, breeders for their own
+    match /newsletterLists/{listId} {
+      allow read: if isAuthenticated() && (isAdmin() || resource.data.ownerId == request.auth.uid);
+      allow create: if isAuthenticated() && (isAdmin() || request.resource.data.ownerId == request.auth.uid);
+      allow update, delete: if isAuthenticated() && (isAdmin() || resource.data.ownerId == request.auth.uid);
+    }
+
+    // Newsletter subscribers - admin only for platform subscribers
+    match /newsletterSubscribers/{subscriberId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Email campaigns - admin for platform campaigns, breeders for their own
+    match /emailCampaigns/{campaignId} {
+      allow read: if isAuthenticated() &&
+        (isAdmin() || (resource.data.ownerType == 'breeder' && resource.data.ownerId == request.auth.uid));
+      allow create: if isAuthenticated() &&
+        (isAdmin() || (request.resource.data.ownerType == 'breeder' && request.resource.data.ownerId == request.auth.uid));
+      allow update, delete: if isAuthenticated() &&
+        (isAdmin() || (resource.data.ownerType == 'breeder' && resource.data.ownerId == request.auth.uid));
+    }
+
+    // Autoresponder sequences - admin for platform sequences, breeders for their own
+    match /autoresponderSequences/{sequenceId} {
+      allow read: if isAuthenticated() &&
+        (isAdmin() || (resource.data.ownerType == 'breeder' && resource.data.ownerId == request.auth.uid));
+      allow create: if isAuthenticated() &&
+        (isAdmin() || (request.resource.data.ownerType == 'breeder' && request.resource.data.ownerId == request.auth.uid));
+      allow update, delete: if isAuthenticated() &&
+        (isAdmin() || (resource.data.ownerType == 'breeder' && resource.data.ownerId == request.auth.uid));
+    }
+
+    // Autoresponder emails (sequence steps)
+    match /autoresponderEmails/{emailId} {
+      // Need to check parent sequence ownership - simplified to admin + authenticated for now
+      allow read, write: if isAuthenticated();
+    }
+
+    // Subscriber sequence progress - managed by cloud functions
+    match /subscriberSequenceProgress/{progressId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only cloud functions should write
+    }
+
+    // Lead magnets - admin for platform resources, breeders for their own
+    match /leadMagnets/{magnetId} {
+      allow read: if isAuthenticated() &&
+        (isAdmin() || (resource.data.ownerType == 'breeder' && resource.data.ownerId == request.auth.uid));
+      allow create: if isAuthenticated() &&
+        (isAdmin() || (request.resource.data.ownerType == 'breeder' && request.resource.data.ownerId == request.auth.uid));
+      allow update, delete: if isAuthenticated() &&
+        (isAdmin() || (resource.data.ownerType == 'breeder' && resource.data.ownerId == request.auth.uid));
+    }
+
+    // Signup forms - admin for platform forms, breeders for their own
+    match /signupForms/{formId} {
+      // Public read for rendering embedded forms
+      allow get: if true;
+      allow list: if isAuthenticated() &&
+        (isAdmin() || resource.data.ownerId == request.auth.uid);
+      allow create: if isAuthenticated() &&
+        (isAdmin() || request.resource.data.ownerId == request.auth.uid);
+      allow update, delete: if isAuthenticated() &&
+        (isAdmin() || resource.data.ownerId == request.auth.uid);
+    }
+
+    // Email events (analytics) - admin only read, cloud functions write
+    match /emailEvents/{eventId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated(); // Cloud functions via admin SDK bypass rules
+      allow update, delete: if false;
+    }
+
+    // Newsletter templates - public templates readable by all, custom by owner
+    match /newsletterTemplates/{templateId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.isPublic == true || isAdmin() || resource.data.ownerId == request.auth.uid);
+      allow create: if isAuthenticated() &&
+        (isAdmin() || request.resource.data.ownerId == request.auth.uid);
+      allow update, delete: if isAuthenticated() &&
+        (isAdmin() || resource.data.ownerId == request.auth.uid);
+    }
+
+    // Import jobs - owner only
+    match /importJobs/{jobId} {
+      allow read: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if false; // Managed by cloud functions
+    }
+
+    // Export jobs - owner only
+    match /exportJobs/{jobId} {
+      allow read: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if false; // Managed by cloud functions
+    }
   }
 }

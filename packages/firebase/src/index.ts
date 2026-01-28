@@ -18,6 +18,7 @@ export * from './stores/dogStoreFirebase';
 export * from './stores/emailStore';
 export * from './stores/emailTemplateStore';
 export * from './stores/heatCycleStore';
+export * from './stores/newsletterStore';
 export * from './stores/scheduledEmailStore';
 // export * from './stores/studJobStore'; // TODO: Fix actualDate property errors
 export * from './stores/taskStore';
