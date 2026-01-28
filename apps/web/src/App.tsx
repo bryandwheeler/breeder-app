@@ -28,6 +28,7 @@ import { LitterForecast } from '@/pages/LitterForecast';
 import { BreedingPlanner } from '@/pages/BreedingPlanner';
 import { CustomerAnalytics } from '@/pages/CustomerAnalytics';
 import { Help } from '@/pages/Help';
+import { Tasks } from '@/pages/Tasks';
 import { Login } from '@/pages/Login';
 import { Signup } from '@/pages/Signup';
 import { AdminDashboard } from '@/pages/AdminDashboard';
@@ -303,6 +304,14 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <LitterDetails />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/tasks'
+                element={
+                  <ProtectedRoute>
+                    <Tasks />
                   </ProtectedRoute>
                 }
               />

@@ -33,6 +33,8 @@ import {
   Sunrise,
   Sun,
   Moon,
+  CheckCheck,
+  SkipForward,
 } from 'lucide-react';
 import {
   differenceInDays,
@@ -71,7 +73,7 @@ export function Dashboard() {
   const { customers } = useCrmStore();
   const { getHeatCyclesForDog } = useHeatCycleStore();
   const { currentUser } = useAuth();
-  const { litterTasks, subscribeToBreederTasks, updateTaskStatus } =
+  const { litterTasks, subscribeToBreederTasks, updateTaskStatus, bulkUpdateTaskStatus } =
     useTaskStore();
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewType, setPreviewType] = useState<PreviewType | null>(null);
@@ -653,13 +655,62 @@ export function Dashboard() {
                 <>
                   {visibleOverdueDailyTasks.length > 0 && (
                     <div className='space-y-1'>
-                      <p className='text-xs font-semibold text-destructive uppercase tracking-wide'>
-                        Overdue
-                      </p>
+                      <div className='flex items-center justify-between'>
+                        <p className='text-xs font-semibold text-destructive uppercase tracking-wide'>
+                          Overdue
+                        </p>
+                        {overdueDailyCount > 0 && (
+                          <div className='flex items-center gap-1'>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant='ghost'
+                                  size='sm'
+                                  className='h-6 px-2 text-xs'
+                                  onClick={async () => {
+                                    const pendingIds = overdueDailyTasks
+                                      .filter((t) => t.status === 'pending')
+                                      .map((t) => t.id);
+                                    if (pendingIds.length > 0) {
+                                      await bulkUpdateTaskStatus(pendingIds, 'completed');
+                                    }
+                                  }}
+                                >
+                                  <CheckCheck className='h-3.5 w-3.5 mr-1' />
+                                  All
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Complete all overdue tasks</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant='ghost'
+                                  size='sm'
+                                  className='h-6 px-2 text-xs'
+                                  onClick={async () => {
+                                    const pendingIds = overdueDailyTasks
+                                      .filter((t) => t.status === 'pending')
+                                      .map((t) => t.id);
+                                    if (pendingIds.length > 0) {
+                                      await bulkUpdateTaskStatus(pendingIds, 'skipped');
+                                    }
+                                  }}
+                                >
+                                  <SkipForward className='h-3.5 w-3.5 mr-1' />
+                                  Skip
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Skip all overdue tasks</TooltipContent>
+                            </Tooltip>
+                          </div>
+                        )}
+                      </div>
                       <div className='space-y-1.5'>
                         {visibleOverdueDailyTasks.map((task) => {
                           const litter = littersById.get(task.litterId);
                           const isCompleted = task.status === 'completed';
+                          const taskDate = new Date(task.dueDate);
                           return (
                             <div
                               key={task.id}
@@ -686,11 +737,10 @@ export function Dashboard() {
                                 )}>
                                   {task.title}
                                 </span>
-                                {litter && (
-                                  <span className='text-xs text-muted-foreground'>
-                                    {litter.litterName || 'Litter'}
-                                  </span>
-                                )}
+                                <span className='text-xs text-muted-foreground'>
+                                  {litter ? `${litter.litterName || 'Litter'} · ` : ''}
+                                  {format(taskDate, 'MMM d')}
+                                </span>
                               </button>
                             </div>
                           );

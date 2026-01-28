@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle2, Circle, ListTodo, Plus, Sunrise, Sun, Moon, Calendar, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Circle, ListTodo, Plus, Sunrise, Sun, Moon, Calendar, Loader2, RefreshCw, AlertCircle, CheckCheck, SkipForward } from 'lucide-react';
 import { format, startOfDay, endOfDay, isBefore, isAfter, addDays } from 'date-fns';
 import { Litter, LitterTask } from '@breeder/types';
 import { cn } from '@/lib/utils';
@@ -23,10 +23,10 @@ import {
 
 interface LitterCareTasksProps {
   litter: Litter;
-  onUpdate: (litterId: string, updates: Partial<Litter>) => Promise<void>;
+  onUpdate?: (litterId: string, updates: Partial<Litter>) => Promise<void>;
 }
 
-export function LitterCareTasks({ litter, onUpdate }: LitterCareTasksProps) {
+export function LitterCareTasks({ litter }: LitterCareTasksProps) {
   const [saving, setSaving] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const { currentUser } = useAuth();
@@ -36,6 +36,7 @@ export function LitterCareTasks({ litter, onUpdate }: LitterCareTasksProps) {
     generateAllLitterTasks,
     deleteTasksForLitter,
     updateTaskStatus,
+    bulkUpdateTaskStatus,
     loading,
   } = useTaskStore();
 
@@ -63,16 +64,23 @@ export function LitterCareTasks({ litter, onUpdate }: LitterCareTasksProps) {
   }, [litter.id, subscribeToLitterTasks]);
 
   // Filter and organize tasks
-  const { dailyTasks, weeklyTasks, todaysDailyTasks, upcomingWeeklyTasks } = useMemo(() => {
+  const { weeklyTasks, todaysDailyTasks, overdueDailyTasks, upcomingWeeklyTasks } = useMemo(() => {
     const daily = litterTasks.filter(t => t.taskType === 'daily');
     const weekly = litterTasks.filter(t => t.taskType === 'weekly' || !t.taskType);
 
     // Today's daily tasks
     const todayStart = startOfDay(new Date());
     const todayEnd = endOfDay(new Date());
+
     const todaysDaily = daily.filter(t => {
       const dueDate = new Date(t.dueDate);
       return !isBefore(dueDate, todayStart) && !isAfter(dueDate, todayEnd);
+    });
+
+    // Overdue daily tasks (before today)
+    const overdueDaily = daily.filter(t => {
+      const dueDate = new Date(t.dueDate);
+      return isBefore(dueDate, todayStart);
     });
 
     // Weekly tasks sorted by due date
@@ -81,9 +89,9 @@ export function LitterCareTasks({ litter, onUpdate }: LitterCareTasksProps) {
     );
 
     return {
-      dailyTasks: daily,
       weeklyTasks: weekly,
       todaysDailyTasks: todaysDaily,
+      overdueDailyTasks: overdueDaily,
       upcomingWeeklyTasks: sortedWeekly,
     };
   }, [litterTasks]);
@@ -99,6 +107,9 @@ export function LitterCareTasks({ litter, onUpdate }: LitterCareTasksProps) {
   const eveningComplete = eveningTasks.filter(t => t.status === 'completed').length;
   const totalDailyTasks = morningTasks.length + middayTasks.length + eveningTasks.length;
   const totalDailyComplete = morningComplete + middayComplete + eveningComplete;
+
+  // Overdue counts
+  const overduePendingCount = overdueDailyTasks.filter(t => t.status === 'pending').length;
 
   const weeklyCompleted = weeklyTasks.filter(t => t.status === 'completed').length;
   const weeklyProgress = weeklyTasks.length > 0
@@ -468,11 +479,11 @@ export function LitterCareTasks({ litter, onUpdate }: LitterCareTasksProps) {
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="daily" className="flex items-center gap-2">
               <Sun className="h-4 w-4" />
-              <span className="hidden sm:inline">Today's Tasks</span>
-              <span className="sm:hidden">Today</span>
-              {totalDailyTasks > 0 && (
-                <Badge variant={totalDailyComplete === totalDailyTasks ? 'default' : 'outline'} className="ml-1">
-                  {totalDailyComplete}/{totalDailyTasks}
+              <span className="hidden sm:inline">Daily Tasks</span>
+              <span className="sm:hidden">Daily</span>
+              {(totalDailyTasks > 0 || overduePendingCount > 0) && (
+                <Badge variant={totalDailyComplete === totalDailyTasks && overduePendingCount === 0 ? 'default' : 'outline'} className="ml-1">
+                  {overduePendingCount > 0 ? `${overduePendingCount}+` : ''}{totalDailyComplete}/{totalDailyTasks}
                 </Badge>
               )}
             </TabsTrigger>
@@ -490,13 +501,100 @@ export function LitterCareTasks({ litter, onUpdate }: LitterCareTasksProps) {
 
           {/* Daily Tasks Tab */}
           <TabsContent value="daily" className="space-y-6">
-            {totalDailyTasks === 0 ? (
+            {totalDailyTasks === 0 && overdueDailyTasks.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <p>No daily tasks for today.</p>
                 <p className="text-sm mt-2">Daily routines will appear based on the litter's age.</p>
               </div>
             ) : (
               <>
+                {/* Overdue daily tasks */}
+                {overdueDailyTasks.length > 0 && (
+                  <div className="border border-destructive/50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-destructive flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        Overdue ({overduePendingCount} pending)
+                      </h3>
+                      {overduePendingCount > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={async () => {
+                              const pendingIds = overdueDailyTasks
+                                .filter((t) => t.status === 'pending')
+                                .map((t) => t.id);
+                              if (pendingIds.length > 0) {
+                                await bulkUpdateTaskStatus(pendingIds, 'completed');
+                              }
+                            }}
+                          >
+                            <CheckCheck className="h-3.5 w-3.5 mr-1" />
+                            All
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={async () => {
+                              const pendingIds = overdueDailyTasks
+                                .filter((t) => t.status === 'pending')
+                                .map((t) => t.id);
+                              if (pendingIds.length > 0) {
+                                await bulkUpdateTaskStatus(pendingIds, 'skipped');
+                              }
+                            }}
+                          >
+                            <SkipForward className="h-3.5 w-3.5 mr-1" />
+                            Skip
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {overdueDailyTasks.map(task => {
+                        const isCompleted = task.status === 'completed';
+                        const isSkipped = task.status === 'skipped';
+                        const isSaving = saving === task.id;
+                        const taskDate = new Date(task.dueDate);
+                        return (
+                          <button
+                            key={task.id}
+                            onClick={() => handleToggleTask(task.id, task.status)}
+                            disabled={isSaving}
+                            className={cn(
+                              "w-full flex items-start gap-3 p-2 rounded-lg text-left transition-all",
+                              "hover:bg-muted/50 disabled:opacity-50",
+                              (isCompleted || isSkipped) && "bg-muted/30 opacity-60"
+                            )}
+                          >
+                            {isCompleted ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                            ) : isSkipped ? (
+                              <SkipForward className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            ) : (
+                              <Circle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className={cn(
+                                "font-medium text-sm",
+                                (isCompleted || isSkipped) && "line-through text-muted-foreground"
+                              )}>
+                                {task.title}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {format(taskDate, 'MMM d')} · {task.timeOfDay || 'morning'}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Today's date header */}
                 <div className="text-center text-sm text-muted-foreground">
                   {format(new Date(), 'EEEE, MMMM d, yyyy')}

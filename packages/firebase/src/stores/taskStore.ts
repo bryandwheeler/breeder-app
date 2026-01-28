@@ -73,6 +73,10 @@ interface TaskState {
     status: TaskStatus,
     notes?: string
   ) => Promise<void>;
+  bulkUpdateTaskStatus: (
+    taskIds: string[],
+    status: TaskStatus
+  ) => Promise<void>;
   deleteTasksForLitter: (litterId: string) => Promise<void>;
   getTaskStats: (litterId: string) => TaskStats;
 }
@@ -547,6 +551,29 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       await updateDoc(taskRef, updates);
     } catch (error) {
       console.error('Error updating task status:', error);
+      throw error;
+    }
+  },
+
+  bulkUpdateTaskStatus: async (taskIds: string[], status: TaskStatus) => {
+    try {
+      const batch = writeBatch(db);
+      const updates: any = {
+        status,
+      };
+
+      if (status === 'completed') {
+        updates.completedAt = new Date().toISOString();
+      }
+
+      taskIds.forEach((taskId) => {
+        const taskRef = doc(db, 'litterTasks', taskId);
+        batch.update(taskRef, updates);
+      });
+
+      await batch.commit();
+    } catch (error) {
+      console.error('Error bulk updating task status:', error);
       throw error;
     }
   },

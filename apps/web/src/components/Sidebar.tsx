@@ -23,6 +23,7 @@ import {
   TrendingUp,
   Calculator,
   Shield,
+  ListTodo,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
@@ -52,6 +53,7 @@ const breederNavigation: NavGroup[] = [
       { name: 'Dashboard', path: '/', icon: LayoutDashboard },
       { name: 'Dogs', path: '/dogs', icon: Dog },
       { name: 'Litters', path: '/litters', icon: GitFork },
+      { name: 'Tasks', path: '/tasks', icon: ListTodo },
       { name: 'Calendar', path: '/calendar', icon: Calendar },
       { name: 'Reminders', path: '/reminders', icon: Bell },
     ],
