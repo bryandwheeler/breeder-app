@@ -7,17 +7,48 @@ admin.initializeApp();
 const db = admin.firestore();
 
 // 1. Create Stripe Customer on signup
+// Also ensures user profile exists even if Stripe fails
 exports.createStripeCustomer = functions.auth.user().onCreate(async (user) => {
-  const customer = await stripe.customers.create({
-    email: user.email,
-    metadata: { uid: user.uid },
-  });
-  await db.collection('users').doc(user.uid).set(
-    {
-      stripeCustomerId: customer.id,
-    },
-    { merge: true }
-  );
+  const now = new Date().toISOString();
+  const userRef = db.collection('users').doc(user.uid);
+
+  // First, ensure the user profile exists with basic data
+  // This should never fail and ensures the user can access the app
+  try {
+    await userRef.set({
+      email: user.email || 'unknown',
+      displayName: user.displayName || 'Unknown User',
+      photoURL: user.photoURL || null,
+      createdAt: now,
+      lastLogin: now,
+      isActive: true,
+      role: 'user',
+    }, { merge: true });
+    console.log(`User profile created for ${user.uid}`);
+  } catch (profileError) {
+    console.error(`Failed to create user profile for ${user.uid}:`, profileError);
+    // Don't throw - continue to try Stripe
+  }
+
+  // Then try to create Stripe customer (optional - app works without it)
+  try {
+    if (process.env.STRIPE_SECRET_KEY) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        metadata: { uid: user.uid },
+      });
+      await userRef.set(
+        { stripeCustomerId: customer.id },
+        { merge: true }
+      );
+      console.log(`Stripe customer created for ${user.uid}: ${customer.id}`);
+    } else {
+      console.log('Stripe not configured, skipping customer creation');
+    }
+  } catch (stripeError) {
+    console.error(`Failed to create Stripe customer for ${user.uid}:`, stripeError);
+    // Don't throw - user profile was already created
+  }
 });
 
 // 2. Create Stripe Checkout Session
@@ -561,6 +592,60 @@ async function executeAction(action, context, userId) {
 
   return { executed: false };
 }
+
+// Admin function to fix missing user profiles
+exports.fixMissingUserProfile = functions.https.onCall(async (data, context) => {
+  // Only allow admins to call this function
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated');
+  }
+
+  // Check if caller is admin
+  const callerDoc = await db.collection('users').doc(context.auth.uid).get();
+  if (!callerDoc.exists || callerDoc.data().role !== 'admin') {
+    throw new functions.https.HttpsError('permission-denied', 'Must be an admin');
+  }
+
+  const { uid, email, displayName } = data;
+
+  if (!uid) {
+    throw new functions.https.HttpsError('invalid-argument', 'uid is required');
+  }
+
+  // Check if user profile already exists
+  const userRef = db.collection('users').doc(uid);
+  const userDoc = await userRef.get();
+
+  if (userDoc.exists) {
+    return {
+      success: true,
+      message: 'User profile already exists',
+      existed: true,
+      data: userDoc.data()
+    };
+  }
+
+  // Create the missing user profile
+  const now = new Date().toISOString();
+  const userData = {
+    email: email || 'unknown',
+    displayName: displayName || 'Unknown User',
+    photoURL: null,
+    lastLogin: now,
+    createdAt: now,
+    isActive: true,
+    role: 'user',
+  };
+
+  await userRef.set(userData);
+
+  return {
+    success: true,
+    message: 'User profile created successfully',
+    existed: false,
+    data: userData
+  };
+});
 
 // Simple variable replacement for server-side use
 function replaceVariables(text, customer, profile) {

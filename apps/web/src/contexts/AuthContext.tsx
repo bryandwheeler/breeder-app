@@ -71,21 +71,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function ensureUserProfile(user: User, isNewUser: boolean = false) {
     try {
       const userRef = doc(db, 'users', user.uid);
+      const now = new Date().toISOString();
       const base = {
         email: user.email,
         displayName: user.displayName || 'Unknown User',
         photoURL: user.photoURL || null,
-        lastLogin: new Date().toISOString(),
+        lastLogin: now,
         isActive: true,
       } as Record<string, any>;
 
       // Only set defaults when this is the very first creation
       if (isNewUser) {
-        base.createdAt = new Date().toISOString();
+        base.createdAt = now;
         base.role = 'user';
       }
 
+      // Use setDoc with merge - if the document doesn't exist, it creates it
+      // If it exists, it merges the new data
       await setDoc(userRef, base, { merge: true });
+
+      // If this is NOT a new user (login flow), we still need to ensure
+      // createdAt and role exist in case the profile was never properly created
+      // We do this separately to avoid overwriting existing values
+      if (!isNewUser) {
+        const { getDoc } = await import('firebase/firestore');
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          // If essential fields are missing, add them
+          if (!data.createdAt || !data.role) {
+            await setDoc(userRef, {
+              createdAt: data.createdAt || now,
+              role: data.role || 'user',
+            }, { merge: true });
+          }
+        }
+      }
     } catch (error: any) {
       console.error('[AuthContext] Error ensuring user profile:', error);
       // Don't throw - allow auth to proceed even if profile creation fails
