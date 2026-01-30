@@ -618,14 +618,14 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
                 <div className="space-y-2 ml-6">
                   <Label htmlFor="rebreedOriginalJobId">Original Failed Stud Job</Label>
                   <Select
-                    value={rebreedOriginalJobId}
-                    onValueChange={setRebreedOriginalJobId}
+                    value={rebreedOriginalJobId || 'none'}
+                    onValueChange={(val) => setRebreedOriginalJobId(val === 'none' ? '' : val)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select original job (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Not linked / Unknown</SelectItem>
+                      <SelectItem value="none">Not linked / Unknown</SelectItem>
                       {allStudJobs
                         .filter(job =>
                           job.id !== editingJob?.id && // Not the current job
