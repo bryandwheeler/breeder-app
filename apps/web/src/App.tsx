@@ -35,6 +35,14 @@ import { AdminDashboard } from '@/pages/AdminDashboard';
 import { AdminSettings } from '@/pages/AdminSettings';
 import { AdminCustomers } from '@/pages/AdminCustomers';
 import { AdminNewsletter } from '@/pages/admin/Newsletter';
+import { NewsletterLists } from '@/pages/admin/NewsletterLists';
+import { NewsletterSubscribers } from '@/pages/admin/NewsletterSubscribers';
+import { NewsletterCampaigns } from '@/pages/admin/NewsletterCampaigns';
+import { NewsletterSequences } from '@/pages/admin/NewsletterSequences';
+import { NewsletterLeadMagnets } from '@/pages/admin/NewsletterLeadMagnets';
+import { NewsletterForms } from '@/pages/admin/NewsletterForms';
+import { AdminNewsletterSettings } from '@/pages/admin/NewsletterSettings';
+import { NewsletterTemplates } from '@/pages/admin/NewsletterTemplates';
 import { GmailCallback } from '@/pages/auth/GmailCallback';
 import { OutlookCallback } from '@/pages/auth/OutlookCallback';
 import { MessagingInbox } from '@/pages/MessagingInbox';
@@ -469,10 +477,82 @@ function AppContent() {
                 }
               />
               <Route
-                path='/admin/newsletter/*'
+                path='/admin/newsletter/lists'
                 element={
                   <ProtectedRoute>
-                    <AdminNewsletter />
+                    <NewsletterLists />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/admin/newsletter/subscribers'
+                element={
+                  <ProtectedRoute>
+                    <NewsletterSubscribers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/admin/newsletter/campaigns'
+                element={
+                  <ProtectedRoute>
+                    <NewsletterCampaigns />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/admin/newsletter/campaigns/:id'
+                element={
+                  <ProtectedRoute>
+                    <NewsletterCampaigns />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/admin/newsletter/sequences'
+                element={
+                  <ProtectedRoute>
+                    <NewsletterSequences />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/admin/newsletter/sequences/:id'
+                element={
+                  <ProtectedRoute>
+                    <NewsletterSequences />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/admin/newsletter/lead-magnets'
+                element={
+                  <ProtectedRoute>
+                    <NewsletterLeadMagnets />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/admin/newsletter/forms'
+                element={
+                  <ProtectedRoute>
+                    <NewsletterForms />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/admin/newsletter/settings'
+                element={
+                  <ProtectedRoute>
+                    <AdminNewsletterSettings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/admin/newsletter/templates'
+                element={
+                  <ProtectedRoute>
+                    <NewsletterTemplates />
                   </ProtectedRoute>
                 }
               />

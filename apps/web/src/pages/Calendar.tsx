@@ -2,35 +2,254 @@ import { useDogStore } from '@breeder/firebase';
 import { useStudJobStore } from '@/store/studJobStore';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar as CalendarIcon, Heart, Baby, Download, Settings, Briefcase, Grid3x3, CalendarDays } from 'lucide-react';
+import { Calendar as CalendarIcon, Heart, Baby, Download, Settings, Briefcase, Grid3x3, CalendarDays, X, ExternalLink, Edit, Dog, Stethoscope } from 'lucide-react';
 import { format, addDays, isSameMonth, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameDay, startOfYear, addMonths } from 'date-fns';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { downloadICalFile } from '@/lib/icalExport';
 import { ReminderSettingsDialog } from '@/components/ReminderSettingsDialog';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 interface CalendarEvent {
   date: Date;
-  type: 'heat' | 'expectedHeat' | 'breeding' | 'dueDate' | 'pickup' | 'studJob';
+  type: 'heat' | 'expectedHeat' | 'breeding' | 'dueDate' | 'pickup' | 'studJob' | 'studJobBreeding' | 'pregnancyCheck' | 'litterSizeCheck';
   title: string;
   dogId: string;
   dogName: string;
   details?: string;
   studJobId?: string;
+  litterId?: string;
+  heatCycleId?: string;
   status?: string;
+}
+
+// Event Detail Popup Component
+function EventDetailPopup({
+  event,
+  position,
+  onClose,
+  onNavigate,
+}: {
+  event: CalendarEvent;
+  position: { x: number; y: number };
+  onClose: () => void;
+  onNavigate: (path: string) => void;
+}) {
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [adjustedPosition, setAdjustedPosition] = useState({ left: 0, top: 0 });
+
+  // Close on click outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose]);
+
+  // Adjust position to keep popup in viewport
+  useEffect(() => {
+    const popupWidth = 320; // w-80 = 20rem = 320px
+    const popupHeight = popupRef.current?.offsetHeight || 400;
+    const padding = 16; // Keep some padding from edges
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let left = position.x;
+    let top = position.y;
+
+    // Check if popup would go off the right edge
+    if (left + popupWidth + padding > viewportWidth) {
+      // Position to the left of the click point
+      left = Math.max(padding, position.x - popupWidth - 10);
+    }
+
+    // Check if popup would go off the bottom edge
+    if (top + popupHeight + padding > viewportHeight) {
+      // Position above the click point if there's room, otherwise align to bottom
+      if (position.y - popupHeight - 10 > padding) {
+        top = position.y - popupHeight - 10;
+      } else {
+        top = Math.max(padding, viewportHeight - popupHeight - padding);
+      }
+    }
+
+    // Ensure we don't go off the left edge
+    left = Math.max(padding, left);
+
+    // Ensure we don't go off the top edge
+    top = Math.max(padding, top);
+
+    setAdjustedPosition({ left, top });
+  }, [position]);
+
+  const getEventIcon = () => {
+    switch (event.type) {
+      case 'heat':
+      case 'expectedHeat':
+        return <Heart className="h-5 w-5 text-pink-500" />;
+      case 'breeding':
+      case 'studJob':
+      case 'studJobBreeding':
+        return <Heart className="h-5 w-5 text-purple-500" />;
+      case 'dueDate':
+        return <Baby className="h-5 w-5 text-blue-500" />;
+      case 'pickup':
+        return <Baby className="h-5 w-5 text-green-500" />;
+      case 'pregnancyCheck':
+      case 'litterSizeCheck':
+        return <Stethoscope className="h-5 w-5 text-cyan-500" />;
+      default:
+        return <CalendarIcon className="h-5 w-5" />;
+    }
+  };
+
+  const getEventColor = () => {
+    switch (event.type) {
+      case 'heat': return 'bg-pink-500';
+      case 'expectedHeat': return 'bg-pink-300';
+      case 'breeding': return 'bg-purple-500';
+      case 'dueDate': return 'bg-blue-500';
+      case 'pickup': return 'bg-green-500';
+      case 'studJob':
+      case 'studJobBreeding': return 'bg-amber-500';
+      case 'pregnancyCheck': return 'bg-cyan-500';
+      case 'litterSizeCheck': return 'bg-teal-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getActions = () => {
+    const actions: { label: string; icon: React.ReactNode; path: string }[] = [];
+
+    // Always add view dog profile
+    actions.push({
+      label: 'View Dog Profile',
+      icon: <Dog className="h-4 w-4" />,
+      path: `/dogs/${event.dogId}`,
+    });
+
+    // Add specific actions based on event type
+    if (event.studJobId) {
+      actions.push({
+        label: 'View/Edit Stud Job',
+        icon: <Edit className="h-4 w-4" />,
+        path: `/stud-jobs?edit=${event.studJobId}`,
+      });
+    }
+
+    if (event.litterId) {
+      actions.push({
+        label: 'View Litter',
+        icon: <Baby className="h-4 w-4" />,
+        path: `/litters/${event.litterId}`,
+      });
+    }
+
+    if (event.type === 'heat' || event.type === 'expectedHeat' || event.type === 'breeding') {
+      actions.push({
+        label: 'View Heat Cycles',
+        icon: <Heart className="h-4 w-4" />,
+        path: `/dogs/${event.dogId}?tab=health`,
+      });
+    }
+
+    return actions;
+  };
+
+  return (
+    <div
+      ref={popupRef}
+      className="fixed z-50 bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 w-80 overflow-hidden"
+      style={{ left: adjustedPosition.left, top: adjustedPosition.top }}
+    >
+      {/* Header */}
+      <div className={`${getEventColor()} px-4 py-3 flex items-center justify-between`}>
+        <div className="flex items-center gap-2 text-white">
+          {getEventIcon()}
+          <span className="font-semibold">{event.title}</span>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-white/80 hover:text-white transition-colors"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="p-4 space-y-3">
+        <div>
+          <div className="text-sm text-muted-foreground">Date</div>
+          <div className="font-medium">{format(event.date, 'EEEE, MMMM d, yyyy')}</div>
+        </div>
+
+        <div>
+          <div className="text-sm text-muted-foreground">Dog</div>
+          <div className="font-medium">{event.dogName}</div>
+        </div>
+
+        {event.details && (
+          <div>
+            <div className="text-sm text-muted-foreground">Details</div>
+            <div className="font-medium">{event.details}</div>
+          </div>
+        )}
+
+        {event.status && (
+          <div>
+            <div className="text-sm text-muted-foreground">Status</div>
+            <Badge variant="outline" className="capitalize">{event.status.replace(/_/g, ' ')}</Badge>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="pt-2 border-t space-y-2">
+          {getActions().map((action, i) => (
+            <Button
+              key={i}
+              variant="outline"
+              size="sm"
+              className="w-full justify-start gap-2"
+              onClick={() => {
+                onNavigate(action.path);
+                onClose();
+              }}
+            >
+              {action.icon}
+              {action.label}
+              <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
+            </Button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function Calendar() {
   const { dogs, litters } = useDogStore();
   const { getAllStudJobs } = useStudJobStore();
+  const navigate = useNavigate();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'month' | 'year'>('month');
+  const [selectedEvent, setSelectedEvent] = useState<{ event: CalendarEvent; position: { x: number; y: number } } | null>(null);
 
   const studJobs = getAllStudJobs();
+
+  const handleEventClick = (event: CalendarEvent, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedEvent({
+      event,
+      position: { x: e.clientX, y: e.clientY },
+    });
+  };
 
   // Collect all calendar events
   const events: CalendarEvent[] = [];
@@ -90,6 +309,7 @@ export function Calendar() {
         dogId: dam.id,
         dogName: dam.name,
         details: litter.litterName,
+        litterId: litter.id,
       });
     }
 
@@ -102,28 +322,76 @@ export function Calendar() {
         dogId: dam.id,
         dogName: dam.name,
         details: litter.litterName,
+        litterId: litter.id,
       });
     }
   });
 
-  // Stud job events
+  // Stud job events - show each individual breeding
   studJobs.forEach(job => {
     const stud = dogs.find(d => d.id === job.studId);
     if (!stud) return;
 
-    const eventDate = job.actualDate || job.scheduledDate;
-    if (!eventDate) return;
+    // Add each breeding date as a calendar event
+    if (job.breedings && job.breedings.length > 0) {
+      job.breedings.forEach((breeding, index) => {
+        if (!breeding.date) return;
 
-    events.push({
-      date: new Date(eventDate),
-      type: 'studJob',
-      title: `Stud Service${job.status === 'pending' ? ' (Pending)' : job.status === 'confirmed' ? ' (Confirmed)' : ''}`,
-      dogId: stud.id,
-      dogName: stud.name,
-      details: `${job.femaleDogName} - ${job.breederName}`,
-      studJobId: job.id,
-      status: job.status,
-    });
+        const breedingDate = new Date(breeding.date);
+        const breedingStatus = breeding.status === 'completed' ? ' (Done)' :
+                               breeding.status === 'scheduled' ? ' (Scheduled)' :
+                               breeding.status === 'cancelled' ? ' (Cancelled)' : '';
+
+        events.push({
+          date: breedingDate,
+          type: 'studJobBreeding',
+          title: `Stud Breeding #${index + 1}${breedingStatus}`,
+          dogId: stud.id,
+          dogName: stud.name,
+          details: `${job.femaleDogName} - ${breeding.method === 'natural' ? 'Natural' : breeding.method === 'ai' ? 'AI' : 'Surgical AI'}`,
+          studJobId: job.id,
+          status: breeding.status,
+        });
+
+        // Add 30-day pregnancy confirmation follow-up for completed breedings
+        if (breeding.status === 'completed') {
+          const pregnancyCheckDate = addDays(breedingDate, 30);
+          events.push({
+            date: pregnancyCheckDate,
+            type: 'pregnancyCheck',
+            title: 'Pregnancy Confirmation',
+            dogId: stud.id,
+            dogName: stud.name,
+            details: `${job.femaleDogName} - 30 days post-breeding`,
+            studJobId: job.id,
+          });
+
+          // Add 65-day litter size confirmation follow-up
+          const litterCheckDate = addDays(breedingDate, 65);
+          events.push({
+            date: litterCheckDate,
+            type: 'litterSizeCheck',
+            title: 'Litter Size Confirmation',
+            dogId: stud.id,
+            dogName: stud.name,
+            details: `${job.femaleDogName} - 65 days post-breeding`,
+            studJobId: job.id,
+          });
+        }
+      });
+    } else if (job.scheduledDate) {
+      // Fallback for jobs without individual breedings
+      events.push({
+        date: new Date(job.scheduledDate),
+        type: 'studJob',
+        title: `Stud Service${job.status === 'pending' ? ' (Pending)' : job.status === 'confirmed' ? ' (Confirmed)' : ''}`,
+        dogId: stud.id,
+        dogName: stud.name,
+        details: `${job.femaleDogName}`,
+        studJobId: job.id,
+        status: job.status,
+      });
+    }
   });
 
   const monthStart = startOfMonth(currentMonth);
@@ -141,6 +409,9 @@ export function Calendar() {
       case 'dueDate': return 'bg-blue-500';
       case 'pickup': return 'bg-green-500';
       case 'studJob': return 'bg-amber-500';
+      case 'studJobBreeding': return 'bg-amber-500';
+      case 'pregnancyCheck': return 'bg-cyan-500';
+      case 'litterSizeCheck': return 'bg-teal-500';
       default: return 'bg-gray-500';
     }
   };
@@ -242,13 +513,14 @@ export function Calendar() {
                       </div>
                       <div className='space-y-0.5 overflow-y-auto max-h-16'>
                         {dayEvents.slice(0, 3).map((event, i) => (
-                          <div
+                          <button
                             key={i}
-                            className={`text-xs px-1 py-0.5 rounded text-white truncate ${getEventColor(event.type)}`}
+                            onClick={(e) => handleEventClick(event, e)}
+                            className={`text-xs px-1 py-0.5 rounded text-white truncate ${getEventColor(event.type)} w-full text-left hover:opacity-80 cursor-pointer transition-opacity`}
                             title={`${event.dogName}: ${event.title}`}
                           >
                             {event.dogName.split(' ')[0]}
-                          </div>
+                          </button>
                         ))}
                         {dayEvents.length > 3 && (
                           <div className='text-xs text-muted-foreground'>+{dayEvents.length - 3} more</div>
@@ -331,8 +603,12 @@ export function Calendar() {
               ) : (
                 <div className='space-y-2'>
                   {displayEvents.map((event, i) => (
-                    <Link key={i} to={`/dogs/${event.dogId}`} className='block'>
-                      <div className='p-3 border rounded-lg hover:bg-muted/50 transition-colors'>
+                    <button
+                      key={i}
+                      onClick={(e) => handleEventClick(event, e)}
+                      className='block w-full text-left'
+                    >
+                      <div className='p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer'>
                         <div className='flex items-start justify-between gap-2'>
                           <div className='flex-1'>
                             <div className='flex items-center gap-2 mb-1'>
@@ -352,7 +628,7 @@ export function Calendar() {
                           </div>
                         </div>
                       </div>
-                    </Link>
+                    </button>
                   ))}
                 </div>
               );
@@ -385,9 +661,31 @@ export function Calendar() {
               <div className='w-4 h-4 rounded bg-green-500' />
               <span className='text-sm'>Puppies Ready</span>
             </div>
+            <div className='flex items-center gap-2'>
+              <div className='w-4 h-4 rounded bg-amber-500' />
+              <span className='text-sm'>Stud Breeding</span>
+            </div>
+            <div className='flex items-center gap-2'>
+              <div className='w-4 h-4 rounded bg-cyan-500' />
+              <span className='text-sm'>Pregnancy Check (30d)</span>
+            </div>
+            <div className='flex items-center gap-2'>
+              <div className='w-4 h-4 rounded bg-teal-500' />
+              <span className='text-sm'>Litter Confirm (65d)</span>
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Event Detail Popup */}
+      {selectedEvent && (
+        <EventDetailPopup
+          event={selectedEvent.event}
+          position={selectedEvent.position}
+          onClose={() => setSelectedEvent(null)}
+          onNavigate={(path) => navigate(path)}
+        />
+      )}
     </div>
   );
 }

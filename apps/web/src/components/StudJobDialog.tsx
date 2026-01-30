@@ -41,12 +41,17 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
   const { dogs } = useDogStore();
   const { addStudJob, updateStudJob } = useStudJobStore();
 
-  // Get male dogs (studs) and female dogs from the kennel
-  const maleDogs = dogs.filter((dog) => dog.sex === 'male' && !dog.isDeceased);
+  // Get active male studs and female dogs from the kennel
+  // Only show males that are marked as 'active-stud' in breeding status
+  const maleDogs = dogs.filter((dog) =>
+    dog.sex === 'male' &&
+    !dog.isDeceased &&
+    dog.breedingStatus === 'active-stud'
+  );
   const femaleDogs = dogs.filter((dog) => dog.sex === 'female' && !dog.isDeceased);
 
   const [studId, setStudId] = useState('');
-  const [status, setStatus] = useState<'pending' | 'confirmed' | 'completed' | 'cancelled'>('pending');
+  const [status, setStatus] = useState<'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled'>('pending');
   const [femaleSource, setFemaleSource] = useState<'own' | 'external'>('external');
   const [femaleDogName, setFemaleDogName] = useState('');
   const [femaleDogId, setFemaleDogId] = useState('');
@@ -59,6 +64,8 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
   const [additionalBreedingFee, setAdditionalBreedingFee] = useState('');
   const [additionalBreedingsPaid, setAdditionalBreedingsPaid] = useState(false);
   const [pickOfLitter, setPickOfLitter] = useState(false);
+  const [isRebreed, setIsRebreed] = useState(false);
+  const [rebreedOriginalJobId, setRebreedOriginalJobId] = useState('');
   const [addOns, setAddOns] = useState<StudJobAddOn[]>([]);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -92,6 +99,8 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
       setAdditionalBreedingFee(editingJob.additionalBreedingFee?.toString() || '');
       setAdditionalBreedingsPaid(editingJob.additionalBreedingsPaid || false);
       setPickOfLitter(editingJob.pickOfLitter || false);
+      setIsRebreed(editingJob.isRebreed || false);
+      setRebreedOriginalJobId(editingJob.rebreedOriginalJobId || '');
       setAddOns(editingJob.addOns || []);
       setNotes(editingJob.notes || '');
     } else if (open && !editingJob) {
@@ -115,6 +124,8 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
       setAdditionalBreedingFee('');
       setAdditionalBreedingsPaid(false);
       setPickOfLitter(false);
+      setIsRebreed(false);
+      setRebreedOriginalJobId('');
       setAddOns([]);
       setNotes('');
       setFemaleSearchTerm('');
@@ -129,6 +140,7 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
       id: crypto.randomUUID(),
       date: '',
       method: 'natural',
+      status: 'scheduled',
       notes: '',
     };
     setBreedings([...breedings, newBreeding]);
@@ -251,6 +263,8 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
       if (additionalBreedingFee) jobData.additionalBreedingFee = parseFloat(additionalBreedingFee);
       if (additionalBreedingsPaid) jobData.additionalBreedingsPaid = additionalBreedingsPaid;
       if (pickOfLitter) jobData.pickOfLitter = pickOfLitter;
+      if (isRebreed) jobData.isRebreed = isRebreed;
+      if (rebreedOriginalJobId) jobData.rebreedOriginalJobId = rebreedOriginalJobId;
       if (addOns && addOns.length > 0) jobData.addOns = addOns;
 
       if (editingJob) {
@@ -299,7 +313,7 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
                 <SelectContent>
                   {maleDogs.length === 0 ? (
                     <SelectItem value="none" disabled>
-                      No male dogs in kennel
+                      No active studs in kennel
                     </SelectItem>
                   ) : (
                     maleDogs.map((dog) => (
@@ -321,6 +335,7 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
                 <SelectContent>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
@@ -492,7 +507,7 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
                         </Button>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1">
                           <Label className="text-xs">Date *</Label>
                           <Input
@@ -516,6 +531,24 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
                               <SelectItem value="natural">Natural</SelectItem>
                               <SelectItem value="ai">AI</SelectItem>
                               <SelectItem value="surgical_ai">Surgical AI</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs">Status</Label>
+                          <Select
+                            value={breeding.status || 'scheduled'}
+                            onValueChange={(value: any) => updateBreeding(breeding.id, { status: value })}
+                          >
+                            <SelectTrigger className="h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="scheduled">Scheduled</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                              <SelectItem value="no_show">No Show</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -619,6 +652,17 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
               />
               <Label htmlFor="pickOfLitter" className="cursor-pointer font-normal">
                 Pick of the Litter Agreement
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isRebreed"
+                checked={isRebreed}
+                onCheckedChange={(checked) => setIsRebreed(checked as boolean)}
+              />
+              <Label htmlFor="isRebreed" className="cursor-pointer font-normal">
+                Rebreed (guaranteed service at reduced/no cost)
               </Label>
             </div>
 

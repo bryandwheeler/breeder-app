@@ -253,12 +253,12 @@ export function EmailCompose({ open, setOpen, defaultTo, customerId, onSent }: E
                   <FileText className="h-4 w-4 inline mr-1" />
                   Use Template (Optional)
                 </Label>
-                <Select value={selectedTemplateId} onValueChange={handleTemplateSelect}>
+                <Select value={selectedTemplateId || 'none'} onValueChange={(value) => handleTemplateSelect(value === 'none' ? '' : value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Choose a template or write from scratch" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Template</SelectItem>
+                    <SelectItem value="none">No Template</SelectItem>
                     {templates.map((template) => (
                       <SelectItem key={template.id} value={template.id}>
                         {template.name}

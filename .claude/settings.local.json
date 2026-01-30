@@ -7,7 +7,8 @@
       "Bash(pnpm install:*)",
       "Bash(node fix-ui-imports.js:*)",
       "Bash(pnpm run build:*)",
-      "Bash(firebase deploy:*)"
+      "Bash(firebase deploy:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }

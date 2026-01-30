@@ -15,7 +15,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, DollarSign, Check, X } from 'lucide-react';
+import { Plus, Edit, Trash2, DollarSign, Check, X, RotateCcw } from 'lucide-react';
 import { StudJobDialog } from './StudJobDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from 'react-router-dom';
@@ -24,13 +24,14 @@ export function StudJobs() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<StudJob | null>(null);
 
-  const { getPendingStudJobs, getConfirmedStudJobs, getCompletedStudJobs, deleteStudJob } =
+  const { getPendingStudJobs, getConfirmedStudJobs, getInProgressStudJobs, getCompletedStudJobs, deleteStudJob } =
     useStudJobStore();
   const { dogs } = useDogStore();
   const { customers } = useCrmStore();
 
   const pendingJobs = getPendingStudJobs();
   const confirmedJobs = getConfirmedStudJobs();
+  const inProgressJobs = getInProgressStudJobs();
   const completedJobs = getCompletedStudJobs();
 
   const getStudName = (studId: string) => {
@@ -58,13 +59,22 @@ export function StudJobs() {
     const variants: Record<StudJob['status'], 'default' | 'secondary' | 'outline' | 'destructive'> = {
       pending: 'outline',
       confirmed: 'default',
+      in_progress: 'default',
       completed: 'secondary',
       cancelled: 'destructive',
     };
 
+    const labels: Record<StudJob['status'], string> = {
+      pending: 'Pending',
+      confirmed: 'Confirmed',
+      in_progress: 'In Progress',
+      completed: 'Completed',
+      cancelled: 'Cancelled',
+    };
+
     return (
-      <Badge variant={variants[status]}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+      <Badge variant={variants[status]} className={status === 'in_progress' ? 'bg-amber-500' : undefined}>
+        {labels[status]}
       </Badge>
     );
   };
@@ -88,6 +98,11 @@ export function StudJobs() {
   const renderJobRow = (job: StudJob) => {
     const totalFees = calculateTotalFees(job);
     const allBreedings = job.breedings || [];
+
+    // Count breeding statuses
+    const completedBreedings = allBreedings.filter(b => b.status === 'completed').length;
+    const scheduledBreedings = allBreedings.filter(b => b.status === 'scheduled').length;
+
     const breedingDates = allBreedings.length > 0
       ? allBreedings.map(b => format(parseISO(b.date), 'MMM d')).join(', ')
       : job.scheduledDate
@@ -99,7 +114,17 @@ export function StudJobs() {
 
     return (
       <TableRow key={job.id}>
-        <TableCell className="font-medium">{getStudName(job.studId)}</TableCell>
+        <TableCell className="font-medium">
+          <div className="flex items-center gap-2">
+            {getStudName(job.studId)}
+            {job.isRebreed && (
+              <Badge variant="outline" className="text-xs bg-purple-100 text-purple-800 border-purple-300">
+                <RotateCcw className="h-3 w-3 mr-1" />
+                Rebreed
+              </Badge>
+            )}
+          </div>
+        </TableCell>
         <TableCell>{job.femaleDogName}</TableCell>
         <TableCell>
           {breederInfo ? (
@@ -125,10 +150,19 @@ export function StudJobs() {
         <TableCell>
           <div className="flex flex-col">
             <span className="text-sm">{breedingDates}</span>
-            {allBreedings.length > 1 && (
-              <Badge variant="secondary" className="mt-1 w-fit text-xs">
-                {allBreedings.length} breedings
-              </Badge>
+            {allBreedings.length > 0 && (
+              <div className="flex gap-1 mt-1">
+                {completedBreedings > 0 && (
+                  <Badge variant="secondary" className="w-fit text-xs bg-green-100 text-green-800">
+                    {completedBreedings} done
+                  </Badge>
+                )}
+                {scheduledBreedings > 0 && (
+                  <Badge variant="outline" className="w-fit text-xs">
+                    {scheduledBreedings} scheduled
+                  </Badge>
+                )}
+              </div>
             )}
           </div>
         </TableCell>
@@ -176,12 +210,15 @@ export function StudJobs() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="pending" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="pending">
                 Pending ({pendingJobs.length})
               </TabsTrigger>
               <TabsTrigger value="confirmed">
                 Confirmed ({confirmedJobs.length})
+              </TabsTrigger>
+              <TabsTrigger value="in_progress">
+                In Progress ({inProgressJobs.length})
               </TabsTrigger>
               <TabsTrigger value="completed">
                 Completed ({completedJobs.length})
@@ -235,6 +272,32 @@ export function StudJobs() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>{confirmedJobs.map(renderJobRow)}</TableBody>
+                  </Table>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="in_progress" className="mt-4">
+              {inProgressJobs.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  No stud jobs in progress. Jobs move here when some breedings are complete but more are scheduled.
+                </p>
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Stud</TableHead>
+                        <TableHead>Female</TableHead>
+                        <TableHead>Breeder</TableHead>
+                        <TableHead>Breedings</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Payment</TableHead>
+                        <TableHead>Puppies</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>{inProgressJobs.map(renderJobRow)}</TableBody>
                   </Table>
                 </div>
               )}

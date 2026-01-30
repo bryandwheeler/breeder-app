@@ -245,54 +245,111 @@ function CreateContactDialog({
   onContactCreated,
   onClose,
 }: CreateContactDialogProps) {
-  const { findOrCreateContact } = useCrmStore();
+  const { addCustomer, customers } = useCrmStore();
   const [formData, setFormData] = useState({
     name: initialName,
     email: '',
     phone: '',
     address: '',
+    kennelName: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setError(null);
+
+    // Validate - require at least email OR phone for contact identification
+    if (!formData.email && !formData.phone) {
+      setError('Please provide at least an email or phone number');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const contactId = await findOrCreateContact({
+      // Create the contact directly with addCustomer for more control
+      await addCustomer({
         name: formData.name,
-        email: formData.email || undefined,
+        email: formData.email || '',
         phone: formData.phone || undefined,
         address: formData.address || undefined,
-        roles,
+        type: 'prospect',
+        status: 'active',
+        contactRoles: roles,
+        tags: formData.kennelName ? [formData.kennelName] : [],
+        notes: formData.kennelName ? `Kennel: ${formData.kennelName}` : undefined,
       });
 
-      onContactCreated(contactId);
+      // Find the newly created contact by email or phone
+      // Wait a moment for state to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Re-fetch the customers to get the latest
+      const latestCustomers = useCrmStore.getState().customers;
+      let newContact;
+
+      if (formData.email) {
+        newContact = latestCustomers.find(
+          (c) => c.email?.toLowerCase() === formData.email.toLowerCase()
+        );
+      }
+      if (!newContact && formData.phone) {
+        const normalizedPhone = formData.phone.replace(/\D/g, '');
+        newContact = latestCustomers.find(
+          (c) => c.phone?.replace(/\D/g, '') === normalizedPhone
+        );
+      }
+      if (!newContact) {
+        // Fallback: find by name (most recently created)
+        newContact = latestCustomers
+          .filter((c) => c.name === formData.name)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+      }
+
+      if (!newContact) {
+        throw new Error('Contact was created but could not be found. Please search for the contact.');
+      }
+
+      onContactCreated(newContact.id);
     } catch (err) {
+      console.error('Error creating contact:', err);
       setError(err instanceof Error ? err.message : 'Failed to create contact');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Use portal to render at document body level (higher z-index context)
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Create New Contact</h3>
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50"
+      onClick={(e) => {
+        // Only close if clicking the backdrop, not the dialog content
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Create New Contact</h3>
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-800">
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-sm text-red-800 dark:text-red-200">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -300,44 +357,62 @@ function CreateContactDialog({
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Kennel Name
+            </label>
+            <input
+              type="text"
+              value={formData.kennelName}
+              onChange={(e) => setFormData({ ...formData, kennelName: e.target.value })}
+              placeholder="e.g., Happy Paws Kennel"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Email <span className="text-red-500">*</span>
+            </label>
             <input
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
             />
+            <p className="text-xs text-gray-500 mt-1">Required: email or phone</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Phone <span className="text-red-500">*</span>
+            </label>
             <input
               type="tel"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
             <textarea
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
             />
           </div>
 
           {roles.length > 0 && (
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
               Contact will be created with roles:{' '}
-              <span className="font-medium">{roles.join(', ')}</span>
+              <span className="font-medium">{roles.map(r => r.replace(/_/g, ' ')).join(', ')}</span>
             </div>
           )}
 
@@ -346,13 +421,13 @@ function CreateContactDialog({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !formData.name}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
               {isSubmitting ? 'Creating...' : 'Create Contact'}

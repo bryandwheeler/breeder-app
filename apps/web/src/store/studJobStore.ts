@@ -29,6 +29,7 @@ type Store = {
   getAllStudJobs: () => StudJob[];
   getPendingStudJobs: () => StudJob[];
   getConfirmedStudJobs: () => StudJob[];
+  getInProgressStudJobs: () => StudJob[];
   getCompletedStudJobs: () => StudJob[];
 
   // Subscription
@@ -105,6 +106,16 @@ export const useStudJobStore = create<Store>()((set, get) => ({
   getConfirmedStudJobs: () => {
     return get()
       .studJobs.filter((job) => job.status === 'confirmed')
+      .sort(
+        (a, b) =>
+          new Date(a.scheduledDate || a.createdAt || '').getTime() -
+          new Date(b.scheduledDate || b.createdAt || '').getTime()
+      );
+  },
+
+  getInProgressStudJobs: () => {
+    return get()
+      .studJobs.filter((job) => job.status === 'in_progress')
       .sort(
         (a, b) =>
           new Date(a.scheduledDate || a.createdAt || '').getTime() -

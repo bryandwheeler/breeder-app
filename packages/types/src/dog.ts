@@ -110,11 +110,19 @@ export interface BreedingRecord {
   updatedAt?: string;
 }
 
+/**
+ * Individual breeding attempt/date within a stud job
+ * A typical stud job has 2-3 breeding dates
+ */
 export interface StudJobBreeding {
   id: string;
   date: string; // ISO date string
+  time?: string; // Time of breeding (e.g., "9:00 AM")
   method: 'natural' | 'ai' | 'surgical_ai';
+  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
   aiDetails?: string;
+  successful?: boolean; // Did the tie/insemination happen successfully
+  duration?: number; // Duration in minutes (for natural breeding ties)
   notes?: string;
 }
 
@@ -134,7 +142,7 @@ export interface StudJob {
   id: string;
   studId: string; // Male dog ID from own kennel
   userId: string; // Owner of the stud
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
 
   // Female dog info
   femaleDogName: string;
@@ -193,6 +201,8 @@ export interface StudJob {
   additionalBreedingFee?: number; // Cost per additional breeding
   additionalBreedingsPaid?: boolean;
   pickOfLitter?: boolean;
+  isRebreed?: boolean; // Indicates if this is a rebreed (typically at reduced/no cost)
+  rebreedOriginalJobId?: string; // Reference to original stud job if this is a rebreed
   addOns?: StudJobAddOn[]; // Additional services
 
   // Contract
