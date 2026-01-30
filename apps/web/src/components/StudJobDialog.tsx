@@ -510,7 +510,7 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
                         </Button>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-4 gap-3">
                         <div className="space-y-1">
                           <Label className="text-xs">Date *</Label>
                           <Input
@@ -518,6 +518,19 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
                             value={breeding.date}
                             onChange={(e) => updateBreeding(breeding.id, { date: e.target.value })}
                             required
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs">Heat Day</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="30"
+                            value={breeding.heatDay || ''}
+                            onChange={(e) => updateBreeding(breeding.id, { heatDay: e.target.value ? parseInt(e.target.value) : undefined })}
+                            placeholder="e.g., 12"
+                            className="h-9"
                           />
                         </div>
 
@@ -555,6 +568,35 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
                             </SelectContent>
                           </Select>
                         </div>
+                      </div>
+
+                      {/* Progesterone Test Section */}
+                      <div className="grid grid-cols-2 gap-3 items-end">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`progesterone-${breeding.id}`}
+                            checked={breeding.progesteroneTest || false}
+                            onCheckedChange={(checked) => updateBreeding(breeding.id, {
+                              progesteroneTest: checked as boolean,
+                              progesteroneResult: checked ? breeding.progesteroneResult : undefined
+                            })}
+                          />
+                          <Label htmlFor={`progesterone-${breeding.id}`} className="text-xs cursor-pointer font-normal">
+                            Progesterone Test Done
+                          </Label>
+                        </div>
+
+                        {breeding.progesteroneTest && (
+                          <div className="space-y-1">
+                            <Label className="text-xs">Result (ng/ml)</Label>
+                            <Input
+                              value={breeding.progesteroneResult || ''}
+                              onChange={(e) => updateBreeding(breeding.id, { progesteroneResult: e.target.value })}
+                              placeholder="e.g., 5.2"
+                              className="h-9"
+                            />
+                          </div>
+                        )}
                       </div>
 
                       {breeding.method !== 'natural' && (

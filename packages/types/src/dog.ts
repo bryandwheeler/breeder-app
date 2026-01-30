@@ -123,6 +123,9 @@ export interface StudJobBreeding {
   aiDetails?: string;
   successful?: boolean; // Did the tie/insemination happen successfully
   duration?: number; // Duration in minutes (for natural breeding ties)
+  heatDay?: number; // What day of heat the dam is in
+  progesteroneTest?: boolean; // Whether a progesterone test was done
+  progesteroneResult?: string; // The result of the progesterone test (e.g., "5.2 ng/ml")
   notes?: string;
 }
 
