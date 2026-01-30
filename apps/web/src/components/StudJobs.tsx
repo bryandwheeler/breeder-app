@@ -24,7 +24,7 @@ export function StudJobs() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<StudJob | null>(null);
 
-  const { getPendingStudJobs, getConfirmedStudJobs, getInProgressStudJobs, getCompletedStudJobs, deleteStudJob } =
+  const { getPendingStudJobs, getConfirmedStudJobs, getInProgressStudJobs, getCompletedStudJobs, deleteStudJob, getAllStudJobs } =
     useStudJobStore();
   const { dogs } = useDogStore();
   const { customers } = useCrmStore();
@@ -33,6 +33,19 @@ export function StudJobs() {
   const confirmedJobs = getConfirmedStudJobs();
   const inProgressJobs = getInProgressStudJobs();
   const completedJobs = getCompletedStudJobs();
+  const allStudJobs = getAllStudJobs();
+
+  // Helper to get original job info for rebreeds
+  const getOriginalJobInfo = (rebreedOriginalJobId?: string) => {
+    if (!rebreedOriginalJobId) return null;
+    const originalJob = allStudJobs.find(j => j.id === rebreedOriginalJobId);
+    if (!originalJob) return null;
+    const dateStr = originalJob.breedings?.[0]?.date || originalJob.scheduledDate;
+    return {
+      femaleName: originalJob.femaleDogName,
+      date: dateStr ? format(parseISO(dateStr), 'MMM d, yyyy') : 'Unknown date',
+    };
+  };
 
   const getStudName = (studId: string) => {
     const dog = dogs.find((d) => d.id === studId);
@@ -112,16 +125,26 @@ export function StudJobs() {
     // Get breeder contact info from centralized system
     const breederInfo = getStudJobBreederInfo(job, customers);
 
+    // Get original job info if this is a rebreed
+    const originalJobInfo = job.isRebreed ? getOriginalJobInfo(job.rebreedOriginalJobId) : null;
+
     return (
       <TableRow key={job.id}>
         <TableCell className="font-medium">
-          <div className="flex items-center gap-2">
-            {getStudName(job.studId)}
-            {job.isRebreed && (
-              <Badge variant="outline" className="text-xs bg-purple-100 text-purple-800 border-purple-300">
-                <RotateCcw className="h-3 w-3 mr-1" />
-                Rebreed
-              </Badge>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              {getStudName(job.studId)}
+              {job.isRebreed && (
+                <Badge variant="outline" className="text-xs bg-purple-100 text-purple-800 border-purple-300">
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Rebreed
+                </Badge>
+              )}
+            </div>
+            {originalJobInfo && (
+              <span className="text-xs text-muted-foreground">
+                Rebreed from {originalJobInfo.date}
+              </span>
             )}
           </div>
         </TableCell>

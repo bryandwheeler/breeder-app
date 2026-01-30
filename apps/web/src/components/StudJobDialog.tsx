@@ -39,7 +39,10 @@ interface StudJobDialogProps {
 export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: StudJobDialogProps) {
   const { currentUser } = useAuth();
   const { dogs } = useDogStore();
-  const { addStudJob, updateStudJob } = useStudJobStore();
+  const { addStudJob, updateStudJob, getAllStudJobs } = useStudJobStore();
+
+  // Get all stud jobs for rebreed selection
+  const allStudJobs = getAllStudJobs();
 
   // Get active male studs and female dogs from the kennel
   // Only show males that are marked as 'active-stud' in breeding status
@@ -587,6 +590,69 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
           <div className="space-y-4 border-t pt-4">
             <Label className="text-base">Financial & Litter Info</Label>
 
+            {/* Rebreed Section - at top of financial since it affects fees */}
+            <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isRebreed"
+                  checked={isRebreed}
+                  onCheckedChange={(checked) => {
+                    const isChecked = checked as boolean;
+                    setIsRebreed(isChecked);
+                    if (isChecked) {
+                      // Auto-set fee to 0 for rebreeds
+                      setStudFee('0');
+                      setStudFeePaid(true);
+                    }
+                    if (!isChecked) {
+                      setRebreedOriginalJobId('');
+                    }
+                  }}
+                />
+                <Label htmlFor="isRebreed" className="cursor-pointer font-normal">
+                  Guaranteed Rebreed (no charge - previous breeding didn't result in pregnancy)
+                </Label>
+              </div>
+
+              {isRebreed && (
+                <div className="space-y-2 ml-6">
+                  <Label htmlFor="rebreedOriginalJobId">Original Failed Stud Job</Label>
+                  <Select
+                    value={rebreedOriginalJobId}
+                    onValueChange={setRebreedOriginalJobId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select original job (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Not linked / Unknown</SelectItem>
+                      {allStudJobs
+                        .filter(job =>
+                          job.id !== editingJob?.id && // Not the current job
+                          job.studId === studId && // Same stud
+                          job.status === 'completed' && // Must be completed
+                          (!job.puppyCount || job.puppyCount === 0) // No puppies (failed)
+                        )
+                        .map(job => {
+                          const studDog = dogs.find(d => d.id === job.studId);
+                          const studName = studDog?.name || 'Unknown';
+                          const dateStr = job.breedings?.[0]?.date || job.scheduledDate || '';
+                          const formattedDate = dateStr ? new Date(dateStr).toLocaleDateString() : 'No date';
+                          return (
+                            <SelectItem key={job.id} value={job.id}>
+                              {job.femaleDogName} × {studName} ({formattedDate})
+                            </SelectItem>
+                          );
+                        })}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Link this rebreed to the original stud job that didn't result in pregnancy
+                  </p>
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="studFee">Base Stud Fee ($)</Label>
@@ -598,7 +664,11 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
                   value={studFee}
                   onChange={(e) => setStudFee(e.target.value)}
                   placeholder="0.00"
+                  disabled={isRebreed}
                 />
+                {isRebreed && (
+                  <p className="text-xs text-muted-foreground">Fee is $0 for guaranteed rebreeds</p>
+                )}
               </div>
 
               <div className="space-y-2 pt-6">
@@ -607,6 +677,7 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
                     id="studFeePaid"
                     checked={studFeePaid}
                     onCheckedChange={(checked) => setStudFeePaid(checked as boolean)}
+                    disabled={isRebreed}
                   />
                   <Label htmlFor="studFeePaid" className="cursor-pointer font-normal">
                     Base Fee Paid
@@ -652,17 +723,6 @@ export function StudJobDialog({ open, setOpen, editingJob, preselectedStudId }: 
               />
               <Label htmlFor="pickOfLitter" className="cursor-pointer font-normal">
                 Pick of the Litter Agreement
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isRebreed"
-                checked={isRebreed}
-                onCheckedChange={(checked) => setIsRebreed(checked as boolean)}
-              />
-              <Label htmlFor="isRebreed" className="cursor-pointer font-normal">
-                Rebreed (guaranteed service at reduced/no cost)
               </Label>
             </div>
 
