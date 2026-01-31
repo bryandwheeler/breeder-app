@@ -147,7 +147,8 @@ export function LitterCareTasks({ litter }: LitterCareTasksProps) {
         litter.id,
         currentUser.uid,
         litter.dateOfBirth,
-        litter.litterName
+        litter.litterName,
+        { dewClawRemoval: litter.dewClawRemoval }
       );
     } catch (error) {
       console.error('Error generating tasks:', error);
@@ -168,7 +169,8 @@ export function LitterCareTasks({ litter }: LitterCareTasksProps) {
         litter.id,
         currentUser.uid,
         litter.dateOfBirth,
-        litter.litterName
+        litter.litterName,
+        { dewClawRemoval: litter.dewClawRemoval }
       );
     } catch (error) {
       console.error('Error regenerating tasks:', error);

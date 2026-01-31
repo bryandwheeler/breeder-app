@@ -529,6 +529,8 @@ export interface Litter {
   announceDate?: string;
   pickupReadyDate?: string;
   litterNotes?: string;
+  // Dew claw removal - creates immediate task if enabled (typically done days 2-5)
+  dewClawRemoval?: boolean;
   pricing?: {
     petPrice?: number;
     breedingPrice?: number;

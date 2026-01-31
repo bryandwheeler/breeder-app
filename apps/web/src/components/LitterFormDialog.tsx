@@ -19,7 +19,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Combobox } from '@/components/ui/combobox';
-import { useDogStore } from '@breeder/firebase';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useDogStore, useTaskStore } from '@breeder/firebase';
 import { Litter } from '@breeder/types';
 import { searchDogs, type DogSearchResult } from '@/lib/kennelSearch';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,7 +44,8 @@ export function LitterFormDialog({
   litter,
 }: LitterFormDialogProps) {
   const { currentUser } = useAuth();
-  const { dogs, addLitter, updateLitter } = useDogStore();
+  const { dogs, addLitter, updateLitter, litters } = useDogStore();
+  const { generateAllLitterTasks } = useTaskStore();
 
   // Filter for active breeding dogs only
   const activeDams = dogs.filter(
@@ -72,6 +74,7 @@ export function LitterFormDialog({
     status: 'planned',
     puppies: [],
     buyers: [],
+    dewClawRemoval: false,
   });
 
   // Sire search state
@@ -105,6 +108,7 @@ export function LitterFormDialog({
         litterNotes: litter.litterNotes,
         pricing: litter.pricing,
         ownerInfo: litter.ownerInfo,
+        dewClawRemoval: litter.dewClawRemoval,
       });
       // Calculate existing puppy counts
       const males = litter.puppies?.filter(p => p.sex === 'male').length || 0;
@@ -243,10 +247,52 @@ export function LitterFormDialog({
       });
     } else {
       await addLitter(litterData);
-      toast({
-        title: 'Litter created',
-        description: `Created litter with ${puppies.length} puppy record${puppies.length !== 1 ? 's' : ''}.`,
-      });
+
+      // Auto-generate tasks if the litter has a birth date
+      if (formData.dateOfBirth && currentUser) {
+        // Wait a moment for the litter to be added to Firestore and synced
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Find the newly created litter by matching dam, sire, and date
+        const latestLitters = useDogStore.getState().litters;
+        const newLitter = latestLitters.find(
+          l => l.damId === formData.damId &&
+               l.dateOfBirth === formData.dateOfBirth &&
+               (l.sireId === formData.sireId || (!l.sireId && externalSire))
+        );
+
+        if (newLitter) {
+          try {
+            await generateAllLitterTasks(
+              newLitter.id,
+              currentUser.uid,
+              formData.dateOfBirth,
+              formData.litterName,
+              { dewClawRemoval: formData.dewClawRemoval }
+            );
+            toast({
+              title: 'Litter created with care schedule',
+              description: `Created litter with ${puppies.length} puppy record${puppies.length !== 1 ? 's' : ''} and daily care tasks.`,
+            });
+          } catch (error) {
+            console.error('Error generating tasks:', error);
+            toast({
+              title: 'Litter created',
+              description: `Created litter with ${puppies.length} puppy record${puppies.length !== 1 ? 's' : ''}. You can generate care tasks from the litter page.`,
+            });
+          }
+        } else {
+          toast({
+            title: 'Litter created',
+            description: `Created litter with ${puppies.length} puppy record${puppies.length !== 1 ? 's' : ''}.`,
+          });
+        }
+      } else {
+        toast({
+          title: 'Litter created',
+          description: `Created litter with ${puppies.length} puppy record${puppies.length !== 1 ? 's' : ''}.`,
+        });
+      }
     }
 
     setOpen(false);
@@ -592,6 +638,20 @@ export function LitterFormDialog({
                   {maleCount + femaleCount}
                 </div>
               </div>
+            </div>
+
+            {/* Dew Claw Removal Option */}
+            <div className='flex items-center space-x-2 pt-2'>
+              <Checkbox
+                id='dewClawRemoval'
+                checked={formData.dewClawRemoval || false}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, dewClawRemoval: checked as boolean })
+                }
+              />
+              <Label htmlFor='dewClawRemoval' className='cursor-pointer font-normal text-sm'>
+                Schedule dew claw removal (creates task for days 2-5)
+              </Label>
             </div>
           </div>
 

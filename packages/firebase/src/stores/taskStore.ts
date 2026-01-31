@@ -66,7 +66,8 @@ interface TaskState {
     litterId: string,
     breederId: string,
     birthDate: string,
-    litterName?: string
+    litterName?: string,
+    options?: { dewClawRemoval?: boolean }
   ) => Promise<void>;
   updateTaskStatus: (
     taskId: string,
@@ -374,11 +375,57 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     litterId: string,
     breederId: string,
     birthDate: string,
-    litterName?: string
+    litterName?: string,
+    options?: { dewClawRemoval?: boolean }
   ) => {
     try {
       const birthDateObj = new Date(birthDate);
       const batch = writeBatch(db);
+
+      // Add dew claw removal task if enabled (typically done days 2-5)
+      if (options?.dewClawRemoval) {
+        const dewClawDueDate = new Date(birthDateObj);
+        dewClawDueDate.setDate(dewClawDueDate.getDate() + 3); // Day 3 is ideal
+
+        const dewClawTaskRef = doc(collection(db, 'litterTasks'));
+        batch.set(dewClawTaskRef, {
+          id: dewClawTaskRef.id,
+          litterId,
+          breederId,
+          templateId: 'dew-claw-removal',
+          title: 'Dew Claw Removal',
+          description: 'Schedule and complete dew claw removal for puppies (best done between days 2-5 while nails are still soft).',
+          dueDate: dewClawDueDate.toISOString(),
+          dayOrWeek: 0,
+          frequency: 'once' as const,
+          category: 'health' as const,
+          status: 'pending' as const,
+          taskType: 'weekly' as const,
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      // Add week 6 task to schedule week 7 vet visit
+      const scheduleVetVisitDate = new Date(birthDateObj);
+      scheduleVetVisitDate.setDate(scheduleVetVisitDate.getDate() + 6 * 7); // Week 6
+
+      const scheduleVetTaskRef = doc(collection(db, 'litterTasks'));
+      batch.set(scheduleVetTaskRef, {
+        id: scheduleVetTaskRef.id,
+        litterId,
+        breederId,
+        templateId: 'schedule-week7-vet-visit',
+        title: 'Schedule Week 7 Vet Visit',
+        description: 'Schedule vet appointment for week 7 puppy checkup and first vaccinations. Enter appointment details when confirmed.',
+        dueDate: scheduleVetVisitDate.toISOString(),
+        dayOrWeek: 6,
+        frequency: 'once' as const,
+        category: 'vaccination' as const,
+        status: 'pending' as const,
+        taskType: 'weekly' as const,
+        requiresScheduling: true,
+        createdAt: new Date().toISOString(),
+      });
 
       // Fetch weekly templates from Firestore, fall back to hardcoded defaults
       // Note: No orderBy to avoid index requirements on new collections

@@ -44,6 +44,17 @@ export interface LitterTask {
   createdAt: string;
   taskType?: TaskType; // 'weekly' for milestones, 'daily' for routines
   timeOfDay?: 'morning' | 'midday' | 'evening'; // For daily tasks only
+  // Appointment scheduling data (for tasks like vet visits)
+  requiresScheduling?: boolean; // If true, task requires appointment scheduling
+  appointment?: {
+    date?: string; // ISO date string for scheduled appointment
+    time?: string; // Time of appointment (e.g., "2:30 PM")
+    vetContactId?: string; // Reference to vet contact in CRM
+    vetName?: string; // Vet name (denormalized for display)
+    vetClinic?: string; // Clinic name
+    vetPhone?: string; // Vet phone number
+    confirmationNumber?: string; // Appointment confirmation number
+  };
 }
 
 export interface TaskStats {
