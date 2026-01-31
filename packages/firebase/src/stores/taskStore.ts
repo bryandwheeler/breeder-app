@@ -78,6 +78,18 @@ interface TaskState {
     taskIds: string[],
     status: TaskStatus
   ) => Promise<void>;
+  updateTaskAppointment: (
+    taskId: string,
+    appointment: {
+      date?: string;
+      time?: string;
+      vetContactId?: string;
+      vetName?: string;
+      vetClinic?: string;
+      vetPhone?: string;
+      confirmationNumber?: string;
+    }
+  ) => Promise<void>;
   deleteTasksForLitter: (litterId: string) => Promise<void>;
   getTaskStats: (litterId: string) => TaskStats;
 }
@@ -380,7 +392,22 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   ) => {
     try {
       const birthDateObj = new Date(birthDate);
-      const batch = writeBatch(db);
+
+      // Use multiple batches to avoid Firestore's 500 operation limit
+      const batches: ReturnType<typeof writeBatch>[] = [writeBatch(db)];
+      let currentBatchIndex = 0;
+      let operationsInCurrentBatch = 0;
+      const MAX_BATCH_SIZE = 450; // Leave some buffer under 500 limit
+
+      const addToBatch = (ref: ReturnType<typeof doc>, data: any) => {
+        if (operationsInCurrentBatch >= MAX_BATCH_SIZE) {
+          batches.push(writeBatch(db));
+          currentBatchIndex++;
+          operationsInCurrentBatch = 0;
+        }
+        batches[currentBatchIndex].set(ref, data);
+        operationsInCurrentBatch++;
+      };
 
       // Add dew claw removal task if enabled (typically done days 2-5)
       if (options?.dewClawRemoval) {
@@ -388,7 +415,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         dewClawDueDate.setDate(dewClawDueDate.getDate() + 3); // Day 3 is ideal
 
         const dewClawTaskRef = doc(collection(db, 'litterTasks'));
-        batch.set(dewClawTaskRef, {
+        addToBatch(dewClawTaskRef, {
           id: dewClawTaskRef.id,
           litterId,
           breederId,
@@ -410,7 +437,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       scheduleVetVisitDate.setDate(scheduleVetVisitDate.getDate() + 6 * 7); // Week 6
 
       const scheduleVetTaskRef = doc(collection(db, 'litterTasks'));
-      batch.set(scheduleVetTaskRef, {
+      addToBatch(scheduleVetTaskRef, {
         id: scheduleVetTaskRef.id,
         litterId,
         breederId,
@@ -462,7 +489,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         dueDate.setDate(dueDate.getDate() + template.weekDue * 7);
 
         const taskRef = doc(collection(db, 'litterTasks'));
-        batch.set(taskRef, {
+        addToBatch(taskRef, {
           id: taskRef.id,
           litterId,
           breederId,
@@ -512,44 +539,54 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         }));
       }
 
-      // Generate daily tasks - create for the next 10 weeks (70 days)
-      // But skip days that are in the past (don't create overdue daily tasks)
-      const totalDays = 70; // ~10 weeks of daily tasks
+      // Generate daily tasks - create for the next 10 weeks (70 days) from today
+      // But respect the litter's actual age for determining which routines apply
       const today = new Date();
       today.setHours(0, 0, 0, 0); // Start of today
 
-      for (let day = 0; day < totalDays; day++) {
+      // Calculate how many days old the litter is
+      const litterAgeDays = Math.floor((today.getTime() - birthDateObj.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Start from today (or birth date if in the future) and generate 70 days of tasks
+      const startDay = Math.max(0, litterAgeDays);
+      const endDay = startDay + 70; // 70 days from the starting point
+
+      for (let day = startDay; day < endDay; day++) {
         const taskDate = new Date(birthDateObj);
         taskDate.setDate(taskDate.getDate() + day);
         taskDate.setHours(0, 0, 0, 0); // Normalize to start of day
-
-        // Skip past dates - don't create overdue daily tasks
-        if (taskDate < today) continue;
 
         const currentWeek = Math.floor(day / 7);
 
         dailyTemplates.forEach((routine) => {
           // Check if this routine applies to the current week
-          const isActive = routine.weekStart <= currentWeek;
-          const notEnded = routine.weekEnd === undefined || routine.weekEnd >= currentWeek;
+          // Use ?? to handle undefined/null weekStart (default to 0)
+          const weekStart = routine.weekStart ?? 0;
+          const isActive = weekStart <= currentWeek;
+          const notEnded = routine.weekEnd === undefined || routine.weekEnd === null || routine.weekEnd >= currentWeek;
 
           if (!isActive || !notEnded) return;
 
           // Create tasks for morning, midday, and/or evening based on timeOfDay
           const timesOfDay: Array<'morning' | 'midday' | 'evening'> = [];
-          if (routine.timeOfDay === 'morning' || routine.timeOfDay === 'both') {
+          const timeOfDayValue = (routine.timeOfDay || '').toLowerCase();
+
+          if (timeOfDayValue === 'morning' || timeOfDayValue === 'both' || timeOfDayValue === 'am') {
             timesOfDay.push('morning');
           }
-          if (routine.timeOfDay === 'midday') {
+          if (timeOfDayValue === 'midday' || timeOfDayValue === 'noon') {
             timesOfDay.push('midday');
           }
-          if (routine.timeOfDay === 'evening' || routine.timeOfDay === 'both') {
+          if (timeOfDayValue === 'evening' || timeOfDayValue === 'both' || timeOfDayValue === 'pm') {
             timesOfDay.push('evening');
           }
 
+          // If no valid timeOfDay, skip
+          if (timesOfDay.length === 0) return;
+
           timesOfDay.forEach((timeOfDay) => {
             const taskRef = doc(collection(db, 'litterTasks'));
-            batch.set(taskRef, {
+            addToBatch(taskRef, {
               id: taskRef.id,
               litterId,
               breederId,
@@ -569,7 +606,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         });
       }
 
-      await batch.commit();
+      // Commit all batches
+      await Promise.all(batches.map(batch => batch.commit()));
     } catch (error) {
       console.error('Error generating all litter tasks:', error);
       throw error;
@@ -621,6 +659,21 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       await batch.commit();
     } catch (error) {
       console.error('Error bulk updating task status:', error);
+      throw error;
+    }
+  },
+
+  updateTaskAppointment: async (taskId, appointment) => {
+    try {
+      const taskRef = doc(db, 'litterTasks', taskId);
+      await updateDoc(taskRef, {
+        appointment,
+        // Also mark as completed when appointment is scheduled
+        status: 'completed',
+        completedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Error updating task appointment:', error);
       throw error;
     }
   },

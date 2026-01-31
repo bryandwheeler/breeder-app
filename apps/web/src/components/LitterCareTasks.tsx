@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle2, Circle, ListTodo, Plus, Sunrise, Sun, Moon, Calendar, Loader2, RefreshCw, AlertCircle, CheckCheck, SkipForward } from 'lucide-react';
+import { CheckCircle2, Circle, ListTodo, Plus, Sunrise, Sun, Moon, Calendar, Loader2, RefreshCw, AlertCircle, CheckCheck, SkipForward, CalendarPlus, Phone, Clock } from 'lucide-react';
 import { format, startOfDay, endOfDay, isBefore, isAfter, addDays } from 'date-fns';
 import { Litter, LitterTask } from '@breeder/types';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { AppointmentSchedulingDialog } from './AppointmentSchedulingDialog';
 
 interface LitterCareTasksProps {
   litter: Litter;
@@ -29,6 +30,7 @@ interface LitterCareTasksProps {
 export function LitterCareTasks({ litter }: LitterCareTasksProps) {
   const [saving, setSaving] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [schedulingTask, setSchedulingTask] = useState<LitterTask | null>(null);
   const { currentUser } = useAuth();
   const {
     litterTasks,
@@ -811,7 +813,94 @@ export function LitterCareTasks({ litter }: LitterCareTasksProps) {
                             const isCompleted = task.status === 'completed';
                             const isSaving = saving === task.id;
                             const taskDueDate = new Date(task.dueDate);
+                            const requiresScheduling = task.requiresScheduling;
+                            const hasAppointment = task.appointment?.date;
 
+                            // For scheduling tasks, show special UI
+                            if (requiresScheduling) {
+                              return (
+                                <div
+                                  key={task.id}
+                                  className={cn(
+                                    "w-full p-3 rounded-lg border-2 transition-all",
+                                    isCompleted
+                                      ? "bg-green-500/10 border-green-300"
+                                      : "bg-blue-50 border-blue-200 hover:border-blue-300"
+                                  )}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    {isCompleted ? (
+                                      <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                                    ) : (
+                                      <CalendarPlus className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center justify-between gap-2">
+                                        <p className={cn(
+                                          "font-medium text-sm",
+                                          isCompleted && "text-green-700"
+                                        )}>
+                                          {task.title}
+                                        </p>
+                                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                          Due: {format(taskDueDate, 'MMM d')}
+                                        </span>
+                                      </div>
+
+                                      {task.description && !hasAppointment && (
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                          {task.description}
+                                        </p>
+                                      )}
+
+                                      {/* Show appointment details if scheduled */}
+                                      {hasAppointment && (
+                                        <div className="mt-2 p-2 bg-white rounded border text-xs space-y-1">
+                                          <div className="flex items-center gap-2">
+                                            <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                                            <span className="font-medium">
+                                              {format(new Date(task.appointment!.date!), 'EEEE, MMMM d, yyyy')}
+                                            </span>
+                                            {task.appointment?.time && (
+                                              <>
+                                                <Clock className="h-3.5 w-3.5 text-blue-500 ml-2" />
+                                                <span>{task.appointment.time}</span>
+                                              </>
+                                            )}
+                                          </div>
+                                          {(task.appointment?.vetName || task.appointment?.vetClinic) && (
+                                            <div className="text-muted-foreground">
+                                              {task.appointment.vetName}
+                                              {task.appointment.vetName && task.appointment.vetClinic && ' at '}
+                                              {task.appointment.vetClinic}
+                                            </div>
+                                          )}
+                                          {task.appointment?.vetPhone && (
+                                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                                              <Phone className="h-3 w-3" />
+                                              {task.appointment.vetPhone}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+
+                                      {/* Schedule button */}
+                                      <Button
+                                        size="sm"
+                                        variant={isCompleted ? "outline" : "default"}
+                                        className="mt-2"
+                                        onClick={() => setSchedulingTask(task)}
+                                      >
+                                        <CalendarPlus className="h-4 w-4 mr-1" />
+                                        {isCompleted ? 'Edit Appointment' : 'Schedule Appointment'}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            // Regular task rendering
                             return (
                               <button
                                 key={task.id}
@@ -867,6 +956,13 @@ export function LitterCareTasks({ litter }: LitterCareTasksProps) {
           </TabsContent>
         </Tabs>
       </CardContent>
+
+      {/* Appointment Scheduling Dialog */}
+      <AppointmentSchedulingDialog
+        open={schedulingTask !== null}
+        onOpenChange={(open) => !open && setSchedulingTask(null)}
+        task={schedulingTask}
+      />
     </Card>
   );
 }
