@@ -32,6 +32,13 @@ import {
 } from '@breeder/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
   Plus,
   Trash2,
   GripVertical,
@@ -41,6 +48,8 @@ import {
   Moon,
   ChevronDown,
   ChevronUp,
+  Calendar,
+  Clock,
 } from 'lucide-react';
 import {
   DndContext,
@@ -401,6 +410,8 @@ export function CareScheduleEditor() {
     DailyRoutineTemplate[]
   >([]);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showAddTaskDialog, setShowAddTaskDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState<'weekly' | 'daily'>('weekly');
   const { toast } = useToast();
 
   type DeletedItem =
@@ -493,7 +504,7 @@ export function CareScheduleEditor() {
     setHasChanges(true);
   };
 
-  const handleAddDailyRoutine = (timeOfDay: 'morning' | 'evening') => {
+  const handleAddDailyRoutine = (timeOfDay: 'morning' | 'evening' | 'both') => {
     const newRoutine: DailyRoutineTemplate = {
       name: '',
       description: '',
@@ -503,6 +514,18 @@ export function CareScheduleEditor() {
     };
     setEditableDailyRoutines([...editableDailyRoutines, newRoutine]);
     setHasChanges(true);
+  };
+
+  const handleAddTaskTypeSelection = (type: 'weekly' | 'daily') => {
+    setShowAddTaskDialog(false);
+    if (type === 'weekly') {
+      setActiveTab('weekly');
+      handleAddTask();
+    } else {
+      setActiveTab('daily');
+      // Default to morning for new daily routines from the dialog
+      handleAddDailyRoutine('morning');
+    }
   };
 
   const handleRemoveDailyRoutine = (index: number) => {
@@ -641,6 +664,10 @@ export function CareScheduleEditor() {
           </p>
         </div>
         <div className='flex gap-2'>
+          <Button variant='outline' onClick={() => setShowAddTaskDialog(true)} size='sm'>
+            <Plus className='h-4 w-4 mr-2' />
+            Add Task
+          </Button>
           <Button variant='outline' onClick={handleResetToDefaults} size='sm'>
             <RotateCcw className='h-4 w-4 mr-2' />
             Reset to Defaults
@@ -656,7 +683,47 @@ export function CareScheduleEditor() {
         </div>
       </div>
 
-      <Tabs defaultValue='weekly' className='space-y-6'>
+      {/* Add Task Type Selection Dialog */}
+      <Dialog open={showAddTaskDialog} onOpenChange={setShowAddTaskDialog}>
+        <DialogContent className='max-w-sm'>
+          <DialogHeader>
+            <DialogTitle>Add New Task</DialogTitle>
+            <DialogDescription>
+              What type of task would you like to add?
+            </DialogDescription>
+          </DialogHeader>
+          <div className='grid grid-cols-2 gap-4 pt-4'>
+            <button
+              type='button'
+              onClick={() => handleAddTaskTypeSelection('weekly')}
+              className='flex flex-col items-center gap-3 p-6 border rounded-lg hover:bg-muted transition-colors'
+            >
+              <Calendar className='h-8 w-8 text-primary' />
+              <div className='text-center'>
+                <p className='font-medium'>Weekly Task</p>
+                <p className='text-xs text-muted-foreground mt-1'>
+                  One-time milestone tasks due at specific weeks
+                </p>
+              </div>
+            </button>
+            <button
+              type='button'
+              onClick={() => handleAddTaskTypeSelection('daily')}
+              className='flex flex-col items-center gap-3 p-6 border rounded-lg hover:bg-muted transition-colors'
+            >
+              <Clock className='h-8 w-8 text-primary' />
+              <div className='text-center'>
+                <p className='font-medium'>Daily Routine</p>
+                <p className='text-xs text-muted-foreground mt-1'>
+                  Recurring tasks done every day
+                </p>
+              </div>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'weekly' | 'daily')} className='space-y-6'>
         <TabsList>
           <TabsTrigger value='weekly'>Weekly Tasks</TabsTrigger>
           <TabsTrigger value='daily'>Daily Routines</TabsTrigger>
