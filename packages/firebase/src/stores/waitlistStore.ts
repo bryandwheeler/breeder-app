@@ -11,13 +11,22 @@ import {
   onSnapshot,
   serverTimestamp,
   getDocs,
+  getDoc,
+  setDoc,
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
-import { WaitlistEntry, CoApplicant } from '@breeder/types';
+import {
+  WaitlistEntry,
+  CoApplicant,
+  WaitlistFormConfig,
+  createDefaultFormConfig,
+} from '@breeder/types';
 
 type Store = {
   waitlist: WaitlistEntry[];
   loading: boolean;
+  formConfig: WaitlistFormConfig | null;
+  formConfigLoading: boolean;
 
   // Waitlist methods
   addToWaitlist: (
@@ -54,11 +63,18 @@ type Store = {
 
   // Subscription
   subscribeToWaitlist: () => () => void;
+
+  // Form config methods
+  loadFormConfig: (breederId: string) => Promise<WaitlistFormConfig>;
+  saveFormConfig: (config: WaitlistFormConfig) => Promise<void>;
+  loadFormConfigForPublic: (breederId: string) => Promise<WaitlistFormConfig | null>;
 };
 
 export const useWaitlistStore = create<Store>()((set, get) => ({
   waitlist: [],
   loading: false,
+  formConfig: null,
+  formConfigLoading: false,
 
   addToWaitlist: async (entry) => {
     const user = auth.currentUser;
@@ -622,5 +638,62 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
     );
 
     return unsubscribe;
+  },
+
+  loadFormConfig: async (breederId: string) => {
+    set({ formConfigLoading: true });
+    try {
+      const configRef = doc(db, 'breeders', breederId, 'settings', 'waitlistFormConfig');
+      const configSnap = await getDoc(configRef);
+
+      if (configSnap.exists()) {
+        const config = configSnap.data() as WaitlistFormConfig;
+        set({ formConfig: config, formConfigLoading: false });
+        return config;
+      } else {
+        // Return default config if none exists
+        const defaultConfig = createDefaultFormConfig(breederId);
+        set({ formConfig: defaultConfig, formConfigLoading: false });
+        return defaultConfig;
+      }
+    } catch (error) {
+      console.error('Error loading form config:', error);
+      set({ formConfigLoading: false });
+      // Return default config on error
+      const defaultConfig = createDefaultFormConfig(breederId);
+      set({ formConfig: defaultConfig });
+      return defaultConfig;
+    }
+  },
+
+  saveFormConfig: async (config: WaitlistFormConfig) => {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Must be logged in to save form config');
+
+    const configRef = doc(db, 'breeders', user.uid, 'settings', 'waitlistFormConfig');
+    const updatedConfig = {
+      ...config,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await setDoc(configRef, updatedConfig);
+    set({ formConfig: updatedConfig });
+  },
+
+  loadFormConfigForPublic: async (breederId: string) => {
+    // Public method for loading form config (for application form)
+    try {
+      const configRef = doc(db, 'breeders', breederId, 'settings', 'waitlistFormConfig');
+      const configSnap = await getDoc(configRef);
+
+      if (configSnap.exists()) {
+        return configSnap.data() as WaitlistFormConfig;
+      }
+      // Return null if no custom config - caller can use default form
+      return null;
+    } catch (error) {
+      console.error('Error loading public form config:', error);
+      return null;
+    }
   },
 }));

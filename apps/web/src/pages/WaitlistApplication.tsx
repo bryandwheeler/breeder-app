@@ -15,38 +15,50 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CheckCircle, Plus, Trash2, Instagram, Facebook } from 'lucide-react';
+import { CheckCircle, Plus, Trash2, Instagram, Facebook, Loader2 } from 'lucide-react';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@breeder/firebase';
 import emailjs from '@emailjs/browser';
 import { EMAILJS_CONFIG } from '@/lib/emailjs';
-import { CoApplicant, SocialMediaCommunication } from '@breeder/types';
+import { CoApplicant, SocialMediaCommunication, WaitlistFormConfig, WaitlistEntry } from '@breeder/types';
+import { DynamicWaitlistForm } from '@/components/waitlist/DynamicWaitlistForm';
 
 export function WaitlistApplication() {
   const { userId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const submitWaitlistApplication = useWaitlistStore((state) => state.submitWaitlistApplication);
+  const { submitWaitlistApplication, loadFormConfigForPublic } = useWaitlistStore();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const inquiryId = searchParams.get('inquiryId');
   const [breederProfile, setBreederProfile] = useState<any>(null);
+  const [formConfig, setFormConfig] = useState<WaitlistFormConfig | null>(null);
+  const [formConfigLoading, setFormConfigLoading] = useState(true);
 
-  // Load breeder profile for notification settings
+  // Load breeder profile and form config
   useEffect(() => {
-    const loadProfile = async () => {
+    const loadData = async () => {
       if (!userId) return;
+      setFormConfigLoading(true);
       try {
-        const profileDoc = await getDoc(doc(db, 'breederProfiles', userId));
+        // Load profile and form config in parallel
+        const [profileDoc, config] = await Promise.all([
+          getDoc(doc(db, 'breederProfiles', userId)),
+          loadFormConfigForPublic(userId),
+        ]);
+
         if (profileDoc.exists()) {
           setBreederProfile(profileDoc.data());
         }
+        setFormConfig(config);
       } catch (error) {
-        console.error('Error loading profile:', error);
+        console.error('Error loading data:', error);
+      } finally {
+        setFormConfigLoading(false);
       }
     };
-    loadProfile();
-  }, [userId]);
+    loadData();
+  }, [userId, loadFormConfigForPublic]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -251,6 +263,73 @@ export function WaitlistApplication() {
     }
   };
 
+  // Handler for dynamic form submission
+  const handleDynamicFormSubmit = async (data: Partial<WaitlistEntry>) => {
+    if (!userId) throw new Error('No breeder ID');
+
+    const now = new Date().toISOString();
+
+    await submitWaitlistApplication({
+      ...data,
+      userId,
+      applicationDate: now.split('T')[0],
+      submittedAt: now,
+      status: 'pending',
+      depositRequired: true,
+      activityLog: [
+        {
+          timestamp: now,
+          action: 'Application submitted',
+          details: 'Customer submitted waitlist application',
+          performedBy: 'customer',
+        },
+      ],
+    } as any);
+
+    // Send notification email to breeder if enabled
+    if (breederProfile?.enableWaitlistNotifications !== false) {
+      try {
+        const publicKey = breederProfile?.emailjsPublicKey || EMAILJS_CONFIG.PUBLIC_KEY;
+        const serviceId = breederProfile?.emailjsServiceId || EMAILJS_CONFIG.SERVICE_ID;
+        const templateId = breederProfile?.emailjsWaitlistNotificationTemplateId;
+
+        if (publicKey && serviceId && templateId) {
+          const notificationEmail = breederProfile?.notificationEmail || breederProfile?.email;
+
+          await emailjs.send(
+            serviceId,
+            templateId,
+            {
+              to_email: notificationEmail,
+              to_name: breederProfile?.breederName || 'Breeder',
+              customer_name: data.name,
+              customer_email: data.email,
+              customer_phone: data.phone || 'Not provided',
+              submitted_date: new Date().toLocaleString(),
+            },
+            publicKey
+          );
+        }
+      } catch (emailError) {
+        console.error('Failed to send notification email:', emailError);
+      }
+    }
+
+    setSubmitted(true);
+  };
+
+  // Show loading state while fetching form config
+  if (formConfigLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading application form...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (submitted) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -258,10 +337,31 @@ export function WaitlistApplication() {
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Application Submitted!</h2>
           <p className="text-muted-foreground mb-6">
-            Thank you for your interest! The breeder will review your application and contact you soon.
+            {formConfig?.successMessage || 'Thank you for your interest! The breeder will review your application and contact you soon.'}
           </p>
           <Button onClick={() => navigate(`/home/${userId}`)}>Back to Home</Button>
         </Card>
+      </div>
+    );
+  }
+
+  // Use dynamic form if a custom config exists
+  if (formConfig && userId) {
+    return (
+      <div className="min-h-screen bg-background py-12 px-4">
+        <div className="container mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold mb-2">Waitlist Application</h1>
+            <p className="text-muted-foreground">
+              Complete this application to join our waitlist for upcoming litters.
+            </p>
+          </div>
+          <DynamicWaitlistForm
+            config={formConfig}
+            breederId={userId}
+            onSubmit={handleDynamicFormSubmit}
+          />
+        </div>
       </div>
     );
   }

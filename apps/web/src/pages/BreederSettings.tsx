@@ -20,6 +20,7 @@ import { EmailSettings } from '@/components/EmailSettings';
 import { EmailTemplatesManager } from '@/components/EmailTemplatesManager';
 import { WorkflowManager } from '@/components/WorkflowManager';
 import { ScheduledEmailsManager } from '@/components/ScheduledEmailsManager';
+import { WaitlistFormBuilder } from '@/components/settings/WaitlistFormBuilder';
 
 export function BreederSettings() {
   const { currentUser } = useAuth();
@@ -206,6 +207,7 @@ export function BreederSettings() {
           <ScrollableTabsTrigger value='health'>Health</ScrollableTabsTrigger>
           <ScrollableTabsTrigger value='credentials'>Credentials</ScrollableTabsTrigger>
           <ScrollableTabsTrigger value='care'>Care</ScrollableTabsTrigger>
+          <ScrollableTabsTrigger value='waitlistForm'>Waitlist Form</ScrollableTabsTrigger>
           <ScrollableTabsTrigger value='email'>Email Config</ScrollableTabsTrigger>
           <ScrollableTabsTrigger value='emailIntegration'>Integration</ScrollableTabsTrigger>
           <ScrollableTabsTrigger value='emailTemplates'>Templates</ScrollableTabsTrigger>
@@ -554,6 +556,11 @@ export function BreederSettings() {
           <Card className='p-6'>
             <CareScheduleEditor />
           </Card>
+        </TabsContent>
+
+        {/* Waitlist Form Builder */}
+        <TabsContent value='waitlistForm'>
+          <WaitlistFormBuilder />
         </TabsContent>
 
         {/* Email Integration */}

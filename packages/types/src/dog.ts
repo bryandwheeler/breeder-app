@@ -1267,6 +1267,10 @@ export interface WaitlistEntry {
   submittedAt?: string; // When the customer submitted the application
   formSubmittedDate?: string; // When form was submitted (for entries created manually then later filled via form)
   updatedAt?: string;
+
+  // Custom form fields
+  customFields?: Record<string, any>; // Stores responses to custom fields defined in form builder
+  formConfigId?: string; // Reference to the form config version used when submitting
 }
 
 export interface CommunicationNote {
