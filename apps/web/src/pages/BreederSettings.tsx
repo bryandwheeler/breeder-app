@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useBreederStore } from '@breeder/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { migrateToContacts, migrateWaitlistToContacts } from '@breeder/firebase';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -90,70 +89,6 @@ export function BreederSettings() {
     ? `${window.location.origin}/home/${currentUser.uid}`
     : '';
 
-  // Migration state
-  const [migrating, setMigrating] = useState(false);
-  const [migrationStats, setMigrationStats] = useState<any>(null);
-  const [migratingWaitlist, setMigratingWaitlist] = useState(false);
-  const [waitlistMigrationStats, setWaitlistMigrationStats] = useState<any>(null);
-
-  const handleMigration = async () => {
-    if (!currentUser) return;
-
-    const confirmMigration = window.confirm(
-      'This will migrate your guardian homes, external parents, and stud jobs to use the new Contact system. This is a one-time operation. Continue?'
-    );
-
-    if (!confirmMigration) return;
-
-    setMigrating(true);
-    setMigrationStats(null);
-
-    try {
-      const stats = await migrateToContacts(currentUser.uid);
-      setMigrationStats(stats);
-      alert(
-        `Migration completed successfully!\n\n` +
-        `Guardians: ${stats.guardiansProcessed} processed, ${stats.guardiansCreated} created\n` +
-        `External Parents: ${stats.externalParentsProcessed} processed, ${stats.externalParentsCreated} created\n` +
-        `Stud Jobs: ${stats.studJobsProcessed} processed, ${stats.studJobsCreated} created`
-      );
-    } catch (error) {
-      console.error('Migration failed:', error);
-      alert('Migration failed. Please try again or contact support.');
-    } finally {
-      setMigrating(false);
-    }
-  };
-
-  const handleWaitlistMigration = async () => {
-    if (!currentUser) return;
-
-    const confirmMigration = window.confirm(
-      'This will create Contact records for all your waitlist applicants who don\'t already have one. Continue?'
-    );
-
-    if (!confirmMigration) return;
-
-    setMigratingWaitlist(true);
-    setWaitlistMigrationStats(null);
-
-    try {
-      const stats = await migrateWaitlistToContacts(currentUser.uid);
-      setWaitlistMigrationStats(stats);
-      alert(
-        `Waitlist migration completed!\n\n` +
-        `Entries processed: ${stats.waitlistProcessed}\n` +
-        `Entries linked: ${stats.waitlistLinked}\n` +
-        `New contacts created: ${stats.contactsCreated}`
-      );
-    } catch (error) {
-      console.error('Waitlist migration failed:', error);
-      alert('Waitlist migration failed. Please try again or contact support.');
-    } finally {
-      setMigratingWaitlist(false);
-    }
-  };
-
   return (
     <div className='space-y-6'>
       <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
@@ -213,7 +148,6 @@ export function BreederSettings() {
           <ScrollableTabsTrigger value='emailTemplates'>Templates</ScrollableTabsTrigger>
           <ScrollableTabsTrigger value='workflows'>Workflows</ScrollableTabsTrigger>
           <ScrollableTabsTrigger value='scheduledEmails'>Scheduled</ScrollableTabsTrigger>
-          <ScrollableTabsTrigger value='migration'>Migration</ScrollableTabsTrigger>
           <ScrollableTabsTrigger value='settings'>Settings</ScrollableTabsTrigger>
         </ScrollableTabsList>
 
@@ -931,138 +865,6 @@ export function BreederSettings() {
                   </p>
                 </div>
               )}
-          </Card>
-        </TabsContent>
-
-        {/* Data Migration */}
-        <TabsContent value='migration'>
-          <Card className='p-6 space-y-6'>
-            <div>
-              <h3 className='text-lg font-semibold mb-2'>Migrate to Centralized Contact System</h3>
-              <p className='text-sm text-muted-foreground mb-6'>
-                This migration will convert your guardian homes, external parents, and stud job breeders
-                to use the new centralized Contact system. This is a one-time operation that will:
-              </p>
-
-              <ul className='list-disc list-inside space-y-2 text-sm text-muted-foreground mb-6'>
-                <li>Create Contact records for all guardians, external breeders, and stud job clients</li>
-                <li>Automatically detect and merge duplicate contacts based on email and phone</li>
-                <li>Link existing data to the new Contact records</li>
-                <li>Preserve all original data for backward compatibility</li>
-              </ul>
-
-              <div className='bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6'>
-                <p className='text-sm text-yellow-800'>
-                  <strong>Important:</strong> This migration is safe and can be run multiple times.
-                  It will skip any data that has already been migrated. Your original data will not be deleted.
-                </p>
-              </div>
-
-              <div className='flex items-center gap-4'>
-                <Button
-                  onClick={handleMigration}
-                  disabled={migrating}
-                  variant='default'
-                >
-                  {migrating ? 'Migrating...' : 'Run Migration'}
-                </Button>
-
-                {migrationStats && (
-                  <div className='text-sm text-green-600 font-medium'>
-                    Migration completed successfully!
-                  </div>
-                )}
-              </div>
-
-              {migrationStats && (
-                <div className='mt-6 p-4 bg-green-50 border border-green-200 rounded-md'>
-                  <h4 className='font-semibold text-green-800 mb-2'>Migration Results</h4>
-                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm'>
-                    <div>
-                      <div className='font-medium'>Guardian Homes</div>
-                      <div className='text-muted-foreground'>
-                        {migrationStats.guardiansProcessed} processed, {migrationStats.guardiansCreated} created
-                      </div>
-                    </div>
-                    <div>
-                      <div className='font-medium'>External Parents</div>
-                      <div className='text-muted-foreground'>
-                        {migrationStats.externalParentsProcessed} processed, {migrationStats.externalParentsCreated} created
-                      </div>
-                    </div>
-                    <div>
-                      <div className='font-medium'>Stud Jobs</div>
-                      <div className='text-muted-foreground'>
-                        {migrationStats.studJobsProcessed} processed, {migrationStats.studJobsCreated} created
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className='border-t pt-6'>
-              <h3 className='text-lg font-semibold mb-2'>Migrate Waitlist to Contacts</h3>
-              <p className='text-sm text-muted-foreground mb-6'>
-                This migration will create Contact records for all your waitlist applicants
-                who don't already have linked contacts. This enables the unified CRM view.
-              </p>
-
-              <ul className='list-disc list-inside space-y-2 text-sm text-muted-foreground mb-6'>
-                <li>Create Contact records for waitlist applicants</li>
-                <li>Match existing contacts by email or phone to avoid duplicates</li>
-                <li>Link waitlist entries to their Contact records</li>
-              </ul>
-
-              <div className='bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6'>
-                <p className='text-sm text-yellow-800'>
-                  <strong>Note:</strong> This migration is safe and can be run multiple times.
-                  It will skip entries that are already linked to contacts.
-                </p>
-              </div>
-
-              <div className='flex items-center gap-4'>
-                <Button
-                  onClick={handleWaitlistMigration}
-                  disabled={migratingWaitlist}
-                  variant='default'
-                >
-                  {migratingWaitlist ? 'Migrating...' : 'Migrate Waitlist'}
-                </Button>
-
-                {waitlistMigrationStats && (
-                  <div className='text-sm text-green-600 font-medium'>
-                    Waitlist migration completed!
-                  </div>
-                )}
-              </div>
-
-              {waitlistMigrationStats && (
-                <div className='mt-6 p-4 bg-green-50 border border-green-200 rounded-md'>
-                  <h4 className='font-semibold text-green-800 mb-2'>Waitlist Migration Results</h4>
-                  <div className='grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm'>
-                    <div>
-                      <div className='font-medium'>Entries Processed</div>
-                      <div className='text-muted-foreground'>
-                        {waitlistMigrationStats.waitlistProcessed}
-                      </div>
-                    </div>
-                    <div>
-                      <div className='font-medium'>Entries Linked</div>
-                      <div className='text-muted-foreground'>
-                        {waitlistMigrationStats.waitlistLinked}
-                      </div>
-                    </div>
-                    <div>
-                      <div className='font-medium'>Contacts Created</div>
-                      <div className='text-muted-foreground'>
-                        {waitlistMigrationStats.contactsCreated}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
           </Card>
         </TabsContent>
 
