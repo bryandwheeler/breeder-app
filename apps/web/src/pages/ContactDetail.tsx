@@ -1,4 +1,4 @@
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useCrmStore, useDogStore, useWaitlistStore } from '@breeder/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
@@ -31,13 +32,11 @@ import {
   Mail,
   Phone,
   MapPin,
-  Calendar,
   Tag,
   MoreVertical,
   MessageSquare,
   Instagram,
   Facebook,
-  Clock,
   DollarSign,
   User,
   FileText,
@@ -45,8 +44,8 @@ import {
   Activity,
   Plus,
   Edit,
-  UserPlus,
   ListPlus,
+  MessageCircle,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -61,6 +60,7 @@ import {
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { EmailCompose } from '@/components/EmailCompose';
+import { CommunicationChannels, ContactConversations, SendSmsDialog } from '@/components/contacts';
 import { Send, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { Customer } from '@breeder/types';
 
@@ -76,6 +76,7 @@ export function ContactDetail() {
   const [noteText, setNoteText] = useState('');
   const [saving, setSaving] = useState(false);
   const [emailComposeOpen, setEmailComposeOpen] = useState(false);
+  const [smsDialogOpen, setSmsDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [waitlistDialogOpen, setWaitlistDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState<Partial<Customer>>({});
@@ -101,6 +102,12 @@ export function ContactDetail() {
         type: customer.type,
         status: customer.status,
         notes: customer.notes,
+        instagramUsername: customer.instagramUsername,
+        facebook: customer.facebook,
+        facebookProfileUrl: customer.facebookProfileUrl,
+        preferredContact: customer.preferredContact,
+        smsOptIn: customer.smsOptIn,
+        emailOptIn: customer.emailOptIn,
       });
     }
   }, [customer]);
@@ -310,12 +317,18 @@ export function ContactDetail() {
                 Send Email
               </DropdownMenuItem>
               {customer.phone && (
-                <DropdownMenuItem asChild>
-                  <a href={`tel:${customer.phone}`}>
-                    <Phone className='mr-2 h-4 w-4' />
-                    Call
-                  </a>
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuItem asChild>
+                    <a href={`tel:${customer.phone}`}>
+                      <Phone className='mr-2 h-4 w-4' />
+                      Call
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSmsDialogOpen(true)}>
+                    <MessageCircle className='mr-2 h-4 w-4' />
+                    Send Text
+                  </DropdownMenuItem>
+                </>
               )}
               <DropdownMenuItem onClick={() => navigate(`/messaging?contact=${customer.id}`)}>
                 <MessageSquare className='mr-2 h-4 w-4' />
@@ -525,6 +538,13 @@ export function ContactDetail() {
             </CardContent>
           </Card>
 
+          {/* Communication Channels */}
+          <CommunicationChannels
+            customer={customer}
+            onEmailClick={() => setEmailComposeOpen(true)}
+            onSmsClick={() => setSmsDialogOpen(true)}
+          />
+
           {/* Quick Actions */}
           <Card>
             <CardContent className='pt-4 space-y-2'>
@@ -537,12 +557,22 @@ export function ContactDetail() {
                 Send Email
               </Button>
               {customer.phone && (
-                <Button variant='outline' className='w-full justify-start' asChild>
-                  <a href={`tel:${customer.phone}`}>
-                    <Phone className='mr-2 h-4 w-4' />
-                    Call
-                  </a>
-                </Button>
+                <>
+                  <Button variant='outline' className='w-full justify-start' asChild>
+                    <a href={`tel:${customer.phone}`}>
+                      <Phone className='mr-2 h-4 w-4' />
+                      Call
+                    </a>
+                  </Button>
+                  <Button
+                    variant='outline'
+                    className='w-full justify-start'
+                    onClick={() => setSmsDialogOpen(true)}
+                  >
+                    <MessageCircle className='mr-2 h-4 w-4' />
+                    Send Text
+                  </Button>
+                </>
               )}
               <Button
                 variant='outline'
@@ -716,38 +746,54 @@ export function ContactDetail() {
             </TabsContent>
 
             <TabsContent value='messages'>
-              <Card>
-                <CardHeader>
-                  <CardTitle className='text-lg'>Messages</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className='text-center py-8 text-muted-foreground'>
-                    <MessageSquare className='h-12 w-12 mx-auto mb-3 opacity-50' />
-                    <p>No message conversations found.</p>
-                    <p className='text-sm'>Instagram and Facebook messages will appear here.</p>
-                    {customer.conversationIds && customer.conversationIds.length > 0 ? (
-                      <Button className='mt-4' onClick={() => navigate(`/messaging?contact=${customer.id}`)}>
-                        View in Messaging
+              <div className='space-y-4'>
+                <Card>
+                  <CardHeader className='pb-3'>
+                    <CardTitle className='text-base'>Send Message</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className='flex flex-wrap gap-2'>
+                      <Button variant='outline' size='sm' onClick={() => setEmailComposeOpen(true)}>
+                        <Mail className='mr-2 h-4 w-4' />
+                        Email
                       </Button>
-                    ) : (
-                      <div className='mt-4 space-y-2'>
-                        {customer.instagramUsername && (
-                          <Button variant='outline' asChild>
-                            <a
-                              href={`https://instagram.com/${customer.instagramUsername}`}
-                              target='_blank'
-                              rel='noopener noreferrer'
-                            >
-                              <Instagram className='mr-2 h-4 w-4' />
-                              Message on Instagram
-                            </a>
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                      {customer.phone && (
+                        <Button variant='outline' size='sm' onClick={() => setSmsDialogOpen(true)}>
+                          <MessageCircle className='mr-2 h-4 w-4' />
+                          Text
+                        </Button>
+                      )}
+                      {customer.instagramUsername && (
+                        <Button variant='outline' size='sm' asChild>
+                          <a
+                            href={`https://instagram.com/${customer.instagramUsername}`}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                          >
+                            <Instagram className='mr-2 h-4 w-4' />
+                            Instagram
+                          </a>
+                        </Button>
+                      )}
+                      {customer.facebook && (
+                        <Button variant='outline' size='sm' asChild>
+                          <a href={customer.facebook} target='_blank' rel='noopener noreferrer'>
+                            <Facebook className='mr-2 h-4 w-4' />
+                            Facebook
+                          </a>
+                        </Button>
+                      )}
+                      {customer.conversationIds && customer.conversationIds.length > 0 && (
+                        <Button size='sm' onClick={() => navigate(`/messaging?contact=${customer.id}`)}>
+                          <MessageSquare className='mr-2 h-4 w-4' />
+                          Open Inbox
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+                <ContactConversations customer={customer} />
+              </div>
             </TabsContent>
 
             <TabsContent value='purchases'>
@@ -917,6 +963,19 @@ export function ContactDetail() {
         }}
       />
 
+      {/* SMS Dialog */}
+      <SendSmsDialog
+        open={smsDialogOpen}
+        onOpenChange={setSmsDialogOpen}
+        customer={customer}
+        onSent={() => {
+          toast({
+            title: 'Message sent',
+            description: `Text message sent to ${customer.name}`,
+          });
+        }}
+      />
+
       {/* Edit Contact Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className='max-w-lg'>
@@ -1020,6 +1079,80 @@ export function ContactDetail() {
                     <SelectItem value='archived'>Archived</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className='col-span-2'>
+                <Separator className='my-2' />
+                <div className='text-sm font-medium mb-3'>Social Media</div>
+              </div>
+              <div>
+                <Label htmlFor='edit-instagram'>Instagram Username</Label>
+                <div className='relative'>
+                  <span className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground'>@</span>
+                  <Input
+                    id='edit-instagram'
+                    value={editForm.instagramUsername || ''}
+                    onChange={(e) => setEditForm({ ...editForm, instagramUsername: e.target.value.replace('@', '') })}
+                    className='pl-7'
+                    placeholder='username'
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor='edit-facebook'>Facebook Profile URL</Label>
+                <Input
+                  id='edit-facebook'
+                  value={editForm.facebook || editForm.facebookProfileUrl || ''}
+                  onChange={(e) => setEditForm({ ...editForm, facebook: e.target.value, facebookProfileUrl: e.target.value })}
+                  placeholder='https://facebook.com/...'
+                />
+              </div>
+
+              <div className='col-span-2'>
+                <Separator className='my-2' />
+                <div className='text-sm font-medium mb-3'>Communication Preferences</div>
+              </div>
+              <div>
+                <Label htmlFor='edit-preferred-contact'>Preferred Contact Method</Label>
+                <Select
+                  value={editForm.preferredContact || ''}
+                  onValueChange={(value) => setEditForm({ ...editForm, preferredContact: value as Customer['preferredContact'] })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder='Select preferred method' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='email'>Email</SelectItem>
+                    <SelectItem value='phone'>Phone</SelectItem>
+                    <SelectItem value='text'>Text Message</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className='space-y-3'>
+                <div className='flex items-center gap-2'>
+                  <input
+                    type='checkbox'
+                    id='edit-email-optin'
+                    checked={editForm.emailOptIn !== false}
+                    onChange={(e) => setEditForm({ ...editForm, emailOptIn: e.target.checked })}
+                    className='h-4 w-4 rounded border-gray-300'
+                  />
+                  <Label htmlFor='edit-email-optin' className='text-sm font-normal'>Email opt-in</Label>
+                </div>
+                <div className='flex items-center gap-2'>
+                  <input
+                    type='checkbox'
+                    id='edit-sms-optin'
+                    checked={editForm.smsOptIn !== false}
+                    onChange={(e) => setEditForm({ ...editForm, smsOptIn: e.target.checked })}
+                    className='h-4 w-4 rounded border-gray-300'
+                  />
+                  <Label htmlFor='edit-sms-optin' className='text-sm font-normal'>SMS opt-in</Label>
+                </div>
+              </div>
+
+              <div className='col-span-2'>
+                <Separator className='my-2' />
               </div>
               <div className='col-span-2'>
                 <Label htmlFor='edit-notes'>General Notes</Label>

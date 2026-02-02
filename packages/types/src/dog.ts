@@ -1358,6 +1358,22 @@ export interface Customer {
   instagramUsername?: string; // Actual Instagram handle
   instagramProfilePicture?: string;
 
+  // Facebook Messenger Integration
+  facebookUserId?: string; // Facebook-scoped user ID for Messenger
+  facebookPageScopedId?: string; // Page-scoped ID for messaging
+  facebookProfileUrl?: string; // Facebook profile URL
+
+  // SMS/Text Messaging
+  smsEnabled?: boolean; // Whether this contact can receive SMS
+  smsPhoneNumber?: string; // Verified phone number for SMS (may differ from primary phone)
+  smsCarrier?: string; // Phone carrier if known
+  smsLastSentAt?: string; // Last time an SMS was sent
+  smsLastReceivedAt?: string; // Last time an SMS was received
+
+  // WhatsApp Integration
+  whatsappNumber?: string; // WhatsApp phone number (with country code)
+  whatsappEnabled?: boolean; // Whether contact uses WhatsApp
+
   // Messaging & Conversations
   conversationIds?: string[]; // References to Conversation records from messaging system
   lastMessageAt?: string; // Last time we received or sent a message
