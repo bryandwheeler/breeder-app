@@ -1161,13 +1161,32 @@ export interface Inquiry {
 }
 
 // Master Waitlist Entry
+// Co-applicant for waitlist applications (e.g., spouse, partner, co-owner)
+export interface CoApplicant {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  relationship?: string; // e.g., "spouse", "partner", "co-owner"
+  contactId?: string; // Link to Customer/Contact record if matched/created
+}
+
+// Social media communication info for applications
+export interface SocialMediaCommunication {
+  hasCommunicated: boolean; // Have they been communicating via social media?
+  platform?: 'instagram' | 'facebook' | 'both';
+  instagramHandle?: string; // @username
+  facebookProfile?: string; // Profile name or URL
+}
+
 export interface WaitlistEntry {
   id: string;
   userId: string; // Breeder's user ID
   inquiryId?: string; // Link to the original inquiry if came from inquiry
   contactId?: string; // Link to Customer/Contact record in CRM
+  additionalContactIds?: string[]; // Links to co-applicant Contact records
 
-  // Customer Information
+  // Customer Information (Primary Contact)
   name: string;
   email: string;
   phone?: string;
@@ -1175,6 +1194,12 @@ export interface WaitlistEntry {
   city?: string;
   state?: string;
   zipCode?: string;
+
+  // Co-Applicants (additional people on the application)
+  coApplicants?: CoApplicant[];
+
+  // Social Media Communication
+  socialMedia?: SocialMediaCommunication;
 
   // Application Details
   applicationDate: string;

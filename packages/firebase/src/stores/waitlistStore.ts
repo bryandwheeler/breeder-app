@@ -13,7 +13,7 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
-import { WaitlistEntry } from '@breeder/types';
+import { WaitlistEntry, CoApplicant } from '@breeder/types';
 
 type Store = {
   waitlist: WaitlistEntry[];
@@ -49,7 +49,7 @@ type Store = {
 
   // Public methods (for waitlist application form)
   submitWaitlistApplication: (
-    entry: Omit<WaitlistEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+    entry: Omit<WaitlistEntry, 'id' | 'createdAt' | 'updatedAt'> & { userId: string }
   ) => Promise<void>;
 
   // Subscription
@@ -333,6 +333,15 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
 
       // If no existing contact found, create a new one
       if (!contactId) {
+        // Include social media info if provided
+        const socialMediaFields: Record<string, string> = {};
+        if ((entry as any).socialMedia?.instagramHandle) {
+          socialMediaFields.instagram = (entry as any).socialMedia.instagramHandle;
+        }
+        if ((entry as any).socialMedia?.facebookProfile) {
+          socialMediaFields.facebook = (entry as any).socialMedia.facebookProfile;
+        }
+
         const newCustomer = {
           name: entry.name,
           email: entry.email.toLowerCase().trim(),
@@ -358,16 +367,127 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
           tags: [],
           contactRoles: ['prospect'],
           notes: '',
+          ...socialMediaFields,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
 
         const newContactDoc = await addDoc(customersRef, newCustomer);
         contactId = newContactDoc.id;
+      } else {
+        // Update existing contact with social media info if provided and not already set
+        const socialMediaUpdates: Record<string, string> = {};
+        if ((entry as any).socialMedia?.instagramHandle) {
+          socialMediaUpdates.instagram = (entry as any).socialMedia.instagramHandle;
+        }
+        if ((entry as any).socialMedia?.facebookProfile) {
+          socialMediaUpdates.facebook = (entry as any).socialMedia.facebookProfile;
+        }
+        if (Object.keys(socialMediaUpdates).length > 0) {
+          await updateDoc(doc(db, 'customers', contactId), {
+            ...socialMediaUpdates,
+            updatedAt: serverTimestamp(),
+          });
+        }
       }
     } catch (error) {
       // Log error but don't fail the waitlist submission
       console.error('Error creating/linking contact for waitlist application:', error);
+    }
+
+    // Process co-applicants - create/match contacts for each
+    const additionalContactIds: string[] = [];
+    const coApplicants: CoApplicant[] = (entry as any).coApplicants || [];
+
+    for (const coApplicant of coApplicants) {
+      if (!coApplicant.name || !coApplicant.email || !coApplicant.phone) continue;
+
+      try {
+        let coContactId: string | undefined;
+
+        // Search for existing contact by email
+        const coEmailQuery = query(
+          customersRef,
+          where('breederId', '==', breederId),
+          where('email', '==', coApplicant.email.toLowerCase().trim())
+        );
+        const coEmailSnapshot = await getDocs(coEmailQuery);
+
+        if (!coEmailSnapshot.empty) {
+          // Found existing contact by email
+          coContactId = coEmailSnapshot.docs[0].id;
+          const currentRoles = coEmailSnapshot.docs[0].data().contactRoles || [];
+          if (!currentRoles.includes('prospect')) {
+            await updateDoc(doc(db, 'customers', coContactId), {
+              contactRoles: [...currentRoles, 'prospect'],
+              updatedAt: serverTimestamp(),
+            });
+          }
+        } else {
+          // Try phone match
+          const normalizedPhone = coApplicant.phone.replace(/\D/g, '').slice(-10);
+          if (normalizedPhone.length === 10) {
+            const allCustomersQuery = query(
+              customersRef,
+              where('breederId', '==', breederId)
+            );
+            const allCustomersSnapshot = await getDocs(allCustomersQuery);
+
+            for (const customerDoc of allCustomersSnapshot.docs) {
+              const customerPhone = (customerDoc.data().phone || '').replace(/\D/g, '');
+              if (customerPhone.slice(-10) === normalizedPhone) {
+                coContactId = customerDoc.id;
+                const currentRoles = customerDoc.data().contactRoles || [];
+                if (!currentRoles.includes('prospect')) {
+                  await updateDoc(doc(db, 'customers', coContactId), {
+                    contactRoles: [...currentRoles, 'prospect'],
+                    updatedAt: serverTimestamp(),
+                  });
+                }
+                break;
+              }
+            }
+          }
+        }
+
+        // If no existing contact found, create a new one
+        if (!coContactId) {
+          const newCoCustomer = {
+            name: coApplicant.name,
+            email: coApplicant.email.toLowerCase().trim(),
+            phone: coApplicant.phone,
+            type: 'prospect',
+            status: 'active',
+            source: 'website',
+            preferredContact: 'email',
+            emailOptIn: true,
+            smsOptIn: false,
+            userId: breederId,
+            breederId: breederId,
+            firstContactDate: new Date().toISOString().split('T')[0],
+            lastContactDate: new Date().toISOString().split('T')[0],
+            totalPurchases: 0,
+            totalRevenue: 0,
+            lifetimeValue: 0,
+            interactions: [],
+            purchases: [],
+            tags: coApplicant.relationship ? [`Co-applicant: ${coApplicant.relationship}`] : ['Co-applicant'],
+            contactRoles: ['prospect'],
+            notes: `Added as co-applicant for ${entry.name}'s application${coApplicant.relationship ? ` (${coApplicant.relationship})` : ''}`,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          };
+
+          const newCoContactDoc = await addDoc(customersRef, newCoCustomer);
+          coContactId = newCoContactDoc.id;
+        }
+
+        // Update the co-applicant record with the contact ID
+        coApplicant.contactId = coContactId;
+        additionalContactIds.push(coContactId);
+      } catch (error) {
+        console.error('Error creating/linking co-applicant contact:', error);
+      }
     }
 
     // Check if this contact already has a waitlist entry (merge if so)
@@ -445,7 +565,9 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
       ...entry,
       // Persist breederId for rules; keep userId for backward compat
       breederId: breederId,
-      contactId: contactId, // Link to contact record
+      contactId: contactId, // Link to primary contact record
+      additionalContactIds: additionalContactIds.length > 0 ? additionalContactIds : undefined,
+      coApplicants: coApplicants.length > 0 ? coApplicants : undefined,
       status: 'pending' as const,
       position,
       applicationDate: new Date().toISOString().split('T')[0],

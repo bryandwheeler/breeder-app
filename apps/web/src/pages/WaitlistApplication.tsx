@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useWaitlistStore } from '@breeder/firebase';
-import { useBreederStore } from '@breeder/firebase';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,11 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Plus, Trash2, Instagram, Facebook } from 'lucide-react';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@breeder/firebase';
 import emailjs from '@emailjs/browser';
 import { EMAILJS_CONFIG } from '@/lib/emailjs';
+import { CoApplicant, SocialMediaCommunication } from '@breeder/types';
 
 export function WaitlistApplication() {
   const { userId } = useParams();
@@ -73,6 +73,46 @@ export function WaitlistApplication() {
     depositRequired: true,
   });
 
+  // Co-applicants state (additional people on the application)
+  const [coApplicants, setCoApplicants] = useState<CoApplicant[]>([]);
+
+  // Social media communication state
+  const [socialMedia, setSocialMedia] = useState<SocialMediaCommunication>({
+    hasCommunicated: false,
+    platform: undefined,
+    instagramHandle: '',
+    facebookProfile: '',
+  });
+
+  // Helper to generate unique ID for co-applicants
+  const generateId = () => `co-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+  // Add a new co-applicant
+  const addCoApplicant = () => {
+    setCoApplicants([
+      ...coApplicants,
+      {
+        id: generateId(),
+        name: '',
+        email: '',
+        phone: '',
+        relationship: '',
+      },
+    ]);
+  };
+
+  // Remove a co-applicant
+  const removeCoApplicant = (id: string) => {
+    setCoApplicants(coApplicants.filter((c) => c.id !== id));
+  };
+
+  // Update a co-applicant
+  const updateCoApplicant = (id: string, updates: Partial<CoApplicant>) => {
+    setCoApplicants(
+      coApplicants.map((c) => (c.id === id ? { ...c, ...updates } : c))
+    );
+  };
+
   // Load inquiry data if inquiryId is present
   useEffect(() => {
     const loadInquiry = async () => {
@@ -110,6 +150,22 @@ export function WaitlistApplication() {
     setLoading(true);
     try {
       const now = new Date().toISOString();
+
+      // Filter out empty co-applicants and validate
+      const validCoApplicants = coApplicants.filter(
+        (c) => c.name.trim() && c.email.trim() && c.phone.trim()
+      );
+
+      // Prepare social media data (only include if they communicated)
+      const socialMediaData = socialMedia.hasCommunicated
+        ? {
+            hasCommunicated: true,
+            platform: socialMedia.platform,
+            instagramHandle: socialMedia.instagramHandle?.trim() || undefined,
+            facebookProfile: socialMedia.facebookProfile?.trim() || undefined,
+          }
+        : { hasCommunicated: false };
+
       await submitWaitlistApplication({
         ...formData,
         userId,
@@ -117,11 +173,15 @@ export function WaitlistApplication() {
         submittedAt: now,
         status: 'pending',
         inquiryId: inquiryId || undefined,
+        coApplicants: validCoApplicants.length > 0 ? validCoApplicants : undefined,
+        socialMedia: socialMediaData,
         activityLog: [
           {
             timestamp: now,
             action: 'Application submitted',
-            details: 'Customer submitted waitlist application',
+            details: validCoApplicants.length > 0
+              ? `Customer submitted waitlist application with ${validCoApplicants.length} co-applicant(s)`
+              : 'Customer submitted waitlist application',
             performedBy: 'customer',
           },
         ],
@@ -137,6 +197,19 @@ export function WaitlistApplication() {
           if (publicKey && serviceId && templateId) {
             const notificationEmail = breederProfile?.notificationEmail || breederProfile?.email;
 
+            // Build co-applicant info string for email
+            const coApplicantInfo = validCoApplicants.length > 0
+              ? validCoApplicants.map((c) => `${c.name} (${c.email}, ${c.phone})${c.relationship ? ` - ${c.relationship}` : ''}`).join('; ')
+              : 'None';
+
+            // Build social media info string
+            const socialMediaInfo = socialMedia.hasCommunicated
+              ? [
+                  socialMedia.instagramHandle ? `Instagram: ${socialMedia.instagramHandle}` : '',
+                  socialMedia.facebookProfile ? `Facebook: ${socialMedia.facebookProfile}` : '',
+                ].filter(Boolean).join(', ') || 'Yes (no profile provided)'
+              : 'No';
+
             await emailjs.send(
               serviceId,
               templateId,
@@ -148,15 +221,17 @@ export function WaitlistApplication() {
                 customer_phone: formData.phone || 'Not provided',
                 customer_address: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`,
                 preferred_sex: formData.preferredSex === 'either' ? 'No preference' : formData.preferredSex,
-                preferred_color: formData.preferredColor || 'Not specified',
+                preferred_color: formData.preferredColors?.join(', ') || 'Not specified',
                 timeline: formData.timeline || 'Not specified',
-                household_type: formData.householdType || 'Not specified',
-                has_children: formData.hasChildren ? 'Yes' : 'No',
+                household_type: formData.homeOwnership || 'Not specified',
+                has_children: formData.children ? 'Yes' : 'No',
                 children_ages: formData.childrenAges || 'N/A',
                 experience: formData.experience || 'Not provided',
                 lifestyle: formData.lifestyle || 'Not provided',
                 reason: formData.reason || 'Not provided',
                 submitted_date: new Date().toLocaleString(),
+                co_applicants: coApplicantInfo,
+                social_media_contact: socialMediaInfo,
               },
               publicKey
             );
@@ -273,7 +348,211 @@ export function WaitlistApplication() {
                     onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                   />
                 </div>
+
+                <div>
+                  <Label htmlFor="zipCode">Zip Code</Label>
+                  <Input
+                    id="zipCode"
+                    value={formData.zipCode}
+                    onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+                  />
+                </div>
               </div>
+            </div>
+
+            {/* Co-Applicants Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">Additional Contacts</h3>
+                  <p className="text-sm text-muted-foreground">
+                    If someone else will also be involved in caring for the puppy (spouse, partner, etc.), add them here.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addCoApplicant}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Person
+                </Button>
+              </div>
+
+              {coApplicants.length > 0 && (
+                <div className="space-y-4">
+                  {coApplicants.map((coApplicant, index) => (
+                    <Card key={coApplicant.id} className="p-4 bg-muted/30">
+                      <div className="flex items-start justify-between mb-3">
+                        <span className="text-sm font-medium">
+                          Additional Contact {index + 1}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeCoApplicant(coApplicant.id)}
+                          className="text-destructive hover:text-destructive h-8 w-8 p-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label>
+                            Full Name <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            required
+                            value={coApplicant.name}
+                            onChange={(e) =>
+                              updateCoApplicant(coApplicant.id, { name: e.target.value })
+                            }
+                            placeholder="Jane Doe"
+                          />
+                        </div>
+                        <div>
+                          <Label>
+                            Email Address <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            type="email"
+                            required
+                            value={coApplicant.email}
+                            onChange={(e) =>
+                              updateCoApplicant(coApplicant.id, { email: e.target.value })
+                            }
+                            placeholder="jane@example.com"
+                          />
+                        </div>
+                        <div>
+                          <Label>
+                            Phone Number <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            type="tel"
+                            required
+                            value={coApplicant.phone}
+                            onChange={(e) =>
+                              updateCoApplicant(coApplicant.id, { phone: e.target.value })
+                            }
+                            placeholder="(555) 987-6543"
+                          />
+                        </div>
+                        <div>
+                          <Label>Relationship</Label>
+                          <Select
+                            value={coApplicant.relationship || ''}
+                            onValueChange={(value) =>
+                              updateCoApplicant(coApplicant.id, { relationship: value })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select relationship" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="spouse">Spouse</SelectItem>
+                              <SelectItem value="partner">Partner</SelectItem>
+                              <SelectItem value="family_member">Family Member</SelectItem>
+                              <SelectItem value="co-owner">Co-Owner</SelectItem>
+                              <SelectItem value="roommate">Roommate</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Social Media Communication */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Social Media Communication</h3>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="hasCommunicated"
+                  checked={socialMedia.hasCommunicated}
+                  onCheckedChange={(checked) =>
+                    setSocialMedia({
+                      ...socialMedia,
+                      hasCommunicated: checked as boolean,
+                      platform: checked ? socialMedia.platform : undefined,
+                    })
+                  }
+                />
+                <Label htmlFor="hasCommunicated" className="text-sm">
+                  Have you been communicating with us via Instagram or Facebook?
+                </Label>
+              </div>
+
+              {socialMedia.hasCommunicated && (
+                <div className="pl-6 space-y-4 border-l-2 border-muted ml-2">
+                  <div>
+                    <Label>Which platform(s)?</Label>
+                    <Select
+                      value={socialMedia.platform || ''}
+                      onValueChange={(value: 'instagram' | 'facebook' | 'both') =>
+                        setSocialMedia({ ...socialMedia, platform: value })
+                      }
+                    >
+                      <SelectTrigger className="w-full md:w-64">
+                        <SelectValue placeholder="Select platform" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="instagram">Instagram</SelectItem>
+                        <SelectItem value="facebook">Facebook</SelectItem>
+                        <SelectItem value="both">Both</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {(socialMedia.platform === 'instagram' || socialMedia.platform === 'both') && (
+                    <div>
+                      <Label htmlFor="instagramHandle" className="flex items-center gap-2">
+                        <Instagram className="h-4 w-4" />
+                        Instagram Handle (optional)
+                      </Label>
+                      <Input
+                        id="instagramHandle"
+                        value={socialMedia.instagramHandle || ''}
+                        onChange={(e) =>
+                          setSocialMedia({ ...socialMedia, instagramHandle: e.target.value })
+                        }
+                        placeholder="@yourusername"
+                        className="w-full md:w-64"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        This helps us link your conversation history
+                      </p>
+                    </div>
+                  )}
+
+                  {(socialMedia.platform === 'facebook' || socialMedia.platform === 'both') && (
+                    <div>
+                      <Label htmlFor="facebookProfile" className="flex items-center gap-2">
+                        <Facebook className="h-4 w-4" />
+                        Facebook Profile Name (optional)
+                      </Label>
+                      <Input
+                        id="facebookProfile"
+                        value={socialMedia.facebookProfile || ''}
+                        onChange={(e) =>
+                          setSocialMedia({ ...socialMedia, facebookProfile: e.target.value })
+                        }
+                        placeholder="Your name on Facebook"
+                        className="w-full md:w-64"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        This helps us link your conversation history
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Puppy Preferences */}
