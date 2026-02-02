@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, CheckCircle, Baby } from 'lucide-react';
 import { AddHeatCycleDialog } from './AddHeatCycleDialog';
 import { BreedingRecordDialog } from './BreedingRecordDialog';
+import { PregnancyConfirmationDialog } from './PregnancyConfirmationDialog';
 
 interface HeatCyclesProps {
   dogId: string;
@@ -22,6 +23,8 @@ export function HeatCycles({ dogId, dogName }: HeatCyclesProps) {
   const [editingCycle, setEditingCycle] = useState<HeatCycle | null>(null);
   const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
   const [editingBreedingRecord, setEditingBreedingRecord] = useState<BreedingRecord | null>(null);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [confirmingBreeding, setConfirmingBreeding] = useState<BreedingRecord | null>(null);
 
   const {
     getHeatCyclesForDog,
@@ -107,6 +110,25 @@ export function HeatCycles({ dogId, dogName }: HeatCyclesProps) {
   const handleDeleteBreeding = async (recordId: string) => {
     if (confirm('Are you sure you want to delete this breeding record?')) {
       await deleteBreedingRecord(recordId);
+    }
+  };
+
+  const handleConfirmPregnancy = (record: BreedingRecord) => {
+    setConfirmingBreeding(record);
+    setConfirmDialogOpen(true);
+  };
+
+  const getStatusBadge = (status: string | undefined) => {
+    switch (status) {
+      case 'confirmed':
+        return <Badge className="bg-green-500">Pregnant</Badge>;
+      case 'unsuccessful':
+        return <Badge variant="destructive">Unsuccessful</Badge>;
+      case 'whelped':
+        return <Badge className="bg-blue-500">Whelped</Badge>;
+      case 'pending':
+      default:
+        return <Badge variant="secondary">Pending</Badge>;
     }
   };
 
@@ -216,11 +238,28 @@ export function HeatCycles({ dogId, dogName }: HeatCyclesProps) {
                         {breedings.length > 0 ? (
                           <div className="space-y-2">
                             {breedings.map((breeding) => (
-                              <div key={breeding.id} className="flex items-center gap-2">
-                                <Badge variant="secondary" className="flex-1">
-                                  {breeding.studName} - {format(parseISO(breeding.breedingDate), 'MMM d')}
-                                </Badge>
-                                <div className="flex gap-1">
+                              <div key={breeding.id} className="p-2 border rounded-lg space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">{breeding.studName}</span>
+                                    <span className="text-muted-foreground text-sm">
+                                      {format(parseISO(breeding.breedingDate), 'MMM d')}
+                                    </span>
+                                  </div>
+                                  {getStatusBadge(breeding.status)}
+                                </div>
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  {breeding.status === 'pending' && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-green-600 border-green-600 hover:bg-green-50"
+                                      onClick={() => handleConfirmPregnancy(breeding)}
+                                    >
+                                      <CheckCircle className="mr-1 h-3 w-3" />
+                                      Confirm Pregnancy
+                                    </Button>
+                                  )}
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -304,6 +343,16 @@ export function HeatCycles({ dogId, dogName }: HeatCyclesProps) {
         heatCycleId={selectedCycleId}
         editingRecord={editingBreedingRecord}
       />
+
+      {confirmingBreeding && (
+        <PregnancyConfirmationDialog
+          open={confirmDialogOpen}
+          onOpenChange={setConfirmDialogOpen}
+          breedingRecord={confirmingBreeding}
+          damName={dogName}
+          onSuccess={() => setConfirmingBreeding(null)}
+        />
+      )}
     </div>
   );
 }

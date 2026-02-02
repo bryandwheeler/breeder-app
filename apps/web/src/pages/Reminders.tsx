@@ -1,15 +1,15 @@
-import { useDogStore } from '@breeder/firebase';
+import { useDogStore, useHeatCycleStore } from '@breeder/firebase';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Check, Syringe, Heart, Baby, Calendar, Stethoscope } from 'lucide-react';
+import { Bell, Check, Syringe, Heart, Baby, Calendar, Stethoscope, ScanLine } from 'lucide-react';
 import { format, isPast, isToday, isFuture, addDays, differenceInDays } from 'date-fns';
 import { Link } from 'react-router-dom';
 
 interface ComputedReminder {
   id: string;
   title: string;
-  type: 'vaccination' | 'deworming' | 'vet_visit' | 'heat_expected' | 'due_date' | 'pickup' | 'custom';
+  type: 'vaccination' | 'deworming' | 'vet_visit' | 'heat_expected' | 'due_date' | 'pickup' | 'ultrasound' | 'custom';
   date: Date;
   dogId?: string;
   dogName?: string;
@@ -21,6 +21,7 @@ interface ComputedReminder {
 
 export function Reminders() {
   const { dogs, litters } = useDogStore();
+  const { breedingRecords } = useHeatCycleStore();
 
   // Collect all reminders from various sources
   const reminders: ComputedReminder[] = [];
@@ -148,6 +149,32 @@ export function Reminders() {
     }
   });
 
+  // 7. Ultrasound reminders for pending breedings (28-30 days after breeding)
+  breedingRecords.forEach(record => {
+    // Only show for pending breedings
+    if (record.status !== 'pending') return;
+
+    const dam = dogs.find(d => d.id === record.dogId);
+    const breedingDate = new Date(record.breedingDate);
+    const ultrasoundDate = addDays(breedingDate, 28); // Ultrasound recommended at day 28-30
+
+    // Only show within a reasonable window (up to 45 days after breeding)
+    const daysSinceBreeding = differenceInDays(today, breedingDate);
+    if (daysSinceBreeding > 45) return;
+
+    reminders.push({
+      id: `ultrasound-${record.id}`,
+      title: `Ultrasound for ${dam?.name || 'breeding'} - confirm pregnancy`,
+      type: 'ultrasound',
+      date: ultrasoundDate,
+      dogId: dam?.id,
+      dogName: dam?.name,
+      litterId: record.litterId,
+      isOverdue: isPast(ultrasoundDate) && !isToday(ultrasoundDate),
+      daysUntil: differenceInDays(ultrasoundDate, today),
+    });
+  });
+
   // Sort by date (overdue first, then upcoming)
   reminders.sort((a, b) => {
     if (a.isOverdue && !b.isOverdue) return -1;
@@ -168,6 +195,7 @@ export function Reminders() {
       case 'heat_expected': return <Heart className='h-4 w-4' />;
       case 'due_date': return <Baby className='h-4 w-4' />;
       case 'pickup': return <Calendar className='h-4 w-4' />;
+      case 'ultrasound': return <ScanLine className='h-4 w-4' />;
       default: return <Bell className='h-4 w-4' />;
     }
   };
@@ -180,6 +208,7 @@ export function Reminders() {
       case 'heat_expected': return 'bg-pink-500';
       case 'due_date': return 'bg-orange-500';
       case 'pickup': return 'bg-teal-500';
+      case 'ultrasound': return 'bg-cyan-500';
       default: return 'bg-gray-500';
     }
   };

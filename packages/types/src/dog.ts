@@ -24,11 +24,14 @@ export interface Reminder {
     | 'due_date'
     | 'pickup'
     | 'registration'
+    | 'ultrasound'
+    | 'pregnancy_check'
     | 'custom';
   date: string;
   dogId?: string;
   litterId?: string;
   puppyId?: string; // For puppy-specific reminders like registration
+  breedingRecordId?: string; // For breeding-related reminders
   completed?: boolean;
   notes?: string;
 }
@@ -95,6 +98,12 @@ export interface HeatCycle {
   updatedAt?: string;
 }
 
+export type BreedingStatus =
+  | 'pending' // Breeding recorded, waiting to confirm pregnancy
+  | 'confirmed' // Pregnancy confirmed (ultrasound/palpation)
+  | 'unsuccessful' // Breeding did not result in pregnancy
+  | 'whelped'; // Puppies have been born
+
 export interface BreedingRecord {
   id: string;
   dogId: string; // Female dog
@@ -106,6 +115,27 @@ export interface BreedingRecord {
   method: 'natural' | 'ai' | 'surgical_ai';
   aiDetails?: string; // If AI, details about semen source
   notes?: string;
+
+  // Pregnancy tracking
+  status: BreedingStatus;
+  tieSuccessful?: boolean; // Did the tie/insemination appear successful
+  tieDuration?: number; // Duration in minutes (for natural breeding)
+
+  // Confirmation details
+  confirmationDate?: string; // When pregnancy was confirmed
+  confirmationMethod?: 'ultrasound' | 'palpation' | 'blood_test' | 'xray';
+  ultrasoundDate?: string; // Date of ultrasound
+  ultrasoundNotes?: string; // Ultrasound findings
+  estimatedPuppyCount?: number; // Estimated count from ultrasound/xray
+  expectedDueDate?: string; // Calculated 63 days from breeding
+
+  // Litter linkage
+  litterId?: string; // Link to the litter created from this breeding
+
+  // Reminders created flags
+  ultrasoundReminderCreated?: boolean;
+  careTasksCreated?: boolean;
+
   createdAt?: string;
   updatedAt?: string;
 }

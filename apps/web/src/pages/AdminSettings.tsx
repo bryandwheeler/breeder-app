@@ -23,6 +23,7 @@ import { SubscriptionManagement } from '@/components/SubscriptionManagement';
 import { AuditLogViewer } from '@/components/AuditLogViewer';
 import { StripeSettings } from '@/components/StripeSettings';
 import { DefaultTasksManager } from '@/components/DefaultTasksManager';
+import { ForumCategoryManager } from '@/components/forum';
 
 export function AdminSettings() {
   const navigate = useNavigate();
@@ -331,9 +332,10 @@ export function AdminSettings() {
 
       {/* Tabbed Management Sections */}
       <Tabs defaultValue='global' className='w-full'>
-        <TabsList className='grid w-full grid-cols-6'>
+        <TabsList className='grid w-full grid-cols-7'>
           <TabsTrigger value='global'>Global Lists</TabsTrigger>
           <TabsTrigger value='tasks'>Task Templates</TabsTrigger>
+          <TabsTrigger value='forum'>Forum</TabsTrigger>
           <TabsTrigger value='registries'>Registries</TabsTrigger>
           <TabsTrigger value='subscriptions'>Subscriptions</TabsTrigger>
           <TabsTrigger value='stripe'>Stripe</TabsTrigger>
@@ -350,6 +352,11 @@ export function AdminSettings() {
         {/* Task Templates Tab */}
         <TabsContent value='tasks'>
           <DefaultTasksManager />
+        </TabsContent>
+
+        {/* Forum Categories Tab */}
+        <TabsContent value='forum'>
+          <ForumCategoryManager />
         </TabsContent>
 
         {/* Registries Tab */}

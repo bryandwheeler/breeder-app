@@ -85,7 +85,7 @@ type Store = {
   addDog: (dog: NewDog, targetUid?: string) => Promise<string>; // Returns the new dog's ID
   updateDog: (id: string, updates: Partial<Dog>) => Promise<void>;
   deleteDog: (id: string) => Promise<void>;
-  addLitter: (litter: Omit<Litter, 'id'>, targetUid?: string) => Promise<void>;
+  addLitter: (litter: Omit<Litter, 'id'>, targetUid?: string) => Promise<string>;
   updateLitter: (id: string, updates: Partial<Litter>) => Promise<void>;
   deleteLitter: (id: string) => Promise<void>;
   subscribeToUserData: (targetUid?: string) => () => void;
@@ -175,9 +175,10 @@ export const useDogStore = create<Store>()((set, get) => ({
       updatedAt: serverTimestamp(),
     };
 
-    await addDoc(littersRef, newLitter);
+    const docRef = await addDoc(littersRef, newLitter);
     // Update user profile with new litter count
     await updateUserCounters(targetUid || user.uid);
+    return docRef.id;
   },
 
   updateLitter: async (id, updates) => {

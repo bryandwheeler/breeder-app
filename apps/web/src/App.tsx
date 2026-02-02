@@ -21,6 +21,9 @@ import { WaitlistApplication } from '@/pages/WaitlistApplication';
 import { Customers } from '@/pages/Customers';
 import { ContactDetail } from '@/pages/ContactDetail';
 import { Connections } from '@/pages/Connections';
+import { ForumHome } from '@/pages/ForumHome';
+import { ForumCategory } from '@/pages/ForumCategory';
+import { ForumThread } from '@/pages/ForumThread';
 import { BuyerPortal } from '@/pages/BuyerPortal';
 import { HealthRecords } from '@/pages/HealthRecords';
 import { StudJobsPage } from '@/pages/StudJobsPage';
@@ -377,6 +380,30 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <Connections />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/forum'
+                element={
+                  <ProtectedRoute>
+                    <ForumHome />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/forum/category/:categorySlug'
+                element={
+                  <ProtectedRoute>
+                    <ForumCategory />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/forum/thread/:threadId'
+                element={
+                  <ProtectedRoute>
+                    <ForumThread />
                   </ProtectedRoute>
                 }
               />

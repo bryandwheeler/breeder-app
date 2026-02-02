@@ -8,11 +8,26 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { searchDogs, type DogSearchResult } from '@/lib/kennelSearch';
 import { useAuth } from '@/contexts/AuthContext';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, Check, ChevronsUpDown } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { BreedingRecord } from '@breeder/types';
+import { BreedingRecord, BreedingStatus } from '@breeder/types';
 
 interface BreedingRecordDialogProps {
   open: boolean;
@@ -36,14 +51,24 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId, editin
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Tie/breeding success tracking
+  const [tieSuccessful, setTieSuccessful] = useState(true);
+  const [tieDuration, setTieDuration] = useState<number | ''>('');
+  const [status, setStatus] = useState<BreedingStatus>('pending');
+
   // External stud search state
   const [studSearchTerm, setStudSearchTerm] = useState('');
   const [studSearching, setStudSearching] = useState(false);
   const [studSearchResults, setStudSearchResults] = useState<DogSearchResult[]>([]);
   const [externalStud, setExternalStud] = useState<DogSearchResult | null>(null);
 
-  // Get male dogs from the kennel
-  const maleDogs = dogs.filter((dog) => dog.sex === 'male' && !dog.isDeceased);
+  // Own kennel stud combobox state
+  const [studComboboxOpen, setStudComboboxOpen] = useState(false);
+
+  // Get active male dogs from the kennel
+  const maleDogs = dogs.filter(
+    (dog) => dog.sex === 'male' && !dog.isDeceased && dog.status === 'active'
+  );
 
   useEffect(() => {
     if (open && editingRecord) {
@@ -53,6 +78,9 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId, editin
       setAiDetails(editingRecord.aiDetails || '');
       setNotes(editingRecord.notes || '');
       setStudName(editingRecord.studName);
+      setTieSuccessful(editingRecord.tieSuccessful ?? true);
+      setTieDuration(editingRecord.tieDuration || '');
+      setStatus(editingRecord.status || 'pending');
 
       // Determine if using own kennel or external stud
       if (editingRecord.studId) {
@@ -71,9 +99,13 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId, editin
       setMethod('natural');
       setAiDetails('');
       setNotes('');
+      setTieSuccessful(true);
+      setTieDuration('');
+      setStatus('pending');
       setExternalStud(null);
       setStudSearchTerm('');
       setStudSearchResults([]);
+      setStudComboboxOpen(false);
     }
   }, [open, editingRecord]);
 
@@ -109,17 +141,21 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId, editin
     }
   };
 
+  // Calculate expected due date (63 days from breeding)
+  const calculateExpectedDueDate = (breedingDateStr: string): string => {
+    const breedingDateObj = new Date(breedingDateStr);
+    const expectedDueDate = new Date(breedingDateObj);
+    expectedDueDate.setDate(expectedDueDate.getDate() + 63);
+    return expectedDueDate.toISOString().split('T')[0];
+  };
+
   const createPendingLitter = async (
     damId: string,
     sireId: string | undefined,
-    breedingDate: string,
+    breedingDateStr: string,
     externalStud: DogSearchResult | null
-  ) => {
-    // Calculate expected due date (63 days from breeding)
-    const breedingDateObj = new Date(breedingDate);
-    const expectedDueDate = new Date(breedingDateObj);
-    expectedDueDate.setDate(expectedDueDate.getDate() + 63);
-    const expectedDateOfBirth = expectedDueDate.toISOString().split('T')[0];
+  ): Promise<string | undefined> => {
+    const expectedDateOfBirth = calculateExpectedDueDate(breedingDateStr);
 
     // Get the dam's name for the litter name
     const dam = dogs.find((d) => d.id === damId);
@@ -148,7 +184,8 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId, editin
       };
     }
 
-    await addLitter(litterData);
+    const litterId = await addLitter(litterData);
+    return litterId;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -217,6 +254,9 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId, editin
         return;
       }
 
+      // Calculate expected due date
+      const expectedDueDate = calculateExpectedDueDate(breedingDate);
+
       const recordData: any = {
         dogId,
         heatCycleId,
@@ -224,6 +264,9 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId, editin
         breedingDate,
         method,
         notes,
+        status: editingRecord ? status : 'pending', // New records start as pending
+        tieSuccessful,
+        expectedDueDate,
       };
 
       // Only add optional fields if they have values (Firestore doesn't allow undefined)
@@ -232,6 +275,9 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId, editin
       }
       if (method !== 'natural' && aiDetails) {
         recordData.aiDetails = aiDetails;
+      }
+      if (method === 'natural' && tieDuration) {
+        recordData.tieDuration = Number(tieDuration);
       }
 
       if (editingRecord) {
@@ -242,11 +288,16 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId, editin
           description: 'Breeding record updated successfully',
         });
       } else {
+        // Create a pending litter for this breeding first
+        const litterId = await createPendingLitter(dogId, finalStudId, breedingDate, externalStud);
+
+        // Link the litter to the breeding record
+        if (litterId) {
+          recordData.litterId = litterId;
+        }
+
         // Add new record
         await addBreedingRecord(recordData);
-
-        // Automatically create a pending litter for this breeding
-        await createPendingLitter(dogId, finalStudId, breedingDate, externalStud);
 
         toast({
           title: 'Success',
@@ -308,24 +359,63 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId, editin
           {studSource === 'own' ? (
             <div className="space-y-2">
               <Label htmlFor="studId">Select Stud *</Label>
-              <Select value={studId} onValueChange={setStudId} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a male dog" />
-                </SelectTrigger>
-                <SelectContent>
-                  {maleDogs.length === 0 ? (
-                    <SelectItem value="none" disabled>
-                      No male dogs in kennel
-                    </SelectItem>
-                  ) : (
-                    maleDogs.map((dog) => (
-                      <SelectItem key={dog.id} value={dog.id}>
-                        {dog.registeredName || dog.name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+              <Popover open={studComboboxOpen} onOpenChange={setStudComboboxOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={studComboboxOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    {studId
+                      ? maleDogs.find((dog) => dog.id === studId)?.registeredName ||
+                        maleDogs.find((dog) => dog.id === studId)?.name ||
+                        'Select a male dog'
+                      : 'Select a male dog'}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search studs..." />
+                    <CommandList className="max-h-60">
+                      <CommandEmpty>No active male dogs found.</CommandEmpty>
+                      <CommandGroup>
+                        {maleDogs.map((dog) => (
+                          <CommandItem
+                            key={dog.id}
+                            value={`${dog.registeredName || ''} ${dog.name}`}
+                            onSelect={() => {
+                              setStudId(dog.id);
+                              setStudComboboxOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4',
+                                studId === dog.id ? 'opacity-100' : 'opacity-0'
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span>{dog.registeredName || dog.name}</span>
+                              {dog.registeredName && dog.name !== dog.registeredName && (
+                                <span className="text-xs text-muted-foreground">
+                                  Call name: {dog.name}
+                                </span>
+                              )}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {maleDogs.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No active male dogs in your kennel. Add a male or use external stud.
+                </p>
+              )}
             </div>
           ) : externalStud ? (
             <div className="space-y-2">
@@ -436,6 +526,37 @@ export function BreedingRecordDialog({ open, setOpen, dogId, heatCycleId, editin
               </SelectContent>
             </Select>
           </div>
+
+          {/* Tie Success */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="tieSuccessful"
+              checked={tieSuccessful}
+              onCheckedChange={(checked) => setTieSuccessful(checked === true)}
+            />
+            <Label htmlFor="tieSuccessful" className="font-normal cursor-pointer">
+              {method === 'natural' ? 'Tie was successful' : 'Insemination was successful'}
+            </Label>
+          </div>
+
+          {/* Tie Duration (for natural breeding) */}
+          {method === 'natural' && (
+            <div className="space-y-2">
+              <Label htmlFor="tieDuration">Tie Duration (minutes)</Label>
+              <Input
+                id="tieDuration"
+                type="number"
+                min="1"
+                max="60"
+                value={tieDuration}
+                onChange={(e) => setTieDuration(e.target.value ? parseInt(e.target.value) : '')}
+                placeholder="e.g., 15"
+              />
+              <p className="text-xs text-muted-foreground">
+                Typical tie duration is 10-30 minutes
+              </p>
+            </div>
+          )}
 
           {method !== 'natural' && (
             <div className="space-y-2">

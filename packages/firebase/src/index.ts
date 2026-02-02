@@ -17,6 +17,7 @@ export * from './stores/crmStore';
 export * from './stores/dogStoreFirebase';
 export * from './stores/emailStore';
 export * from './stores/emailTemplateStore';
+export * from './stores/forumStore';
 export * from './stores/heatCycleStore';
 export * from './stores/newsletterStore';
 export * from './stores/scheduledEmailStore';

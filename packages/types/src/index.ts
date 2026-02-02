@@ -3,6 +3,7 @@ export * from './admin';
 export * from './dog';
 export * from './email';
 export * from './emailTemplate';
+export * from './forum';
 export * from './guards';
 export * from './messaging';
 export * from './newsletter';
