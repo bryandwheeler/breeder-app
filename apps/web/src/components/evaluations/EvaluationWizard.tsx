@@ -211,7 +211,7 @@ export function EvaluationWizard({
         evaluatorName,
         evaluationDate: new Date().toISOString(),
         puppyAgeWeeks,
-        notes: notes || undefined,
+        ...(notes.trim() ? { notes: notes.trim() } : {}),
       };
 
       let evaluation;

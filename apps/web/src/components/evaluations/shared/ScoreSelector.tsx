@@ -43,7 +43,7 @@ export function VolhardScoreSelector({
 
   return (
     <RadioGroup
-      value={value?.toString()}
+      value={value?.toString() ?? ''}
       onValueChange={(val) => onChange(parseInt(val) as VolhardScore)}
       disabled={disabled}
       className="space-y-2"
@@ -130,7 +130,7 @@ export function FlinksRatingSelector({
 
   return (
     <RadioGroup
-      value={value}
+      value={value ?? ''}
       onValueChange={(val) => onChange(val as FlinksRating)}
       disabled={disabled}
       className="space-y-2"
