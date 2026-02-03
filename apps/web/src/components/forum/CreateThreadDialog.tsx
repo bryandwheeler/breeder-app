@@ -183,20 +183,14 @@ export function CreateThreadDialog({
 
     setSubmitting(true);
     try {
-      const threadId = await createThread({
+      await createThread(
         categoryId,
-        categoryName,
-        categorySlug,
-        authorId: currentUser.uid,
-        authorName: profile.kennelName || profile.displayName || 'Anonymous',
-        authorKennel: profile.kennelName,
-        authorProfilePhoto: profile.profilePhoto,
-        title: title.trim(),
-        content: content.trim(),
-        tags: tags.length > 0 ? tags : undefined,
-        breedTags: breedTags.length > 0 ? breedTags : undefined,
-        attachments: attachments.length > 0 ? attachments : undefined,
-      });
+        title.trim(),
+        content.trim(),
+        attachments.length > 0 ? attachments : undefined,
+        tags.length > 0 ? tags : undefined,
+        breedTags.length > 0 ? breedTags : undefined
+      );
 
       toast({
         title: 'Thread created',

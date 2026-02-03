@@ -38,6 +38,7 @@ interface ForumStore {
   posts: ForumPost[];
   userProfile: ForumUserProfile | null;
   loading: boolean;
+  categoriesLoading: boolean;
   threadsLoading: boolean;
   postsLoading: boolean;
   hasMoreThreads: boolean;
@@ -108,6 +109,7 @@ export const useForumStore = create<ForumStore>((set, get) => ({
   posts: [],
   userProfile: null,
   loading: false,
+  categoriesLoading: false,
   threadsLoading: false,
   postsLoading: false,
   hasMoreThreads: true,
@@ -115,6 +117,7 @@ export const useForumStore = create<ForumStore>((set, get) => ({
 
   // Category Subscriptions
   subscribeToCategories: () => {
+    set({ categoriesLoading: true });
     const q = query(
       collection(db, 'forumCategories'),
       where('isActive', '==', true),
@@ -128,10 +131,11 @@ export const useForumStore = create<ForumStore>((set, get) => ({
           id: doc.id,
           ...doc.data(),
         })) as ForumCategory[];
-        set({ categories });
+        set({ categories, categoriesLoading: false });
       },
       (error) => {
         console.error('[forumStore] Categories snapshot error:', error);
+        set({ categoriesLoading: false });
       }
     );
 

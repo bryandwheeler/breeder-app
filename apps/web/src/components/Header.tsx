@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, Download, Mail, Menu, User } from 'lucide-react';
+import { LogOut, Download, Mail, Menu, User, MessagesSquare } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
 import { useAuth } from '@/contexts/AuthContext';
@@ -98,6 +98,23 @@ export function Header({
         {/* Right section */}
         <div className='flex items-center gap-1 sm:gap-2'>
           {/* Add Dog Button removed per UX: shown in Dogs page instead */}
+
+          {/* Forum Link */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant='ghost'
+                size='icon'
+                asChild
+                className='hidden xs:flex'
+              >
+                <Link to='/forum'>
+                  <MessagesSquare className='h-4 w-4' />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Community Forum</TooltipContent>
+          </Tooltip>
 
           {/* Notifications */}
           <NotificationsDropdown />

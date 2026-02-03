@@ -1,14 +1,23 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useForumStore } from '@breeder/firebase';
+import { useForumStore, useAdminStore } from '@breeder/firebase';
+import { useAuth } from '@/contexts/AuthContext';
+import { DEFAULT_FORUM_CATEGORIES } from '@breeder/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, MessageCircle, Users, MessagesSquare } from 'lucide-react';
+import { Loader2, Plus, MessageCircle, Users, MessagesSquare, RefreshCw } from 'lucide-react';
 import { CategoryCard } from '@/components/forum/CategoryCard';
 import { formatDistanceToNow } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 export function ForumHome() {
+  const { currentUser } = useAuth();
+  const { checkIsAdmin } = useAdminStore();
+  const { toast } = useToast();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+
   const {
     categories,
     threads,
@@ -16,6 +25,7 @@ export function ForumHome() {
     threadsLoading,
     subscribeToCategories,
     subscribeToThreads,
+    createCategory,
   } = useForumStore();
 
   useEffect(() => {
@@ -27,6 +37,47 @@ export function ForumHome() {
       unsubThreads();
     };
   }, [subscribeToCategories, subscribeToThreads]);
+
+  // Check if user is admin
+  useEffect(() => {
+    let mounted = true;
+    const checkAdmin = async () => {
+      if (!currentUser) {
+        if (mounted) setIsAdmin(false);
+        return;
+      }
+      try {
+        const result = await checkIsAdmin(currentUser.uid);
+        if (mounted) setIsAdmin(!!result);
+      } catch {
+        if (mounted) setIsAdmin(false);
+      }
+    };
+    checkAdmin();
+    return () => { mounted = false; };
+  }, [currentUser, checkIsAdmin]);
+
+  const handleSeedCategories = async () => {
+    setSeeding(true);
+    try {
+      for (const cat of DEFAULT_FORUM_CATEGORIES) {
+        await createCategory(cat);
+      }
+      toast({
+        title: 'Categories created',
+        description: `${DEFAULT_FORUM_CATEGORIES.length} default forum categories have been added`,
+      });
+    } catch (error) {
+      console.error('Failed to seed categories:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create default categories',
+        variant: 'destructive',
+      });
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   // Calculate total stats
   const totalThreads = categories.reduce((sum, cat) => sum + cat.threadCount, 0);
@@ -104,8 +155,25 @@ export function ForumHome() {
               <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No Categories Yet</h3>
               <p className="text-muted-foreground mb-4">
-                Forum categories haven't been set up yet. Check back soon!
+                {isAdmin
+                  ? 'Get started by creating the default forum categories.'
+                  : 'Forum categories haven\'t been set up yet. Check back soon!'}
               </p>
+              {isAdmin && (
+                <Button onClick={handleSeedCategories} disabled={seeding}>
+                  {seeding ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Creating Categories...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Create Default Categories
+                    </>
+                  )}
+                </Button>
+              )}
             </Card>
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
