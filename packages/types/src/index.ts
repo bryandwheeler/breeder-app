@@ -11,3 +11,4 @@ export * from './task';
 export * from './waitlist-form';
 export * from './website';
 export * from './workflow';
+export * from './puppyEvaluation';

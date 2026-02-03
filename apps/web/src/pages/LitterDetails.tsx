@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { ScrollableTabsList, ScrollableTabsTrigger } from '@/components/ui/scrollable-tabs';
 import { useIsMobile } from '@/hooks/use-media-query';
-import { ArrowLeft, Plus, Users, Calendar, DollarSign, FileText, Share2, TrendingUp, TrendingDown, Edit, Trash2, ListChecks, Trophy, UserPlus } from 'lucide-react';
+import { ArrowLeft, Plus, Users, Calendar, DollarSign, FileText, Share2, TrendingUp, TrendingDown, Edit, Trash2, ListChecks, Trophy, UserPlus, ClipboardCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PuppyCard } from '@/components/PuppyCard';
 import { PuppyFormDialog } from '@/components/PuppyFormDialog';
@@ -19,6 +19,7 @@ import { generateLitterRecord } from '@/lib/pdfGenerator';
 import { ContractSigningDialog } from '@/components/ContractSigningDialog';
 import { LitterMilestones } from '@/components/LitterMilestones';
 import { LitterCareTasks } from '@/components/LitterCareTasks';
+import { EvaluationTab } from '@/components/evaluations/EvaluationTab';
 import { LitterFormDialog } from '@/components/LitterFormDialog';
 import { AddContactToWaitlistDialog } from '@/components/AddContactToWaitlistDialog';
 import {
@@ -551,6 +552,10 @@ export function LitterDetails() {
                 <ListChecks className='h-4 w-4' />
                 {!isMobile && 'Tasks'}
               </ScrollableTabsTrigger>
+              <ScrollableTabsTrigger value='evaluations' className='flex items-center gap-2'>
+                <ClipboardCheck className='h-4 w-4' />
+                {!isMobile && 'Evaluations'}
+              </ScrollableTabsTrigger>
             </>
           )}
           <ScrollableTabsTrigger value='waitlist' className='flex items-center gap-2'>
@@ -617,6 +622,13 @@ export function LitterDetails() {
         {litter.dateOfBirth && (
           <TabsContent value='tasks'>
             <LitterCareTasks litter={litter} onUpdate={updateLitter} />
+          </TabsContent>
+        )}
+
+        {/* Evaluations Tab */}
+        {litter.dateOfBirth && (
+          <TabsContent value='evaluations'>
+            <EvaluationTab litter={litter} puppies={puppies} />
           </TabsContent>
         )}
 
