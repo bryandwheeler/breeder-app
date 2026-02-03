@@ -2,12 +2,19 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForumStore, useAdminStore } from '@breeder/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { DEFAULT_FORUM_CATEGORIES } from '@breeder/types';
+import { DEFAULT_FORUM_CATEGORIES, ForumCategory } from '@breeder/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Loader2, Plus, MessageCircle, Users, MessagesSquare, RefreshCw } from 'lucide-react';
-import { CategoryCard } from '@/components/forum/CategoryCard';
+import { CategoryCard, CreateThreadDialog } from '@/components/forum';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,6 +24,9 @@ export function ForumHome() {
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [categorySelectOpen, setCategorySelectOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<ForumCategory | null>(null);
+  const [createThreadOpen, setCreateThreadOpen] = useState(false);
 
   const {
     categories,
@@ -27,6 +37,12 @@ export function ForumHome() {
     subscribeToThreads,
     createCategory,
   } = useForumStore();
+
+  const handleSelectCategory = (category: ForumCategory) => {
+    setSelectedCategory(category);
+    setCategorySelectOpen(false);
+    setCreateThreadOpen(true);
+  };
 
   useEffect(() => {
     const unsubCategories = subscribeToCategories();
@@ -101,12 +117,12 @@ export function ForumHome() {
             Connect with other breeders, share knowledge, and learn together
           </p>
         </div>
-        <Link to="/forum/new">
-          <Button>
+        {categories.length > 0 && (
+          <Button onClick={() => setCategorySelectOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             New Thread
           </Button>
-        </Link>
+        )}
       </div>
 
       {/* Stats */}
@@ -236,6 +252,44 @@ export function ForumHome() {
           </Card>
         </div>
       </div>
+
+      {/* Category Selection Dialog */}
+      <Dialog open={categorySelectOpen} onOpenChange={setCategorySelectOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select a Category</DialogTitle>
+            <DialogDescription>
+              Choose which category to post your thread in
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2 py-4">
+            {categories.map((category) => (
+              <Button
+                key={category.id}
+                variant="outline"
+                className="justify-start h-auto py-3 px-4"
+                onClick={() => handleSelectCategory(category)}
+              >
+                <div className="text-left">
+                  <div className="font-medium">{category.name}</div>
+                  <div className="text-xs text-muted-foreground">{category.description}</div>
+                </div>
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Thread Dialog */}
+      {selectedCategory && (
+        <CreateThreadDialog
+          open={createThreadOpen}
+          onOpenChange={setCreateThreadOpen}
+          categoryId={selectedCategory.id}
+          categoryName={selectedCategory.name}
+          categorySlug={selectedCategory.slug}
+        />
+      )}
     </div>
   );
 }
