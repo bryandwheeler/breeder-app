@@ -17,10 +17,10 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -436,6 +436,11 @@ export function ForumCategoryManager() {
             <DialogTitle>
               {editingCategory ? 'Edit Category' : 'Create Category'}
             </DialogTitle>
+            <DialogDescription>
+              {editingCategory
+                ? 'Update the category details below.'
+                : 'Fill in the details to create a new forum category.'}
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">

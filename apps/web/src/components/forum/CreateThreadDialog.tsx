@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -217,9 +218,9 @@ export function CreateThreadDialog({
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Thread</DialogTitle>
-          <p className="text-sm text-muted-foreground">
+          <DialogDescription>
             Posting in: {categoryName}
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
