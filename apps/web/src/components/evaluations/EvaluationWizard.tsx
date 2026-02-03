@@ -1,9 +1,10 @@
 // Evaluation Wizard Component
 // Main wizard for conducting puppy evaluations
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   EvaluationTestType,
+  EvaluationVideo,
   VolhardTestResult,
   VolhardTestName,
   VolhardScore,
@@ -36,7 +37,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2, Video, Upload, X, Loader2 } from 'lucide-react';
 import { VolhardScoreSelector, FlinksRatingSelector } from './shared/ScoreSelector';
 import { ScoreSlider } from './shared/ScoreSlider';
 import {
@@ -44,6 +45,11 @@ import {
   buildAPETEvaluation,
   buildFlinksEvaluation,
 } from '@/lib/evaluationCalculations';
+import {
+  uploadEvaluationVideo,
+  formatVideoSize,
+  deleteEvaluationVideo,
+} from '@/lib/uploadEvaluationVideo';
 
 interface EvaluationWizardProps {
   open: boolean;
@@ -75,6 +81,13 @@ export function EvaluationWizard({
   const [notes, setNotes] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+
+  // Video state
+  const [stepVideos, setStepVideos] = useState<Record<string, EvaluationVideo>>({});
+  const [overallVideo, setOverallVideo] = useState<EvaluationVideo | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState<string | null>(null); // 'overall' or step key
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Volhard state
   const [volhardResults, setVolhardResults] = useState<Partial<Record<VolhardTestName, VolhardTestResult>>>({});
@@ -163,6 +176,132 @@ export function EvaluationWizard({
     }));
   };
 
+  // Handle video upload
+  const handleVideoUpload = async (file: File, targetKey: string) => {
+    if (!file) return;
+
+    setUploadingVideo(targetKey);
+    setUploadProgress(0);
+
+    try {
+      const video = await uploadEvaluationVideo(
+        file,
+        litterId,
+        puppyId,
+        testType,
+        targetKey === 'overall' ? undefined : targetKey,
+        (progress) => setUploadProgress(progress)
+      );
+
+      if (targetKey === 'overall') {
+        setOverallVideo(video);
+      } else {
+        setStepVideos(prev => ({ ...prev, [targetKey]: video }));
+      }
+
+      toast({ title: 'Video uploaded successfully!' });
+    } catch (error) {
+      toast({
+        title: 'Failed to upload video',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingVideo(null);
+      setUploadProgress(0);
+    }
+  };
+
+  // Handle video removal
+  const handleRemoveVideo = async (targetKey: string) => {
+    const video = targetKey === 'overall' ? overallVideo : stepVideos[targetKey];
+    if (video) {
+      try {
+        await deleteEvaluationVideo(video.url);
+      } catch (e) {
+        // Ignore deletion errors
+      }
+    }
+
+    if (targetKey === 'overall') {
+      setOverallVideo(null);
+    } else {
+      setStepVideos(prev => {
+        const updated = { ...prev };
+        delete updated[targetKey];
+        return updated;
+      });
+    }
+  };
+
+  // Video upload section component
+  const VideoUploadSection = ({ stepKey, label }: { stepKey: string; label: string }) => {
+    const video = stepKey === 'overall' ? overallVideo : stepVideos[stepKey];
+    const isUploading = uploadingVideo === stepKey;
+
+    return (
+      <div className="border rounded-lg p-4 bg-gray-50">
+        <div className="flex items-center gap-2 mb-2">
+          <Video className="h-4 w-4 text-muted-foreground" />
+          <Label className="text-sm font-medium">{label}</Label>
+        </div>
+
+        {video ? (
+          <div className="flex items-center justify-between bg-white p-3 rounded border">
+            <div className="flex items-center gap-3">
+              <Video className="h-8 w-8 text-blue-500" />
+              <div>
+                <p className="text-sm font-medium truncate max-w-[200px]">{video.filename}</p>
+                <p className="text-xs text-muted-foreground">{formatVideoSize(video.size)}</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleRemoveVideo(stepKey)}
+              className="text-destructive hover:text-destructive"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : isUploading ? (
+          <div className="bg-white p-3 rounded border">
+            <div className="flex items-center gap-3 mb-2">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <span className="text-sm">Uploading... {Math.round(uploadProgress)}%</span>
+            </div>
+            <Progress value={uploadProgress} className="h-2" />
+          </div>
+        ) : (
+          <div>
+            <input
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime,video/x-msvideo,video/x-m4v"
+              className="hidden"
+              id={`video-${stepKey}`}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleVideoUpload(file, stepKey);
+                e.target.value = '';
+              }}
+            />
+            <label htmlFor={`video-${stepKey}`}>
+              <Button variant="outline" size="sm" className="cursor-pointer" asChild>
+                <span>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Video
+                </span>
+              </Button>
+            </label>
+            <p className="text-xs text-muted-foreground mt-2">
+              MP4, WebM, MOV (max 100MB)
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Check if current step is complete
   const isCurrentStepComplete = () => {
     if (isSummaryStep) return evaluatorName.trim().length > 0;
@@ -212,32 +351,51 @@ export function EvaluationWizard({
         evaluationDate: new Date().toISOString(),
         puppyAgeWeeks,
         ...(notes.trim() ? { notes: notes.trim() } : {}),
+        ...(overallVideo ? { overallVideo } : {}),
       };
 
       let evaluation;
 
       switch (testType) {
         case 'volhard':
-          const volhardResultsArray = Object.values(volhardResults).filter(Boolean) as VolhardTestResult[];
+          // Add videos to volhard results
+          const volhardResultsWithVideos = Object.entries(volhardResults)
+            .filter(([_, result]) => result)
+            .map(([testName, result]) => ({
+              ...result!,
+              ...(stepVideos[testName] ? { video: stepVideos[testName] } : {}),
+            })) as VolhardTestResult[];
           evaluation = buildVolhardEvaluation(
             { ...baseData, testType: 'volhard' },
-            volhardResultsArray
+            volhardResultsWithVideos
           );
           break;
 
         case 'apet':
-          const apetResultsArray = Object.values(apetResults).filter(Boolean) as APETExerciseResult[];
+          // Add videos to APET results
+          const apetResultsWithVideos = Object.entries(apetResults)
+            .filter(([_, result]) => result)
+            .map(([exerciseName, result]) => ({
+              ...result!,
+              ...(stepVideos[exerciseName] ? { video: stepVideos[exerciseName] } : {}),
+            })) as APETExerciseResult[];
           evaluation = buildAPETEvaluation(
             { ...baseData, testType: 'apet' },
-            apetResultsArray
+            apetResultsWithVideos
           );
           break;
 
         case 'flinks':
-          const flinksResultsArray = Object.values(flinksResults).filter(Boolean) as FlinksTestResult[];
+          // Add videos to Flinks results
+          const flinksResultsWithVideos = Object.entries(flinksResults)
+            .filter(([_, result]) => result)
+            .map(([category, result]) => ({
+              ...result!,
+              ...(stepVideos[category] ? { video: stepVideos[category] } : {}),
+            })) as FlinksTestResult[];
           evaluation = buildFlinksEvaluation(
             { ...baseData, testType: 'flinks' },
-            flinksResultsArray
+            flinksResultsWithVideos
           );
           break;
       }
@@ -303,6 +461,8 @@ export function EvaluationWizard({
             descriptions={VOLHARD_SCORE_DESCRIPTIONS[testName]}
           />
         </div>
+
+        <VideoUploadSection stepKey={testName} label="Video of this test (optional)" />
       </div>
     );
   };
@@ -335,6 +495,8 @@ export function EvaluationWizard({
             />
           ))}
         </div>
+
+        <VideoUploadSection stepKey={exerciseName} label="Video of this exercise (optional)" />
       </div>
     );
   };
@@ -369,6 +531,8 @@ export function EvaluationWizard({
             descriptions={FLINKS_DESCRIPTORS[category]}
           />
         </div>
+
+        <VideoUploadSection stepKey={category} label="Video of this test (optional)" />
       </div>
     );
   };
@@ -389,6 +553,8 @@ export function EvaluationWizard({
       }
     }).length;
 
+    const videoCount = Object.keys(stepVideos).length + (overallVideo ? 1 : 0);
+
     return (
       <div className="space-y-6">
         <div className="text-center">
@@ -396,6 +562,7 @@ export function EvaluationWizard({
           <h3 className="text-lg font-semibold">Review & Complete</h3>
           <p className="text-muted-foreground mt-1">
             {completedCount} of {steps.length} tests completed
+            {videoCount > 0 && ` • ${videoCount} video${videoCount > 1 ? 's' : ''} attached`}
           </p>
         </div>
 
@@ -420,6 +587,8 @@ export function EvaluationWizard({
               rows={4}
             />
           </div>
+
+          <VideoUploadSection stepKey="overall" label="Overall Evaluation Video (optional)" />
         </div>
       </div>
     );

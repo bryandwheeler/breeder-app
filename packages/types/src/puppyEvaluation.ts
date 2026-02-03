@@ -7,6 +7,13 @@
 
 export type EvaluationTestType = 'volhard' | 'apet' | 'flinks';
 
+export interface EvaluationVideo {
+  url: string;
+  filename: string;
+  uploadedAt: string;
+  size?: number; // bytes
+}
+
 export interface PuppyEvaluationBase {
   id: string;
   puppyId: string;
@@ -17,6 +24,7 @@ export interface PuppyEvaluationBase {
   evaluationDate: string; // ISO date string
   puppyAgeWeeks: number;
   notes?: string;
+  overallVideo?: EvaluationVideo; // Video for entire evaluation
   createdAt?: string;
   updatedAt?: string;
 }
@@ -45,6 +53,7 @@ export interface VolhardTestResult {
   score: VolhardScore;
   behaviorObserved?: string;
   notes?: string;
+  video?: EvaluationVideo; // Video for this specific test
 }
 
 export type VolhardInterpretation =
@@ -340,6 +349,7 @@ export interface APETExerciseResult {
   traitsEvaluated: APETTraitName[];
   scores: Partial<Record<APETTraitName, APETScore>>;
   observations?: string;
+  video?: EvaluationVideo; // Video for this specific exercise
 }
 
 export type APETScoreCategory = 'low' | 'below_average' | 'average' | 'above_average' | 'high';
@@ -779,6 +789,7 @@ export interface FlinksTestResult {
   behaviorDescriptor: string;
   score: number; // Numeric equivalent: excellent=5, good=4, acceptable=3, poor=2, fail=1
   notes?: string;
+  video?: EvaluationVideo; // Video for this specific test
 }
 
 export type WorkingDogPotential = 'high' | 'moderate' | 'low' | 'not_suitable';
