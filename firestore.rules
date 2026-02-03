@@ -44,6 +44,22 @@ service cloud.firestore {
       allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
       allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Puppies subcollection
+      match /puppies/{puppyId} {
+        allow read: if isAuthenticated() && (isAdmin() || get(/databases/$(database)/documents/litters/$(litterId)).data.userId == request.auth.uid);
+        allow create: if isAuthenticated() && (get(/databases/$(database)/documents/litters/$(litterId)).data.userId == request.auth.uid || isAdmin());
+        allow update: if isAuthenticated() && (get(/databases/$(database)/documents/litters/$(litterId)).data.userId == request.auth.uid || isAdmin());
+        allow delete: if isAuthenticated() && (get(/databases/$(database)/documents/litters/$(litterId)).data.userId == request.auth.uid || isAdmin());
+
+        // Evaluations subcollection under puppies
+        match /evaluations/{evaluationId} {
+          allow read: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid);
+          allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+          allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+          allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+        }
+      }
     }
 
     // Breeder profiles - users can read all profiles (for search) but only write their own
@@ -431,6 +447,15 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create, update: if isAuthenticated() && userId == request.auth.uid;
       allow delete: if isAuthenticated() && (userId == request.auth.uid || isAdmin());
+    }
+
+    // ============================================================================
+    // Collection Group Rules (for cross-collection queries)
+    // ============================================================================
+
+    // Evaluations collection group - allows querying across all puppy evaluations
+    match /{path=**}/evaluations/{evaluationId} {
+      allow read: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid);
     }
   }
 }

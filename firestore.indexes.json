@@ -346,6 +346,48 @@
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "evaluations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "testType", "order": "ASCENDING" },
+        { "fieldPath": "evaluationDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "evaluations",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "litterId", "order": "ASCENDING" },
+        { "fieldPath": "evaluationDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "evaluations",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "litterId", "order": "ASCENDING" },
+        { "fieldPath": "testType", "order": "ASCENDING" },
+        { "fieldPath": "evaluationDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "evaluations",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "evaluationDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "evaluations",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "testType", "order": "ASCENDING" },
+        { "fieldPath": "evaluationDate", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
