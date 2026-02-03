@@ -436,38 +436,75 @@ export function Dashboard() {
       case 'puppies':
         return (
           <div className='space-y-3 max-h-96 overflow-y-auto'>
-            {stats.allPuppies.slice(0, 20).map((puppy) => (
-              <Link
-                key={puppy.id}
-                to={`/litters/${puppy.litter.id}`}
-                className='block p-3 border rounded-lg hover:bg-muted/50 transition'
-                onClick={() => setPreviewOpen(false)}
-              >
-                <div className='flex justify-between items-center'>
-                  <div>
-                    <p className='font-medium'>
-                      {puppy.name || puppy.tempName || 'Unnamed'}
-                    </p>
-                    <p className='text-sm text-muted-foreground'>
-                      {puppy.sex === 'female' ? '♀' : '♂'} {puppy.color}
-                    </p>
+            {stats.allPuppies.slice(0, 20).map((puppy) => {
+              const dam = dogs.find((d) => d.id === puppy.litter.damId);
+              const sire = dogs.find((d) => d.id === puppy.litter.sireId);
+              const litterName =
+                puppy.litter.litterName || `${dam?.name || 'Unknown'} × ${
+                  sire?.name || 'Unknown'
+                }`;
+              const buyer = (puppy.litter.buyers || []).find(
+                (b) => b.id === puppy.buyerId
+              );
+
+              return (
+                <Link
+                  key={puppy.id}
+                  to={`/litters/${puppy.litter.id}`}
+                  className='block p-3 border rounded-lg hover:bg-muted/50 transition'
+                  onClick={() => setPreviewOpen(false)}
+                >
+                  <div className='flex justify-between items-start gap-3'>
+                    <div>
+                      <p className='font-medium'>
+                        {puppy.name || puppy.tempName || 'Unnamed'}
+                      </p>
+                      <p className='text-xs text-muted-foreground'>
+                        Litter: {litterName}
+                      </p>
+                      {puppy.litter.dateOfBirth && (
+                        <p className='text-xs text-muted-foreground'>
+                          DOB:{' '}
+                          {format(
+                            new Date(puppy.litter.dateOfBirth),
+                            'MMM d, yyyy'
+                          )}
+                        </p>
+                      )}
+                      <p className='text-xs text-muted-foreground mt-1'>
+                        {puppy.sex === 'female' ? '♀ Female' : '♂ Male'} ·{' '}
+                        {puppy.color}
+                      </p>
+                      {buyer && (
+                        <p className='text-xs text-muted-foreground mt-1'>
+                          Reserved for: {buyer.name}
+                        </p>
+                      )}
+                    </div>
+                    <div className='flex flex-col items-end gap-1'>
+                      {puppy.salePrice && (
+                        <p className='text-sm font-semibold text-green-600'>
+                          ${puppy.salePrice.toLocaleString()}
+                        </p>
+                      )}
+                      <Badge
+                        variant={
+                          puppy.status === 'available'
+                            ? 'default'
+                            : puppy.status === 'reserved'
+                            ? 'secondary'
+                            : puppy.status === 'sold'
+                            ? 'outline'
+                            : 'secondary'
+                        }
+                      >
+                        {puppy.status}
+                      </Badge>
+                    </div>
                   </div>
-                  <Badge
-                    variant={
-                      puppy.status === 'available'
-                        ? 'default'
-                        : puppy.status === 'reserved'
-                        ? 'secondary'
-                        : puppy.status === 'sold'
-                        ? 'outline'
-                        : 'secondary'
-                    }
-                  >
-                    {puppy.status}
-                  </Badge>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
             {stats.allPuppies.length > 20 && (
               <p className='text-center text-sm text-muted-foreground'>
                 And {stats.allPuppies.length - 20} more...
@@ -479,31 +516,63 @@ export function Dashboard() {
       case 'forSale':
         return (
           <div className='space-y-3 max-h-96 overflow-y-auto'>
-            {stats.forSalePuppies.map((puppy) => (
-              <Link
-                key={puppy.id}
-                to={`/litters/${puppy.litter.id}`}
-                className='block p-3 border rounded-lg hover:bg-muted/50 transition'
-                onClick={() => setPreviewOpen(false)}
-              >
-                <div className='flex justify-between items-center'>
-                  <div>
-                    <p className='font-medium'>
-                      {puppy.name || puppy.tempName || 'Unnamed'}
-                    </p>
-                    <p className='text-sm text-muted-foreground'>
-                      {puppy.sex === 'female' ? '♀' : '♂'} {puppy.color}
-                    </p>
-                    {puppy.salePrice && (
-                      <p className='text-sm font-medium text-green-600'>
-                        ${puppy.salePrice.toLocaleString()}
+            {stats.forSalePuppies.map((puppy) => {
+              const dam = dogs.find((d) => d.id === puppy.litter.damId);
+              const sire = dogs.find((d) => d.id === puppy.litter.sireId);
+              const litterName =
+                puppy.litter.litterName || `${dam?.name || 'Unknown'} × ${
+                  sire?.name || 'Unknown'
+                }`;
+              const buyer = (puppy.litter.buyers || []).find(
+                (b) => b.id === puppy.buyerId
+              );
+
+              return (
+                <Link
+                  key={puppy.id}
+                  to={`/litters/${puppy.litter.id}`}
+                  className='block p-3 border rounded-lg hover:bg-muted/50 transition'
+                  onClick={() => setPreviewOpen(false)}
+                >
+                  <div className='flex justify-between items-start gap-3'>
+                    <div>
+                      <p className='font-medium'>
+                        {puppy.name || puppy.tempName || 'Unnamed'}
                       </p>
-                    )}
+                      <p className='text-xs text-muted-foreground'>
+                        Litter: {litterName}
+                      </p>
+                      {puppy.litter.dateOfBirth && (
+                        <p className='text-xs text-muted-foreground'>
+                          DOB:{' '}
+                          {format(
+                            new Date(puppy.litter.dateOfBirth),
+                            'MMM d, yyyy'
+                          )}
+                        </p>
+                      )}
+                      <p className='text-xs text-muted-foreground mt-1'>
+                        {puppy.sex === 'female' ? '♀ Female' : '♂ Male'} ·{' '}
+                        {puppy.color}
+                      </p>
+                      {buyer && (
+                        <p className='text-xs text-muted-foreground mt-1'>
+                          Reserved for: {buyer.name}
+                        </p>
+                      )}
+                    </div>
+                    <div className='flex flex-col items-end gap-1'>
+                      {puppy.salePrice && (
+                        <p className='text-sm font-semibold text-green-600'>
+                          ${puppy.salePrice.toLocaleString()}
+                        </p>
+                      )}
+                      <ShoppingCart className='h-4 w-4 text-green-600' />
+                    </div>
                   </div>
-                  <ShoppingCart className='h-4 w-4 text-green-600' />
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         );
 
