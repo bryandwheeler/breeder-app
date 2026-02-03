@@ -159,8 +159,8 @@ export const useNewsletterStore = create<NewsletterStore>((set, get) => ({
 
   subscribeLists: (ownerId: string, ownerType: 'admin' | 'breeder') => {
     const q = ownerType === 'admin'
-      ? query(collection(db, COLLECTIONS.LISTS), orderBy('createdAt', 'desc'))
-      : query(collection(db, COLLECTIONS.LISTS), where('ownerId', '==', ownerId), orderBy('createdAt', 'desc'));
+      ? query(collection(db, COLLECTIONS.LISTS), where('ownerType', '==', 'admin'), orderBy('createdAt', 'desc'))
+      : query(collection(db, COLLECTIONS.LISTS), where('ownerId', '==', ownerId), where('ownerType', '==', 'breeder'), orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const lists = snapshot.docs.map((doc) => ({
@@ -564,7 +564,7 @@ export const useNewsletterStore = create<NewsletterStore>((set, get) => ({
   subscribeCampaigns: (ownerId: string, ownerType: 'admin' | 'breeder') => {
     const q = ownerType === 'admin'
       ? query(collection(db, COLLECTIONS.CAMPAIGNS), where('ownerType', '==', 'admin'), orderBy('createdAt', 'desc'))
-      : query(collection(db, COLLECTIONS.CAMPAIGNS), where('ownerId', '==', ownerId), orderBy('createdAt', 'desc'));
+      : query(collection(db, COLLECTIONS.CAMPAIGNS), where('ownerId', '==', ownerId), where('ownerType', '==', 'breeder'), orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const campaigns = snapshot.docs.map((doc) => ({
@@ -683,7 +683,7 @@ export const useNewsletterStore = create<NewsletterStore>((set, get) => ({
   subscribeSequences: (ownerId: string, ownerType: 'admin' | 'breeder') => {
     const q = ownerType === 'admin'
       ? query(collection(db, COLLECTIONS.SEQUENCES), where('ownerType', '==', 'admin'), orderBy('createdAt', 'desc'))
-      : query(collection(db, COLLECTIONS.SEQUENCES), where('ownerId', '==', ownerId), orderBy('createdAt', 'desc'));
+      : query(collection(db, COLLECTIONS.SEQUENCES), where('ownerId', '==', ownerId), where('ownerType', '==', 'breeder'), orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const sequences = snapshot.docs.map((doc) => ({
@@ -878,7 +878,7 @@ export const useNewsletterStore = create<NewsletterStore>((set, get) => ({
   subscribeLeadMagnets: (ownerId: string, ownerType: 'admin' | 'breeder') => {
     const q = ownerType === 'admin'
       ? query(collection(db, COLLECTIONS.LEAD_MAGNETS), where('ownerType', '==', 'admin'), orderBy('createdAt', 'desc'))
-      : query(collection(db, COLLECTIONS.LEAD_MAGNETS), where('ownerId', '==', ownerId), orderBy('createdAt', 'desc'));
+      : query(collection(db, COLLECTIONS.LEAD_MAGNETS), where('ownerId', '==', ownerId), where('ownerType', '==', 'breeder'), orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const leadMagnets = snapshot.docs.map((doc) => ({
@@ -957,7 +957,7 @@ export const useNewsletterStore = create<NewsletterStore>((set, get) => ({
   subscribeSignupForms: (ownerId: string, ownerType: 'admin' | 'breeder') => {
     const q = ownerType === 'admin'
       ? query(collection(db, COLLECTIONS.SIGNUP_FORMS), where('ownerType', '==', 'admin'), orderBy('createdAt', 'desc'))
-      : query(collection(db, COLLECTIONS.SIGNUP_FORMS), where('ownerId', '==', ownerId), orderBy('createdAt', 'desc'));
+      : query(collection(db, COLLECTIONS.SIGNUP_FORMS), where('ownerId', '==', ownerId), where('ownerType', '==', 'breeder'), orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const signupForms = snapshot.docs.map((doc) => ({
