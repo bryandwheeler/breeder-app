@@ -24,6 +24,14 @@ import { Connections } from '@/pages/Connections';
 import { ForumHome } from '@/pages/ForumHome';
 import { ForumCategory } from '@/pages/ForumCategory';
 import { ForumThread } from '@/pages/ForumThread';
+import { BreederNewsletter } from '@/pages/BreederNewsletter';
+import { BreederNewsletterLists } from '@/pages/newsletter/BreederNewsletterLists';
+import { BreederNewsletterSubscribers } from '@/pages/newsletter/BreederNewsletterSubscribers';
+import { BreederNewsletterCampaigns } from '@/pages/newsletter/BreederNewsletterCampaigns';
+import { BreederNewsletterSequences } from '@/pages/newsletter/BreederNewsletterSequences';
+import { BreederNewsletterLeadMagnets } from '@/pages/newsletter/BreederNewsletterLeadMagnets';
+import { BreederNewsletterForms } from '@/pages/newsletter/BreederNewsletterForms';
+import { BreederNewsletterSettings } from '@/pages/newsletter/BreederNewsletterSettings';
 import { BuyerPortal } from '@/pages/BuyerPortal';
 import { HealthRecords } from '@/pages/HealthRecords';
 import { StudJobsPage } from '@/pages/StudJobsPage';
@@ -404,6 +412,87 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <ForumThread />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Breeder Newsletter Routes */}
+              <Route
+                path='/newsletter'
+                element={
+                  <ProtectedRoute>
+                    <BreederNewsletter />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/newsletter/lists'
+                element={
+                  <ProtectedRoute>
+                    <BreederNewsletterLists />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/newsletter/subscribers'
+                element={
+                  <ProtectedRoute>
+                    <BreederNewsletterSubscribers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/newsletter/campaigns'
+                element={
+                  <ProtectedRoute>
+                    <BreederNewsletterCampaigns />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/newsletter/campaigns/:id'
+                element={
+                  <ProtectedRoute>
+                    <BreederNewsletterCampaigns />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/newsletter/sequences'
+                element={
+                  <ProtectedRoute>
+                    <BreederNewsletterSequences />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/newsletter/sequences/:id'
+                element={
+                  <ProtectedRoute>
+                    <BreederNewsletterSequences />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/newsletter/lead-magnets'
+                element={
+                  <ProtectedRoute>
+                    <BreederNewsletterLeadMagnets />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/newsletter/forms'
+                element={
+                  <ProtectedRoute>
+                    <BreederNewsletterForms />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/newsletter/settings'
+                element={
+                  <ProtectedRoute>
+                    <BreederNewsletterSettings />
                   </ProtectedRoute>
                 }
               />

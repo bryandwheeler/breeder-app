@@ -82,6 +82,7 @@ const breederNavigation: NavGroup[] = [
       { name: 'Waitlist', path: '/waitlist', icon: ListOrdered },
       { name: 'Inquiries', path: '/inquiries', icon: MessageSquare },
       { name: 'Connections', path: '/connections', icon: GitFork },
+      { name: 'Newsletter', path: '/newsletter', icon: Mail },
       { name: 'Forum', path: '/forum', icon: MessagesSquare },
       { name: 'Analytics', path: '/analytics', icon: BarChart3 },
     ],
