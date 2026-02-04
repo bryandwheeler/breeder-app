@@ -3,13 +3,15 @@ import { Puppy, Buyer, WaitlistEntry } from '@breeder/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, User, FileText, Users, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Edit, Trash2, User, FileText, Users, ExternalLink, CheckCircle2, Eye, ClipboardCheck } from 'lucide-react';
 import { ImageGalleryDialog } from '@/components/ImageGalleryDialog';
 
 interface PuppyCardProps {
   puppy: Puppy;
   buyer?: Buyer;
   waitlistEntry?: WaitlistEntry; // Waitlist entry assigned to this puppy
+  evaluationCount?: number; // Number of evaluations completed for this puppy
+  onView?: (puppy: Puppy) => void;
   onEdit?: (puppy: Puppy) => void;
   onDelete?: (puppyId: string) => void;
   onReserve?: (puppyId: string) => void;
@@ -18,7 +20,7 @@ interface PuppyCardProps {
   onPhotoDelete?: (puppy: Puppy, photoIndex: number) => void;
 }
 
-export function PuppyCard({ puppy, buyer, waitlistEntry, onEdit, onDelete, onReserve, onGenerateContract, onGenerateHealthGuarantee, onPhotoDelete }: PuppyCardProps) {
+export function PuppyCard({ puppy, buyer, waitlistEntry, evaluationCount, onView, onEdit, onDelete, onReserve, onGenerateContract, onGenerateHealthGuarantee, onPhotoDelete }: PuppyCardProps) {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
 
@@ -58,7 +60,7 @@ export function PuppyCard({ puppy, buyer, waitlistEntry, onEdit, onDelete, onRes
                 </Badge>
               )}
             </CardTitle>
-            <div className='flex gap-2 mt-2'>
+            <div className='flex flex-wrap gap-2 mt-2'>
               <Badge variant={getStatusColor(puppy.status)}>
                 {getStatusLabel(puppy.status)}
               </Badge>
@@ -69,16 +71,27 @@ export function PuppyCard({ puppy, buyer, waitlistEntry, onEdit, onDelete, onRes
                 {puppy.sex === 'male' ? '♂ Male' : '♀ Female'}
               </Badge>
               <Badge variant='outline'>{puppy.color}</Badge>
+              {evaluationCount !== undefined && evaluationCount > 0 && (
+                <Badge variant='secondary' className='flex items-center gap-1'>
+                  <ClipboardCheck className='h-3 w-3' />
+                  {evaluationCount} eval{evaluationCount !== 1 ? 's' : ''}
+                </Badge>
+              )}
             </div>
           </div>
           <div className='flex gap-1'>
+            {onView && (
+              <Button size='sm' variant='ghost' onClick={() => onView(puppy)} title='View Details'>
+                <Eye className='h-4 w-4' />
+              </Button>
+            )}
             {onEdit && (
-              <Button size='sm' variant='ghost' onClick={() => onEdit(puppy)}>
+              <Button size='sm' variant='ghost' onClick={() => onEdit(puppy)} title='Edit'>
                 <Edit className='h-4 w-4' />
               </Button>
             )}
             {onDelete && (
-              <Button size='sm' variant='ghost' onClick={() => onDelete(puppy.id)}>
+              <Button size='sm' variant='ghost' onClick={() => onDelete(puppy.id)} title='Delete'>
                 <Trash2 className='h-4 w-4' />
               </Button>
             )}

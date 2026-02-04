@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConnectionStore } from '@breeder/firebase';
 import { useDogStore } from '@breeder/firebase';
 import { useAdminStore } from '@breeder/firebase';
 import { useBreederStore } from '@breeder/firebase';
-import { Card } from '@/components/ui/card';
+import { useBreederSocialStore } from '@breeder/firebase';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +19,9 @@ import {
   Edit,
   CheckCircle,
   Users,
+  MessageCircle,
+  ArrowRight,
+  UserPlus,
 } from 'lucide-react';
 import { ConnectionRequestDialog } from '@/components/ConnectionRequestDialog';
 import { DataSharingPreferencesDialog } from '@/components/DataSharingPreferencesDialog';
@@ -46,6 +51,13 @@ export function Connections() {
     useDogStore();
   const impersonatedUserId = useAdminStore((s) => s.impersonatedUserId);
   const profile = useBreederStore((state) => state.profile);
+  const {
+    pendingRequests: friendRequests,
+    totalUnreadMessages,
+    subscribeToFriendships,
+    subscribeToConversations,
+    getFriendsList,
+  } = useBreederSocialStore();
   const { toast } = useToast();
 
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
@@ -97,6 +109,20 @@ export function Connections() {
     const unsubscribe = subscribeToUserData(targetUid);
     return () => unsubscribe();
   }, [subscribeToUserData, impersonatedUserId, currentUser?.uid]);
+
+  // Subscribe to breeder social data (friendships and conversations)
+  useEffect(() => {
+    if (!currentUser) return;
+    const unsubFriendships = subscribeToFriendships(currentUser.uid);
+    const unsubConversations = subscribeToConversations(currentUser.uid);
+    return () => {
+      unsubFriendships();
+      unsubConversations();
+    };
+  }, [currentUser, subscribeToFriendships, subscribeToConversations]);
+
+  // Get friends count
+  const friends = getFriendsList();
 
   const sendEmailNotification = async (
     recipientUserId: string,
@@ -511,6 +537,55 @@ export function Connections() {
           New Connection Request
         </Button>
       </div>
+
+      {/* Breeder Friends Quick Access Card */}
+      <Card className='bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200 dark:border-blue-800'>
+        <CardHeader className='pb-2'>
+          <CardTitle className='text-lg flex items-center gap-2'>
+            <Users className='h-5 w-5 text-blue-600 dark:text-blue-400' />
+            Breeder Community
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className='flex flex-wrap items-center gap-4'>
+            <div className='flex items-center gap-2'>
+              <span className='text-2xl font-bold text-blue-600 dark:text-blue-400'>
+                {friends.length}
+              </span>
+              <span className='text-muted-foreground'>
+                Friend{friends.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            {friendRequests.length > 0 && (
+              <div className='flex items-center gap-2'>
+                <Badge variant='destructive' className='flex items-center gap-1'>
+                  <UserPlus className='h-3 w-3' />
+                  {friendRequests.length} pending request{friendRequests.length !== 1 ? 's' : ''}
+                </Badge>
+              </div>
+            )}
+            {totalUnreadMessages > 0 && (
+              <div className='flex items-center gap-2'>
+                <Badge variant='secondary' className='flex items-center gap-1'>
+                  <MessageCircle className='h-3 w-3' />
+                  {totalUnreadMessages} new message{totalUnreadMessages !== 1 ? 's' : ''}
+                </Badge>
+              </div>
+            )}
+            <div className='flex-1' />
+            <Link to='/community'>
+              <Button variant='outline' size='sm' className='border-blue-300 dark:border-blue-700'>
+                <Users className='h-4 w-4 mr-2' />
+                Go to Community
+                <ArrowRight className='h-4 w-4 ml-2' />
+              </Button>
+            </Link>
+          </div>
+          <p className='text-sm text-muted-foreground mt-3'>
+            Connect with other breeders, send friend requests, and message your connections directly.
+          </p>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue='connections' className='w-full'>
         <TabsList>

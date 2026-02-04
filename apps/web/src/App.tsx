@@ -21,6 +21,7 @@ import { WaitlistApplication } from '@/pages/WaitlistApplication';
 import { Customers } from '@/pages/Customers';
 import { ContactDetail } from '@/pages/ContactDetail';
 import { Connections } from '@/pages/Connections';
+import { BreederCommunity } from '@/pages/BreederCommunity';
 import { ForumHome } from '@/pages/ForumHome';
 import { ForumCategory } from '@/pages/ForumCategory';
 import { ForumThread } from '@/pages/ForumThread';
@@ -388,6 +389,14 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <Connections />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/community'
+                element={
+                  <ProtectedRoute>
+                    <BreederCommunity />
                   </ProtectedRoute>
                 }
               />

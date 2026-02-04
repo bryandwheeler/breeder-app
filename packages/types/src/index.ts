@@ -12,3 +12,4 @@ export * from './waitlist-form';
 export * from './website';
 export * from './workflow';
 export * from './puppyEvaluation';
+export * from './breederConnection';

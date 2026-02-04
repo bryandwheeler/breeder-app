@@ -26,6 +26,7 @@ export * from './stores/taskStore';
 export * from './stores/waitlistStore';
 export * from './stores/websiteStore';
 export * from './stores/evaluationStore';
+export * from './stores/breederSocialStore';
 // export * from './stores/workflowStore'; // TODO: Fix complex type errors and missing dependencies
 
 // Re-export subcollection utilities

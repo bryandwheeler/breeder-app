@@ -102,6 +102,7 @@ export function EvaluationResultsList({
   const getResultBadge = (evaluation: PuppyEvaluation) => {
     if (isVolhardEvaluation(evaluation)) {
       const interpretation = VOLHARD_INTERPRETATIONS[evaluation.interpretation];
+      if (!interpretation) return null;
       return (
         <Badge className={getVolhardInterpretationColor(evaluation.interpretation)}>
           {interpretation.title}
@@ -297,9 +298,9 @@ function EvaluationDetailView({ evaluation }: { evaluation: PuppyEvaluation }) {
         <div className="p-4 rounded-lg bg-gray-50">
           <h4 className="font-semibold mb-2">Overall Assessment</h4>
           <Badge className={getVolhardInterpretationColor(evaluation.interpretation)} >
-            {interpretation.title}
+            {interpretation?.title ?? evaluation.interpretation?.replace(/_/g, ' ') ?? 'Unknown'}
           </Badge>
-          <p className="text-sm text-muted-foreground mt-2">{interpretation.description}</p>
+          <p className="text-sm text-muted-foreground mt-2">{interpretation?.description ?? 'No description available'}</p>
           <p className="text-sm mt-2">
             <strong>Average Score:</strong> {evaluation.averageScore.toFixed(1)} / 6
           </p>
@@ -317,29 +318,33 @@ function EvaluationDetailView({ evaluation }: { evaluation: PuppyEvaluation }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <h4 className="font-semibold mb-2 text-green-700">Suitable For</h4>
-            <ul className="text-sm space-y-1">
-              {interpretation.suitableFor.map((item, i) => (
-                <li key={i}>• {item}</li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2 text-red-700">Not Suitable For</h4>
-            <ul className="text-sm space-y-1">
-              {interpretation.notSuitableFor.map((item, i) => (
-                <li key={i}>• {item}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
+        {interpretation && (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-semibold mb-2 text-green-700">Suitable For</h4>
+                <ul className="text-sm space-y-1">
+                  {interpretation.suitableFor.map((item, i) => (
+                    <li key={i}>• {item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2 text-red-700">Not Suitable For</h4>
+                <ul className="text-sm space-y-1">
+                  {interpretation.notSuitableFor.map((item, i) => (
+                    <li key={i}>• {item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
 
-        <div>
-          <h4 className="font-semibold mb-2">Training Notes</h4>
-          <p className="text-sm text-muted-foreground">{interpretation.trainingNotes}</p>
-        </div>
+            <div>
+              <h4 className="font-semibold mb-2">Training Notes</h4>
+              <p className="text-sm text-muted-foreground">{interpretation.trainingNotes}</p>
+            </div>
+          </>
+        )}
       </div>
     );
   }
@@ -391,9 +396,9 @@ function EvaluationDetailView({ evaluation }: { evaluation: PuppyEvaluation }) {
         <div className="p-4 rounded-lg bg-gray-50">
           <h4 className="font-semibold mb-2">Working Dog Potential</h4>
           <Badge className={getWorkingPotentialColor(evaluation.workingDogPotential)}>
-            {evaluation.workingDogPotential.replace('_', ' ').toUpperCase()}
+            {evaluation.workingDogPotential?.replace('_', ' ').toUpperCase() ?? 'Unknown'}
           </Badge>
-          <p className="text-sm text-muted-foreground mt-2">{potentialInfo.description}</p>
+          <p className="text-sm text-muted-foreground mt-2">{potentialInfo?.description ?? 'No description available'}</p>
           <p className="text-sm mt-2">
             <strong>Total Score:</strong> {evaluation.totalScore} / 25
           </p>

@@ -242,6 +242,10 @@ export function generateAPETHomeMatchNotes(trait: APETTraitName, score: APETScor
   const category = getAPETScoreCategory(score);
   const traitInfo = APET_TRAITS[trait];
 
+  if (!traitInfo) {
+    return 'Average - adaptable to most homes';
+  }
+
   if (category === 'low' || category === 'below_average') {
     return traitInfo.lowDescription;
   } else if (category === 'high' || category === 'above_average') {
@@ -285,11 +289,11 @@ export function generateAPETSummary(traitProfile: APETTraitProfile[]): string {
   let summary = '';
 
   if (strengths.length > 0) {
-    summary += `Strengths: ${strengths.map(t => APET_TRAITS[t.trait].name).join(', ')}. `;
+    summary += `Strengths: ${strengths.map(t => APET_TRAITS[t.trait]?.name ?? t.trait.replace(/_/g, ' ')).join(', ')}. `;
   }
 
   if (challenges.length > 0) {
-    summary += `Areas needing attention: ${challenges.map(t => APET_TRAITS[t.trait].name).join(', ')}.`;
+    summary += `Areas needing attention: ${challenges.map(t => APET_TRAITS[t.trait]?.name ?? t.trait.replace(/_/g, ' ')).join(', ')}.`;
   }
 
   if (summary === '') {
@@ -357,7 +361,7 @@ export function buildAPETEvaluation(
   // Identify training priority areas (low scores on tweakable traits)
   const trainingPriorityAreas = traitProfile
     .filter(t => !t.isStableTrait && (t.category === 'low' || t.category === 'below_average'))
-    .map(t => APET_TRAITS[t.trait].name);
+    .map(t => APET_TRAITS[t.trait]?.name ?? t.trait.replace(/_/g, ' '));
 
   return {
     ...base,
@@ -486,7 +490,7 @@ export function generateFlinksSummary(
   let summary = `Working Dog Potential: ${potential.replace('_', ' ').toUpperCase()}. `;
 
   if (disciplines.length > 0) {
-    summary += `Suited for: ${disciplines.map(d => FLINKS_DISCIPLINE_REQUIREMENTS[d].name).join(', ')}. `;
+    summary += `Suited for: ${disciplines.map(d => FLINKS_DISCIPLINE_REQUIREMENTS[d]?.name ?? d.replace(/_/g, ' ')).join(', ')}. `;
   } else {
     summary += 'May not be suited for professional working roles. ';
   }

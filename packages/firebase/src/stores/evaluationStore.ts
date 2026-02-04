@@ -74,6 +74,10 @@ type EvaluationStore = {
   // Filtering (client-side from loaded evaluations)
   getEvaluationsForPuppy: (puppyId: string) => PuppyEvaluation[];
   getEvaluationsByTestType: (testType: EvaluationTestType) => PuppyEvaluation[];
+  getEvaluationCountForPuppy: (puppyId: string) => number;
+
+  // Subscribe-like function
+  subscribeToLitterEvaluations: (litterId: string) => () => void;
 
   // Utility
   setCurrentEvaluation: (evaluation: PuppyEvaluation | null) => void;
@@ -274,6 +278,19 @@ export const useEvaluationStore = create<EvaluationStore>()((set, get) => ({
 
   getEvaluationsByTestType: (testType) => {
     return get().evaluations.filter(e => e.testType === testType);
+  },
+
+  getEvaluationCountForPuppy: (puppyId) => {
+    return get().evaluations.filter(e => e.puppyId === puppyId).length;
+  },
+
+  // Subscribe-like function that fetches litter evaluations (not real-time)
+  subscribeToLitterEvaluations: (litterId: string) => {
+    const store = get();
+    // Fetch evaluations on "subscribe"
+    store.fetchLitterEvaluations(litterId).catch(console.error);
+    // Return unsubscribe function (no-op since not real-time)
+    return () => {};
   },
 
   // ============================================================================

@@ -156,7 +156,7 @@ function VolhardComparisonTable({
                   </TableCell>
                   <TableCell>
                     <Badge className={getVolhardInterpretationColor(eval_.interpretation)}>
-                      {interpretation.title}
+                      {interpretation?.title ?? eval_.interpretation?.replace(/_/g, ' ') ?? 'Unknown'}
                     </Badge>
                   </TableCell>
                   <TableCell>{eval_.averageScore.toFixed(1)}</TableCell>

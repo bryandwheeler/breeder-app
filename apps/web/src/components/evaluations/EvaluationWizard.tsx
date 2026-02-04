@@ -441,6 +441,14 @@ export function EvaluationWizard({
     const test = VOLHARD_TESTS[testName];
     const currentResult = volhardResults[testName];
 
+    if (!test) {
+      return (
+        <div className="p-4 text-center text-muted-foreground">
+          Test configuration not found for: {testName}
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         <div>
@@ -471,6 +479,14 @@ export function EvaluationWizard({
   const renderApetStep = (exerciseName: APETExerciseName) => {
     const exercise = APET_EXERCISES[exerciseName];
     const currentResult = apetResults[exerciseName];
+
+    if (!exercise) {
+      return (
+        <div className="p-4 text-center text-muted-foreground">
+          Exercise configuration not found for: {exerciseName}
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-6">
@@ -505,6 +521,14 @@ export function EvaluationWizard({
   const renderFlinksStep = (category: FlinksTestCategory) => {
     const test = FLINKS_TESTS[category];
     const currentResult = flinksResults[category];
+
+    if (!test) {
+      return (
+        <div className="p-4 text-center text-muted-foreground">
+          Test configuration not found for: {category}
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-6">

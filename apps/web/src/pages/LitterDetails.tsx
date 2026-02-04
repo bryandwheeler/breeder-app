@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { useDogStore, useCrmStore, getExternalBreederInfo, useWaitlistStore } from '@breeder/firebase';
+import { useDogStore, useCrmStore, getExternalBreederInfo, useWaitlistStore, useEvaluationStore } from '@breeder/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,7 @@ import { LitterCareTasks } from '@/components/LitterCareTasks';
 import { EvaluationTab } from '@/components/evaluations/EvaluationTab';
 import { LitterFormDialog } from '@/components/LitterFormDialog';
 import { AddContactToWaitlistDialog } from '@/components/AddContactToWaitlistDialog';
+import { PuppyDetailDialog } from '@/components/PuppyDetailDialog';
 import {
   Select,
   SelectContent,
@@ -49,6 +50,18 @@ export function LitterDetails() {
   const [signingDialogOpen, setSigningDialogOpen] = useState(false);
   const [litterEditDialogOpen, setLitterEditDialogOpen] = useState(false);
   const [addContactDialogOpen, setAddContactDialogOpen] = useState(false);
+  const [viewingPuppy, setViewingPuppy] = useState<Puppy | null>(null);
+
+  // Evaluation store
+  const { subscribeToLitterEvaluations, getEvaluationCountForPuppy } = useEvaluationStore();
+
+  // Subscribe to evaluations for this litter
+  useEffect(() => {
+    if (id) {
+      const unsubscribe = subscribeToLitterEvaluations(id);
+      return () => unsubscribe();
+    }
+  }, [id, subscribeToLitterEvaluations]);
 
   // Subscribe to waitlist
   useEffect(() => {
@@ -102,6 +115,10 @@ export function LitterDetails() {
   const handleEditPuppy = (puppy: Puppy) => {
     setEditingPuppy(puppy);
     setPuppyDialogOpen(true);
+  };
+
+  const handleViewPuppy = (puppy: Puppy) => {
+    setViewingPuppy(puppy);
   };
 
   // Helper to remove undefined values from objects (Firebase doesn't accept undefined)
@@ -598,6 +615,8 @@ export function LitterDetails() {
                   puppy={puppy}
                   buyer={buyer}
                   waitlistEntry={assignedWaitlistEntry}
+                  evaluationCount={getEvaluationCountForPuppy(puppy.id)}
+                  onView={handleViewPuppy}
                   onEdit={handleEditPuppy}
                   onDelete={handleDeletePuppy}
                   onPhotoDelete={handleDeletePuppyPhoto}
@@ -943,6 +962,21 @@ export function LitterDetails() {
         litterId={litter.id}
         litterName={litter.litterName || `${dam?.name || 'Unknown'} x ${sire?.name || litter.externalSire?.name || 'Unknown'}`}
       />
+
+      {viewingPuppy && (
+        <PuppyDetailDialog
+          open={!!viewingPuppy}
+          onOpenChange={(open) => !open && setViewingPuppy(null)}
+          puppy={viewingPuppy}
+          litterId={litter.id}
+          buyer={buyers.find((b) => b.id === viewingPuppy.buyerId)}
+          waitlistEntry={litterWaitlist.find((e) => e.assignedPuppyId === viewingPuppy.id)}
+          onEdit={(puppy) => {
+            setViewingPuppy(null);
+            handleEditPuppy(puppy);
+          }}
+        />
+      )}
     </div>
   );
 }

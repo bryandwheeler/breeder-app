@@ -24,6 +24,7 @@ import { AuditLogViewer } from '@/components/AuditLogViewer';
 import { StripeSettings } from '@/components/StripeSettings';
 import { DefaultTasksManager } from '@/components/DefaultTasksManager';
 import { ForumCategoryManager } from '@/components/forum';
+import { PlatformEmailSettings } from '@/components/admin/PlatformEmailSettings';
 
 export function AdminSettings() {
   const navigate = useNavigate();
@@ -332,13 +333,14 @@ export function AdminSettings() {
 
       {/* Tabbed Management Sections */}
       <Tabs defaultValue='global' className='w-full'>
-        <TabsList className='grid w-full grid-cols-7'>
+        <TabsList className='grid w-full grid-cols-8'>
           <TabsTrigger value='global'>Global Lists</TabsTrigger>
           <TabsTrigger value='tasks'>Task Templates</TabsTrigger>
           <TabsTrigger value='forum'>Forum</TabsTrigger>
           <TabsTrigger value='registries'>Registries</TabsTrigger>
           <TabsTrigger value='subscriptions'>Subscriptions</TabsTrigger>
           <TabsTrigger value='stripe'>Stripe</TabsTrigger>
+          <TabsTrigger value='platformEmail'>Platform Email</TabsTrigger>
           <TabsTrigger value='audit'>Audit Logs</TabsTrigger>
         </TabsList>
 
@@ -372,6 +374,11 @@ export function AdminSettings() {
         {/* Stripe Settings Tab */}
         <TabsContent value='stripe'>
           <StripeSettings />
+        </TabsContent>
+
+        {/* Platform Email Tab */}
+        <TabsContent value='platformEmail'>
+          <PlatformEmailSettings />
         </TabsContent>
 
         {/* Audit Logs Tab */}

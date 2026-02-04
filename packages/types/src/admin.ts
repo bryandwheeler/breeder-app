@@ -39,6 +39,29 @@ export interface TrialConfig {
   active: boolean;
 }
 
+// Platform email settings for sending notifications from expertbreeder.com
+export type PlatformEmailTemplateType =
+  | 'friend_request'
+  | 'friend_accepted'
+  | 'new_message'
+  | 'connection_request'
+  | 'connection_approved'
+  | 'connection_declined';
+
+export interface PlatformEmailTemplate {
+  subject: string;
+  body: string; // HTML or plain text with {{variable}} placeholders
+}
+
+export interface PlatformEmailSettings {
+  enabled: boolean;
+  sendGridApiKey: string; // Encrypted/masked in UI
+  fromEmail: string; // e.g., notifications@expertbreeder.com
+  fromName: string; // e.g., Expert Breeder
+  replyToEmail: string; // e.g., support@expertbreeder.com
+  templates: Record<PlatformEmailTemplateType, PlatformEmailTemplate>;
+}
+
 export interface UserProfile {
   uid: string;
   email: string;
@@ -79,6 +102,8 @@ export interface AppSettings {
   trial?: TrialConfig;
   defaultTier?: SubscriptionTier; // default tier for new users
   paymentsEnabled?: boolean; // whether the app is accepting payments
+  // Platform email configuration for breeder-to-breeder communications
+  platformEmail?: PlatformEmailSettings;
 }
 
 export interface AdminStats {
