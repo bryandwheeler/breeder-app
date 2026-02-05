@@ -1,14 +1,11 @@
 // Tawk.to Live Chat Widget Component
 // Injects the Tawk.to script and manages the widget lifecycle
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@breeder/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAdminStore } from '@breeder/firebase';
-import { TawkToConfig, TawkToAPI, isWithinBusinessHours } from '@breeder/types';
-
-interface TawkToWidgetProps {
-  config?: TawkToConfig;
-}
+import { TawkToConfig, TawkToAPI, isWithinBusinessHours, DEFAULT_TAWKTO_CONFIG } from '@breeder/types';
 
 // Extend Window interface for Tawk.to
 declare global {
@@ -18,10 +15,31 @@ declare global {
   }
 }
 
-export function TawkToWidget({ config }: TawkToWidgetProps) {
+export function TawkToWidget() {
   const location = useLocation();
   const { currentUser } = useAuth();
   const scriptLoaded = useRef(false);
+  const [config, setConfig] = useState<TawkToConfig | null>(null);
+
+  // Load config from Firestore
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      doc(db, 'adminSettings', 'liveChat'),
+      (docSnap) => {
+        if (docSnap.exists() && docSnap.data().tawkTo) {
+          setConfig({
+            ...DEFAULT_TAWKTO_CONFIG,
+            ...docSnap.data().tawkTo,
+          });
+        }
+      },
+      (error) => {
+        console.error('[TawkTo] Error loading config:', error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
 
   // Load Tawk.to script
   useEffect(() => {
