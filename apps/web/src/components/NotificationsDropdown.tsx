@@ -50,6 +50,12 @@ export function NotificationsDropdown() {
         return '✅';
       case 'connection_declined':
         return '❌';
+      case 'friend_request':
+        return '👋';
+      case 'friend_accepted':
+        return '🤝';
+      case 'new_message':
+        return '💬';
       default:
         return '📬';
     }

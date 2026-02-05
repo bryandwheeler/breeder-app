@@ -1549,3 +1549,230 @@ exports.handleUnsubscribe = functions.https.onRequest(async (req, res) => {
     res.status(500).send('Error processing your request');
   }
 });
+
+// ========== PLATFORM EMAIL FUNCTIONS (for breeder-to-breeder notifications) ==========
+
+// Get platform email settings from admin configuration
+async function getPlatformEmailSettings() {
+  const settingsDoc = await db.collection('adminSettings').doc('platformEmail').get();
+  if (!settingsDoc.exists) {
+    return null;
+  }
+  return settingsDoc.data();
+}
+
+// Send platform notification email using admin-configured SendGrid
+async function sendPlatformNotificationEmail(to, templateType, variables) {
+  const settings = await getPlatformEmailSettings();
+
+  if (!settings || !settings.enabled) {
+    console.log('Platform email not enabled, skipping notification');
+    return { sent: false, reason: 'Platform email not enabled' };
+  }
+
+  // Use platform API key if configured, otherwise fall back to env var
+  const apiKey = settings.sendGridApiKey || process.env.SENDGRID_API_KEY;
+  if (!apiKey) {
+    console.log('SendGrid not configured for platform emails');
+    return { sent: false, reason: 'SendGrid not configured' };
+  }
+
+  const sgMail = require('@sendgrid/mail');
+  sgMail.setApiKey(apiKey);
+
+  // Get template for this notification type
+  const template = settings.templates?.[templateType];
+  if (!template) {
+    console.log(`No template configured for ${templateType}`);
+    return { sent: false, reason: `No template for ${templateType}` };
+  }
+
+  // Replace variables in subject and body
+  let subject = template.subject || '';
+  let body = template.body || '';
+
+  for (const [key, value] of Object.entries(variables)) {
+    const regex = new RegExp(`{{${key}}}`, 'g');
+    subject = subject.replace(regex, value || '');
+    body = body.replace(regex, value || '');
+  }
+
+  const msg = {
+    to,
+    from: {
+      email: settings.fromEmail || 'notifications@expertbreeder.com',
+      name: settings.fromName || 'Expert Breeder',
+    },
+    replyTo: settings.replyToEmail || 'support@expertbreeder.com',
+    subject,
+    html: body,
+  };
+
+  try {
+    await sgMail.send(msg);
+    console.log(`Platform email sent to ${to} for ${templateType}`);
+    return { sent: true };
+  } catch (error) {
+    console.error(`Failed to send platform email to ${to}:`, error.message);
+    return { sent: false, reason: error.message };
+  }
+}
+
+// Check if user wants to receive this notification type via email
+async function shouldSendEmailNotification(userId, notificationType) {
+  try {
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return true; // Default to sending if user doc doesn't exist
+    }
+
+    const prefs = userDoc.data().notificationPreferences;
+    if (!prefs) {
+      return true; // Default to sending if no preferences set
+    }
+
+    // Map notification type to preference key
+    const prefKeyMap = {
+      'friend_request': 'friendRequestReceived',
+      'friend_accepted': 'friendRequestAccepted',
+      'new_message': 'newMessage',
+      'connection_request': 'connectionRequestReceived',
+      'connection_approved': 'connectionRequestApproved',
+      'connection_declined': 'connectionRequestDeclined',
+    };
+
+    const prefKey = prefKeyMap[notificationType];
+    if (!prefKey || !prefs[prefKey]) {
+      return true; // Default to sending if preference not found
+    }
+
+    return prefs[prefKey].enabled && prefs[prefKey].channels.includes('email');
+  } catch (error) {
+    console.error('Error checking notification preferences:', error);
+    return true; // Default to sending on error
+  }
+}
+
+// 18. Send notification on friend request created
+exports.onFriendRequestCreated = functions.firestore
+  .document('breederFriendships/{friendshipId}')
+  .onCreate(async (snap, context) => {
+    const friendship = snap.data();
+    const friendshipId = context.params.friendshipId;
+
+    // Only send for pending requests
+    if (friendship.status !== 'pending') {
+      return;
+    }
+
+    try {
+      // Check if recipient wants email notifications
+      const shouldSend = await shouldSendEmailNotification(friendship.recipientId, 'friend_request');
+      if (!shouldSend) {
+        console.log(`Recipient ${friendship.recipientId} has disabled friend request emails`);
+        return;
+      }
+
+      // Get recipient's email
+      const recipientDoc = await db.collection('users').doc(friendship.recipientId).get();
+      if (!recipientDoc.exists) {
+        console.log('Recipient user document not found');
+        return;
+      }
+
+      const recipient = recipientDoc.data();
+      if (!recipient.email) {
+        console.log('Recipient has no email address');
+        return;
+      }
+
+      const baseUrl = process.env.APP_URL || 'https://expert-breeder.web.app';
+
+      // Send platform notification email
+      await sendPlatformNotificationEmail(
+        recipient.email,
+        'friend_request',
+        {
+          recipient_name: recipient.displayName || 'there',
+          requester_name: friendship.requesterDisplayName || 'A breeder',
+          requester_kennel: friendship.requesterKennelName || '',
+          message: friendship.message || '',
+          app_url: baseUrl,
+          community_url: `${baseUrl}/community`,
+        }
+      );
+
+      console.log(`Friend request notification sent for ${friendshipId}`);
+    } catch (error) {
+      console.error('Error sending friend request notification:', error);
+    }
+  });
+
+// 19. Send notification on friend request accepted
+exports.onFriendRequestUpdated = functions.firestore
+  .document('breederFriendships/{friendshipId}')
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    const friendshipId = context.params.friendshipId;
+
+    // Only send if status changed to accepted
+    if (before.status === 'pending' && after.status === 'accepted') {
+      try {
+        // Check if requester wants email notifications
+        const shouldSend = await shouldSendEmailNotification(after.requesterId, 'friend_accepted');
+        if (!shouldSend) {
+          console.log(`Requester ${after.requesterId} has disabled friend accepted emails`);
+          return;
+        }
+
+        // Get requester's email
+        const requesterDoc = await db.collection('users').doc(after.requesterId).get();
+        if (!requesterDoc.exists || !requesterDoc.data().email) {
+          return;
+        }
+
+        const requester = requesterDoc.data();
+        const baseUrl = process.env.APP_URL || 'https://expert-breeder.web.app';
+
+        // Send platform notification email
+        await sendPlatformNotificationEmail(
+          requester.email,
+          'friend_accepted',
+          {
+            requester_name: requester.displayName || 'there',
+            accepter_name: after.recipientDisplayName || 'A breeder',
+            accepter_kennel: after.recipientKennelName || '',
+            app_url: baseUrl,
+            community_url: `${baseUrl}/community`,
+          }
+        );
+
+        console.log(`Friend accepted notification sent for ${friendshipId}`);
+      } catch (error) {
+        console.error('Error sending friend accepted notification:', error);
+      }
+    }
+  });
+
+// 20. Callable function to manually send platform notification (for testing/admin)
+exports.sendPlatformNotification = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated');
+  }
+
+  // Check if caller is admin
+  const callerDoc = await db.collection('users').doc(context.auth.uid).get();
+  if (!callerDoc.exists || callerDoc.data().role !== 'admin') {
+    throw new functions.https.HttpsError('permission-denied', 'Must be an admin');
+  }
+
+  const { to, templateType, variables } = data;
+
+  if (!to || !templateType) {
+    throw new functions.https.HttpsError('invalid-argument', 'to and templateType are required');
+  }
+
+  const result = await sendPlatformNotificationEmail(to, templateType, variables || {});
+  return result;
+});

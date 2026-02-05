@@ -7,9 +7,13 @@
 
 import { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '@breeder/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '@breeder/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import type { PlatformEmailSettings as PlatformEmailSettingsType, PlatformEmailTemplateType } from '@breeder/types';
+import type {
+  PlatformEmailSettings as PlatformEmailSettingsType,
+  PlatformEmailTemplateType,
+} from '@breeder/types';
 import {
   Card,
   CardContent,
@@ -139,7 +143,10 @@ const defaultSettings: PlatformEmailSettingsType = {
   templates: defaultTemplates,
 };
 
-const templateLabels: Record<PlatformEmailTemplateType, { title: string; description: string }> = {
+const templateLabels: Record<
+  PlatformEmailTemplateType,
+  { title: string; description: string }
+> = {
   friend_request: {
     title: 'Friend Request',
     description: 'Sent when a breeder sends a friend request',
@@ -180,14 +187,20 @@ export function PlatformEmailSettings() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [testEmail, setTestEmail] = useState('');
 
-  const [settings, setSettings] = useState<ExtendedSettings>({ ...defaultSettings });
-  const [originalSettings, setOriginalSettings] = useState<ExtendedSettings>({ ...defaultSettings });
+  const [settings, setSettings] = useState<ExtendedSettings>({
+    ...defaultSettings,
+  });
+  const [originalSettings, setOriginalSettings] = useState<ExtendedSettings>({
+    ...defaultSettings,
+  });
 
   // Load settings
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const settingsDoc = await getDoc(doc(db, 'adminSettings', 'platformEmail'));
+        const settingsDoc = await getDoc(
+          doc(db, 'adminSettings', 'platformEmail'),
+        );
         if (settingsDoc.exists()) {
           const data = settingsDoc.data() as ExtendedSettings;
           // Mask API key for display
@@ -223,7 +236,8 @@ export function PlatformEmailSettings() {
     return key.substring(0, 4) + '****' + key.substring(key.length - 4);
   };
 
-  const hasChanges = JSON.stringify(settings) !== JSON.stringify(originalSettings);
+  const hasChanges =
+    JSON.stringify(settings) !== JSON.stringify(originalSettings);
 
   const handleSave = async () => {
     setSaving(true);
@@ -231,9 +245,12 @@ export function PlatformEmailSettings() {
       // Don't save if API key is masked - get original
       const settingsToSave = { ...settings };
       if (settingsToSave.sendGridApiKey.includes('****')) {
-        const settingsDoc = await getDoc(doc(db, 'adminSettings', 'platformEmail'));
+        const settingsDoc = await getDoc(
+          doc(db, 'adminSettings', 'platformEmail'),
+        );
         if (settingsDoc.exists()) {
-          settingsToSave.sendGridApiKey = settingsDoc.data().sendGridApiKey || '';
+          settingsToSave.sendGridApiKey =
+            settingsDoc.data().sendGridApiKey || '';
         }
       }
 
@@ -246,7 +263,9 @@ export function PlatformEmailSettings() {
       // Update state with masked key
       const displaySettings = { ...settingsToSave };
       if (displaySettings.sendGridApiKey) {
-        displaySettings.sendGridApiKey = maskApiKey(displaySettings.sendGridApiKey);
+        displaySettings.sendGridApiKey = maskApiKey(
+          displaySettings.sendGridApiKey,
+        );
       }
       setOriginalSettings(displaySettings);
       setSettings(displaySettings);
@@ -306,8 +325,24 @@ export function PlatformEmailSettings() {
 
     setSendingTest(true);
     try {
-      // In production, this would call a Cloud Function to send a test email
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const sendPlatformNotification = httpsCallable(
+        functions,
+        'sendPlatformNotification',
+      );
+
+      await sendPlatformNotification({
+        to: testEmail,
+        templateType: 'friend_request',
+        variables: {
+          recipient_name: 'Platform Admin',
+          requester_name: 'Test Sender',
+          requester_kennel: 'Expert Breeder',
+          message:
+            'This is a test platform email from the Platform Email settings screen.',
+          app_url: window.location.origin,
+          community_url: `${window.location.origin}/community`,
+        },
+      });
 
       toast({
         title: 'Test email sent',
@@ -316,7 +351,8 @@ export function PlatformEmailSettings() {
     } catch (error) {
       toast({
         title: 'Failed to send',
-        description: 'Could not send test email',
+        description:
+          error instanceof Error ? error.message : 'Could not send test email',
         variant: 'destructive',
       });
     } finally {
@@ -327,7 +363,7 @@ export function PlatformEmailSettings() {
   const handleTemplateChange = (
     templateType: PlatformEmailTemplateType,
     field: 'subject' | 'body',
-    value: string
+    value: string,
   ) => {
     setSettings((prev) => ({
       ...prev,
@@ -357,39 +393,40 @@ export function PlatformEmailSettings() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading settings...</p>
+      <div className='flex items-center justify-center py-12'>
+        <div className='text-center'>
+          <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4'></div>
+          <p className='text-muted-foreground'>Loading settings...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* Enable/Disable Toggle */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className='flex items-center justify-between'>
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
+              <CardTitle className='flex items-center gap-2'>
+                <Mail className='h-5 w-5' />
                 Platform Email
               </CardTitle>
               <CardDescription>
-                Send breeder connection and friend request emails from expertbreeder.com
+                Send breeder connection and friend request emails from
+                expertbreeder.com
               </CardDescription>
             </div>
-            <div className="flex items-center gap-4">
+            <div className='flex items-center gap-4'>
               {settings.isConfigured ? (
-                <Badge className="bg-green-100 text-green-800">
-                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                <Badge className='bg-green-100 text-green-800'>
+                  <CheckCircle2 className='h-3 w-3 mr-1' />
                   Connected
                 </Badge>
               ) : (
-                <Badge variant="secondary">
-                  <XCircle className="h-3 w-3 mr-1" />
+                <Badge variant='secondary'>
+                  <XCircle className='h-3 w-3 mr-1' />
                   Not Connected
                 </Badge>
               )}
@@ -412,93 +449,110 @@ export function PlatformEmailSettings() {
             Configure SendGrid to send emails from your domain
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="apiKey">API Key</Label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
+        <CardContent className='space-y-6'>
+          <div className='space-y-2'>
+            <Label htmlFor='apiKey'>API Key</Label>
+            <div className='flex gap-2'>
+              <div className='relative flex-1'>
                 <Input
-                  id="apiKey"
+                  id='apiKey'
                   type={showApiKey ? 'text' : 'password'}
                   value={settings.sendGridApiKey}
                   onChange={(e) =>
-                    setSettings((prev) => ({ ...prev, sendGridApiKey: e.target.value }))
+                    setSettings((prev) => ({
+                      ...prev,
+                      sendGridApiKey: e.target.value,
+                    }))
                   }
-                  placeholder="SG.xxxxxxxxxxxxxxxxxxxxxxxx"
+                  placeholder='SG.xxxxxxxxxxxxxxxxxxxxxxxx'
                 />
                 <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7"
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  className='absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7'
                   onClick={() => setShowApiKey(!showApiKey)}
                 >
-                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showApiKey ? (
+                    <EyeOff className='h-4 w-4' />
+                  ) : (
+                    <Eye className='h-4 w-4' />
+                  )}
                 </Button>
               </div>
               <Button
-                variant="outline"
+                variant='outline'
                 onClick={handleVerify}
                 disabled={verifying || !settings.sendGridApiKey}
               >
-                {verifying ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Verify'}
+                {verifying ? (
+                  <RefreshCw className='h-4 w-4 animate-spin' />
+                ) : (
+                  'Verify'
+                )}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className='text-xs text-muted-foreground'>
               Get your API key from the{' '}
               <a
-                href="https://app.sendgrid.com/settings/api_keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
+                href='https://app.sendgrid.com/settings/api_keys'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-primary hover:underline'
               >
                 SendGrid dashboard
-                <ExternalLink className="h-3 w-3 inline ml-1" />
+                <ExternalLink className='h-3 w-3 inline ml-1' />
               </a>
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="fromEmail">From Email</Label>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='fromEmail'>From Email</Label>
               <Input
-                id="fromEmail"
-                type="email"
+                id='fromEmail'
+                type='email'
                 value={settings.fromEmail}
                 onChange={(e) =>
-                  setSettings((prev) => ({ ...prev, fromEmail: e.target.value }))
+                  setSettings((prev) => ({
+                    ...prev,
+                    fromEmail: e.target.value,
+                  }))
                 }
-                placeholder="notifications@expertbreeder.com"
+                placeholder='notifications@expertbreeder.com'
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="fromName">From Name</Label>
+            <div className='space-y-2'>
+              <Label htmlFor='fromName'>From Name</Label>
               <Input
-                id="fromName"
+                id='fromName'
                 value={settings.fromName}
                 onChange={(e) =>
                   setSettings((prev) => ({ ...prev, fromName: e.target.value }))
                 }
-                placeholder="Expert Breeder"
+                placeholder='Expert Breeder'
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="replyTo">Reply-To Email</Label>
+          <div className='space-y-2'>
+            <Label htmlFor='replyTo'>Reply-To Email</Label>
             <Input
-              id="replyTo"
-              type="email"
+              id='replyTo'
+              type='email'
               value={settings.replyToEmail}
               onChange={(e) =>
-                setSettings((prev) => ({ ...prev, replyToEmail: e.target.value }))
+                setSettings((prev) => ({
+                  ...prev,
+                  replyToEmail: e.target.value,
+                }))
               }
-              placeholder="support@expertbreeder.com"
+              placeholder='support@expertbreeder.com'
             />
           </div>
 
           {settings.lastVerified && (
-            <p className="text-xs text-muted-foreground">
+            <p className='text-xs text-muted-foreground'>
               Last verified: {new Date(settings.lastVerified).toLocaleString()}
             </p>
           )}
@@ -514,10 +568,10 @@ export function PlatformEmailSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2">
+          <div className='flex gap-2'>
             <Input
-              type="email"
-              placeholder="Enter your email address"
+              type='email'
+              placeholder='Enter your email address'
               value={testEmail}
               onChange={(e) => setTestEmail(e.target.value)}
             />
@@ -526,9 +580,9 @@ export function PlatformEmailSettings() {
               disabled={sendingTest || !settings.sendGridApiKey}
             >
               {sendingTest ? (
-                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                <RefreshCw className='h-4 w-4 animate-spin mr-2' />
               ) : (
-                <Send className="h-4 w-4 mr-2" />
+                <Send className='h-4 w-4 mr-2' />
               )}
               Send Test
             </Button>
@@ -537,23 +591,26 @@ export function PlatformEmailSettings() {
       </Card>
 
       {/* Domain Setup Warning */}
-      <Card className="border-yellow-200 bg-yellow-50">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0" />
+      <Card className='border-yellow-200 bg-yellow-50'>
+        <CardContent className='pt-6'>
+          <div className='flex gap-3'>
+            <AlertTriangle className='h-5 w-5 text-yellow-600 flex-shrink-0' />
             <div>
-              <h4 className="font-medium text-yellow-800">Domain Verification Required</h4>
-              <p className="text-sm text-yellow-700 mt-1">
-                To send emails from @expertbreeder.com, you must verify your domain in SendGrid
-                and set up SPF, DKIM, and DMARC records. See the{' '}
+              <h4 className='font-medium text-yellow-800'>
+                Domain Verification Required
+              </h4>
+              <p className='text-sm text-yellow-700 mt-1'>
+                To send emails from @expertbreeder.com, you must verify your
+                domain in SendGrid and set up SPF, DKIM, and DMARC records. See
+                the{' '}
                 <a
-                  href="https://docs.sendgrid.com/ui/account-and-settings/how-to-set-up-domain-authentication"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-yellow-800 underline hover:text-yellow-900"
+                  href='https://docs.sendgrid.com/ui/account-and-settings/how-to-set-up-domain-authentication'
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='text-yellow-800 underline hover:text-yellow-900'
                 >
                   SendGrid domain authentication guide
-                  <ExternalLink className="h-3 w-3 inline ml-1" />
+                  <ExternalLink className='h-3 w-3 inline ml-1' />
                 </a>
               </p>
             </div>
@@ -566,64 +623,85 @@ export function PlatformEmailSettings() {
         <CardHeader>
           <CardTitle>Email Templates</CardTitle>
           <CardDescription>
-            Customize the email templates for breeder communications. Use {'{{variable}}'} placeholders.
+            Customize the email templates for breeder communications. Use{' '}
+            {'{{variable}}'} placeholders.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Accordion type="single" collapsible className="w-full">
-            {(Object.keys(templateLabels) as PlatformEmailTemplateType[]).map((templateType) => (
-              <AccordionItem key={templateType} value={templateType}>
-                <AccordionTrigger className="hover:no-underline">
-                  <div className="flex items-center gap-3">
-                    <Mail className="h-4 w-4" />
-                    <div className="text-left">
-                      <div className="font-medium">{templateLabels[templateType].title}</div>
-                      <div className="text-xs text-muted-foreground font-normal">
-                        {templateLabels[templateType].description}
+          <Accordion type='single' collapsible className='w-full'>
+            {(Object.keys(templateLabels) as PlatformEmailTemplateType[]).map(
+              (templateType) => (
+                <AccordionItem key={templateType} value={templateType}>
+                  <AccordionTrigger className='hover:no-underline'>
+                    <div className='flex items-center gap-3'>
+                      <Mail className='h-4 w-4' />
+                      <div className='text-left'>
+                        <div className='font-medium'>
+                          {templateLabels[templateType].title}
+                        </div>
+                        <div className='text-xs text-muted-foreground font-normal'>
+                          {templateLabels[templateType].description}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Label>Subject Line</Label>
-                    <Input
-                      value={settings.templates[templateType]?.subject || ''}
-                      onChange={(e) => handleTemplateChange(templateType, 'subject', e.target.value)}
-                      placeholder="Email subject"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email Body</Label>
-                    <Textarea
-                      value={settings.templates[templateType]?.body || ''}
-                      onChange={(e) => handleTemplateChange(templateType, 'body', e.target.value)}
-                      placeholder="Email content..."
-                      rows={8}
-                      className="font-mono text-sm"
-                    />
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <p className="text-xs text-muted-foreground">
-                      Available variables: {'{{'}{templateType.includes('friend') ? 'requester_name, requester_kennel, recipient_name, message' : 'dog_name, owner_name, requester_name, requester_kennel, purpose, message'}{'}}'}
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleResetTemplate(templateType)}
-                    >
-                      Reset to Default
-                    </Button>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
+                  </AccordionTrigger>
+                  <AccordionContent className='space-y-4 pt-4'>
+                    <div className='space-y-2'>
+                      <Label>Subject Line</Label>
+                      <Input
+                        value={settings.templates[templateType]?.subject || ''}
+                        onChange={(e) =>
+                          handleTemplateChange(
+                            templateType,
+                            'subject',
+                            e.target.value,
+                          )
+                        }
+                        placeholder='Email subject'
+                      />
+                    </div>
+                    <div className='space-y-2'>
+                      <Label>Email Body</Label>
+                      <Textarea
+                        value={settings.templates[templateType]?.body || ''}
+                        onChange={(e) =>
+                          handleTemplateChange(
+                            templateType,
+                            'body',
+                            e.target.value,
+                          )
+                        }
+                        placeholder='Email content...'
+                        rows={8}
+                        className='font-mono text-sm'
+                      />
+                    </div>
+                    <div className='flex justify-between items-center'>
+                      <p className='text-xs text-muted-foreground'>
+                        Available variables: {'{{'}
+                        {templateType.includes('friend')
+                          ? 'requester_name, requester_kennel, recipient_name, message'
+                          : 'dog_name, owner_name, requester_name, requester_kennel, purpose, message'}
+                        {'}}'}
+                      </p>
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        onClick={() => handleResetTemplate(templateType)}
+                      >
+                        Reset to Default
+                      </Button>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ),
+            )}
           </Accordion>
         </CardContent>
       </Card>
 
       {/* Save Button */}
-      <div className="flex justify-end">
+      <div className='flex justify-end'>
         <Button onClick={handleSave} disabled={!hasChanges || saving}>
           {saving ? 'Saving...' : 'Save Changes'}
         </Button>

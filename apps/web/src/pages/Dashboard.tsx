@@ -73,8 +73,12 @@ export function Dashboard() {
   const { customers } = useCrmStore();
   const { getHeatCyclesForDog } = useHeatCycleStore();
   const { currentUser } = useAuth();
-  const { litterTasks, subscribeToBreederTasks, updateTaskStatus, bulkUpdateTaskStatus } =
-    useTaskStore();
+  const {
+    litterTasks,
+    subscribeToBreederTasks,
+    updateTaskStatus,
+    bulkUpdateTaskStatus,
+  } = useTaskStore();
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewType, setPreviewType] = useState<PreviewType | null>(null);
   const [showCompletedTasks, setShowCompletedTasks] = useState(false);
@@ -87,19 +91,27 @@ export function Dashboard() {
 
   // Calculate statistics and detailed data
   const stats = useMemo(() => {
-    const activeDams = dogs.filter((d) => d.sex === 'female' && !d.isDeceased && d.breedingStatus !== 'retired');
-    const activeSires = dogs.filter((d) => d.sex === 'male' && !d.isDeceased && d.breedingStatus !== 'retired');
-    const retiredDogs = dogs.filter((d) => d.isDeceased || d.breedingStatus === 'retired');
+    const activeDams = dogs.filter(
+      (d) =>
+        d.sex === 'female' && !d.isDeceased && d.breedingStatus !== 'retired',
+    );
+    const activeSires = dogs.filter(
+      (d) =>
+        d.sex === 'male' && !d.isDeceased && d.breedingStatus !== 'retired',
+    );
+    const retiredDogs = dogs.filter(
+      (d) => d.isDeceased || d.breedingStatus === 'retired',
+    );
 
     const allPuppies = litters.flatMap((litter) =>
-      (litter.puppies || []).map((p) => ({ ...p, litter }))
+      (litter.puppies || []).map((p) => ({ ...p, litter })),
     );
 
     const forSalePuppies = allPuppies.filter((p) => p.status === 'available');
 
     const thisYearLitters = litters.filter((litter) => {
       const litterDate = new Date(
-        litter.dateOfBirth || litter.expectedDateOfBirth || ''
+        litter.dateOfBirth || litter.expectedDateOfBirth || '',
       );
       return litterDate.getFullYear() === new Date().getFullYear();
     });
@@ -130,7 +142,10 @@ export function Dashboard() {
 
   // Calculate upcoming heats
   const upcomingHeats = useMemo(() => {
-    const femaleDogs = dogs.filter((d) => d.sex === 'female' && !d.isDeceased && d.breedingStatus !== 'retired');
+    const femaleDogs = dogs.filter(
+      (d) =>
+        d.sex === 'female' && !d.isDeceased && d.breedingStatus !== 'retired',
+    );
     const predictions: Array<{
       dog: (typeof dogs)[0];
       lastHeat: Date;
@@ -143,7 +158,7 @@ export function Dashboard() {
       if (heatCycles.length > 0) {
         const sortedCycles = [...heatCycles].sort(
           (a, b) =>
-            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+            new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
         );
         const lastHeat = parseISO(sortedCycles[0].startDate);
 
@@ -156,7 +171,7 @@ export function Dashboard() {
             intervals.push(differenceInDays(current, previous));
           }
           avgCycleLength = Math.round(
-            intervals.reduce((sum, val) => sum + val, 0) / intervals.length
+            intervals.reduce((sum, val) => sum + val, 0) / intervals.length,
           );
         }
 
@@ -175,7 +190,7 @@ export function Dashboard() {
   // Calculate upcoming litters
   const upcomingLitters = useMemo(() => {
     const plannedOrPregnantLitters = litters.filter(
-      (l) => l.status === 'planned' || l.status === 'pregnant'
+      (l) => l.status === 'planned' || l.status === 'pregnant',
     );
 
     return plannedOrPregnantLitters
@@ -218,7 +233,9 @@ export function Dashboard() {
 
     // Separate daily and weekly tasks
     const dailyTasks = litterTasks.filter((t) => t.taskType === 'daily');
-    const weeklyTasks = litterTasks.filter((t) => t.taskType === 'weekly' || !t.taskType);
+    const weeklyTasks = litterTasks.filter(
+      (t) => t.taskType === 'weekly' || !t.taskType,
+    );
 
     // Daily tasks: overdue and today
     const overdueDailyList: typeof litterTasks = [];
@@ -235,7 +252,10 @@ export function Dashboard() {
 
     // Group today's tasks by time of day
     const timeOrder = { morning: 0, midday: 1, evening: 2 };
-    const todaysByTime: { timeOfDay: 'morning' | 'midday' | 'evening'; tasks: typeof litterTasks }[] = [
+    const todaysByTime: {
+      timeOfDay: 'morning' | 'midday' | 'evening';
+      tasks: typeof litterTasks;
+    }[] = [
       { timeOfDay: 'morning', tasks: [] },
       { timeOfDay: 'midday', tasks: [] },
       { timeOfDay: 'evening', tasks: [] },
@@ -267,7 +287,9 @@ export function Dashboard() {
       const due = new Date(task.dueDate);
       const key = format(due, 'yyyy-MM-dd');
       const isOverdue = isBefore(due, startToday);
-      const label = isOverdue ? `Overdue - ${format(due, 'MMM d')}` : format(due, 'EEE MMM d');
+      const label = isOverdue
+        ? `Overdue - ${format(due, 'MMM d')}`
+        : format(due, 'EEE MMM d');
       if (!groupedByDate.has(key)) {
         groupedByDate.set(key, { label, tasks: [], isOverdue });
       }
@@ -278,9 +300,15 @@ export function Dashboard() {
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
       .map(([, value]) => value);
 
-    const overdueDailyCount = overdueDailyList.filter((t) => t.status === 'pending').length;
-    const todayDailyCount = todayDailyList.filter((t) => t.status === 'pending').length;
-    const weeklyCount = weeklyThisWeek.filter((t) => t.status === 'pending').length;
+    const overdueDailyCount = overdueDailyList.filter(
+      (t) => t.status === 'pending',
+    ).length;
+    const todayDailyCount = todayDailyList.filter(
+      (t) => t.status === 'pending',
+    ).length;
+    const weeklyCount = weeklyThisWeek.filter(
+      (t) => t.status === 'pending',
+    ).length;
 
     return {
       overdueDailyTasks: overdueDailyList,
@@ -297,7 +325,7 @@ export function Dashboard() {
       showCompletedTasks
         ? overdueDailyTasks
         : overdueDailyTasks.filter((t) => t.status === 'pending'),
-    [showCompletedTasks, overdueDailyTasks]
+    [showCompletedTasks, overdueDailyTasks],
   );
 
   const visibleTodaysDailyTasksByTime = useMemo(
@@ -310,7 +338,7 @@ export function Dashboard() {
             : group.tasks.filter((t) => t.status === 'pending'),
         }))
         .filter((group) => group.tasks.length > 0),
-    [showCompletedTasks, todaysDailyTasksByTime]
+    [showCompletedTasks, todaysDailyTasksByTime],
   );
 
   const visibleWeeklyGroups = useMemo(
@@ -323,7 +351,7 @@ export function Dashboard() {
           return { ...group, tasks };
         })
         .filter((group) => group.tasks.length > 0),
-    [showCompletedTasks, weeklyTasksByDate]
+    [showCompletedTasks, weeklyTasksByDate],
   );
 
   const handleCardClick = (type: PreviewType, route?: string) => {
@@ -440,11 +468,10 @@ export function Dashboard() {
               const dam = dogs.find((d) => d.id === puppy.litter.damId);
               const sire = dogs.find((d) => d.id === puppy.litter.sireId);
               const litterName =
-                puppy.litter.litterName || `${dam?.name || 'Unknown'} × ${
-                  sire?.name || 'Unknown'
-                }`;
+                puppy.litter.litterName ||
+                `${dam?.name || 'Unknown'} × ${sire?.name || 'Unknown'}`;
               const buyer = (puppy.litter.buyers || []).find(
-                (b) => b.id === puppy.buyerId
+                (b) => b.id === puppy.buyerId,
               );
 
               return (
@@ -467,7 +494,7 @@ export function Dashboard() {
                           DOB:{' '}
                           {format(
                             new Date(puppy.litter.dateOfBirth),
-                            'MMM d, yyyy'
+                            'MMM d, yyyy',
                           )}
                         </p>
                       )}
@@ -492,10 +519,10 @@ export function Dashboard() {
                           puppy.status === 'available'
                             ? 'default'
                             : puppy.status === 'reserved'
-                            ? 'secondary'
-                            : puppy.status === 'sold'
-                            ? 'outline'
-                            : 'secondary'
+                              ? 'secondary'
+                              : puppy.status === 'sold'
+                                ? 'outline'
+                                : 'secondary'
                         }
                       >
                         {puppy.status}
@@ -520,11 +547,10 @@ export function Dashboard() {
               const dam = dogs.find((d) => d.id === puppy.litter.damId);
               const sire = dogs.find((d) => d.id === puppy.litter.sireId);
               const litterName =
-                puppy.litter.litterName || `${dam?.name || 'Unknown'} × ${
-                  sire?.name || 'Unknown'
-                }`;
+                puppy.litter.litterName ||
+                `${dam?.name || 'Unknown'} × ${sire?.name || 'Unknown'}`;
               const buyer = (puppy.litter.buyers || []).find(
-                (b) => b.id === puppy.buyerId
+                (b) => b.id === puppy.buyerId,
               );
 
               return (
@@ -547,7 +573,7 @@ export function Dashboard() {
                           DOB:{' '}
                           {format(
                             new Date(puppy.litter.dateOfBirth),
-                            'MMM d, yyyy'
+                            'MMM d, yyyy',
                           )}
                         </p>
                       )}
@@ -596,7 +622,7 @@ export function Dashboard() {
                       sum +
                       (l.puppies?.filter((p) => p.status === 'sold').length ||
                         0),
-                    0
+                    0,
                   )}
                 </p>
               </div>
@@ -607,7 +633,7 @@ export function Dashboard() {
                   litter.puppies?.filter((p) => p.status === 'sold') || [];
                 const litterIncome = soldPuppies.reduce(
                   (sum, p) => sum + (p.salePrice || 0),
-                  0
+                  0,
                 );
                 const dam = dogs.find((d) => d.id === litter.damId);
                 const sire = dogs.find((d) => d.id === litter.sireId);
@@ -709,7 +735,8 @@ export function Dashboard() {
                 Daily Routines
               </span>
               <span className='text-xs font-normal opacity-90'>
-                {overdueDailyCount > 0 && `${overdueDailyCount} overdue · `}{todayDailyCount} today
+                {overdueDailyCount > 0 && `${overdueDailyCount} overdue · `}
+                {todayDailyCount} today
               </span>
             </CardTitle>
           </CardHeader>
@@ -741,7 +768,10 @@ export function Dashboard() {
                                       .filter((t) => t.status === 'pending')
                                       .map((t) => t.id);
                                     if (pendingIds.length > 0) {
-                                      await bulkUpdateTaskStatus(pendingIds, 'completed');
+                                      await bulkUpdateTaskStatus(
+                                        pendingIds,
+                                        'completed',
+                                      );
                                     }
                                   }}
                                 >
@@ -749,7 +779,9 @@ export function Dashboard() {
                                   All
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Complete all overdue tasks</TooltipContent>
+                              <TooltipContent>
+                                Complete all overdue tasks
+                              </TooltipContent>
                             </Tooltip>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -762,7 +794,10 @@ export function Dashboard() {
                                       .filter((t) => t.status === 'pending')
                                       .map((t) => t.id);
                                     if (pendingIds.length > 0) {
-                                      await bulkUpdateTaskStatus(pendingIds, 'skipped');
+                                      await bulkUpdateTaskStatus(
+                                        pendingIds,
+                                        'skipped',
+                                      );
                                     }
                                   }}
                                 >
@@ -770,7 +805,9 @@ export function Dashboard() {
                                   Skip
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Skip all overdue tasks</TooltipContent>
+                              <TooltipContent>
+                                Skip all overdue tasks
+                              </TooltipContent>
                             </Tooltip>
                           </div>
                         )}
@@ -791,23 +828,30 @@ export function Dashboard() {
                                 onCheckedChange={async (checked) => {
                                   await updateTaskStatus(
                                     task.id,
-                                    checked === true ? 'completed' : 'pending'
+                                    checked === true ? 'completed' : 'pending',
                                   );
                                 }}
                               />
                               <button
                                 type='button'
                                 className='flex-1 text-left min-w-0'
-                                onClick={() => navigate(`/litters/${task.litterId}`)}
+                                onClick={() =>
+                                  navigate(`/litters/${task.litterId}`)
+                                }
                               >
-                                <span className={cn(
-                                  'block text-sm hover:underline',
-                                  isCompleted && 'line-through text-muted-foreground'
-                                )}>
+                                <span
+                                  className={cn(
+                                    'block text-sm hover:underline',
+                                    isCompleted &&
+                                      'line-through text-muted-foreground',
+                                  )}
+                                >
                                   {task.title}
                                 </span>
                                 <span className='text-xs text-muted-foreground'>
-                                  {litter ? `${litter.litterName || 'Litter'} · ` : ''}
+                                  {litter
+                                    ? `${litter.litterName || 'Litter'} · `
+                                    : ''}
                                   {format(taskDate, 'MMM d')}
                                 </span>
                               </button>
@@ -849,19 +893,24 @@ export function Dashboard() {
                                 onCheckedChange={async (checked) => {
                                   await updateTaskStatus(
                                     task.id,
-                                    checked === true ? 'completed' : 'pending'
+                                    checked === true ? 'completed' : 'pending',
                                   );
                                 }}
                               />
                               <button
                                 type='button'
                                 className='flex-1 text-left min-w-0'
-                                onClick={() => navigate(`/litters/${task.litterId}`)}
+                                onClick={() =>
+                                  navigate(`/litters/${task.litterId}`)
+                                }
                               >
-                                <span className={cn(
-                                  'block text-sm hover:underline',
-                                  isCompleted && 'line-through text-muted-foreground'
-                                )}>
+                                <span
+                                  className={cn(
+                                    'block text-sm hover:underline',
+                                    isCompleted &&
+                                      'line-through text-muted-foreground',
+                                  )}
+                                >
                                   {task.title}
                                 </span>
                                 {litter && (
@@ -904,10 +953,14 @@ export function Dashboard() {
               ) : (
                 visibleWeeklyGroups.map((group) => (
                   <div key={group.label} className='space-y-1'>
-                    <p className={cn(
-                      'text-xs font-semibold uppercase tracking-wide',
-                      group.isOverdue ? 'text-destructive' : 'text-muted-foreground'
-                    )}>
+                    <p
+                      className={cn(
+                        'text-xs font-semibold uppercase tracking-wide',
+                        group.isOverdue
+                          ? 'text-destructive'
+                          : 'text-muted-foreground',
+                      )}
+                    >
                       {group.label}
                     </p>
                     <div className='space-y-1.5'>
@@ -925,19 +978,24 @@ export function Dashboard() {
                               onCheckedChange={async (checked) => {
                                 await updateTaskStatus(
                                   task.id,
-                                  checked === true ? 'completed' : 'pending'
+                                  checked === true ? 'completed' : 'pending',
                                 );
                               }}
                             />
                             <button
                               type='button'
                               className='flex-1 text-left min-w-0'
-                              onClick={() => navigate(`/litters/${task.litterId}`)}
+                              onClick={() =>
+                                navigate(`/litters/${task.litterId}`)
+                              }
                             >
-                              <span className={cn(
-                                'block text-sm hover:underline',
-                                isCompleted && 'line-through text-muted-foreground'
-                              )}>
+                              <span
+                                className={cn(
+                                  'block text-sm hover:underline',
+                                  isCompleted &&
+                                    'line-through text-muted-foreground',
+                                )}
+                              >
                                 {task.title}
                               </span>
                               {litter && (
@@ -947,7 +1005,9 @@ export function Dashboard() {
                               )}
                             </button>
                             <Badge
-                              variant={group.isOverdue ? 'destructive' : 'outline'}
+                              variant={
+                                group.isOverdue ? 'destructive' : 'outline'
+                              }
                               className='text-xs px-1.5 py-0 flex-shrink-0'
                             >
                               {format(new Date(task.dueDate), 'MMM d')}
@@ -1152,7 +1212,7 @@ export function Dashboard() {
                             )}
                           </TableCell>
                         </TableRow>
-                      )
+                      ),
                     )}
                   </TableBody>
                 </Table>
@@ -1208,7 +1268,7 @@ export function Dashboard() {
                         </Badge>
                       </div>
                     </Link>
-                  )
+                  ),
                 )}
               </div>
             )}
