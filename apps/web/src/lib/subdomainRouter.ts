@@ -6,13 +6,14 @@
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '@breeder/firebase';
 
-// The main domain (requests to this domain are NOT subdomain routes)
-const MAIN_DOMAINS = [
-  'expertbreeder.com',
-  'www.expertbreeder.com',
-  'expert-breeder.web.app',
+// The main app domains (requests to these are NOT breeder subdomain routes)
+// These show the main Expert Breeder app
+const MAIN_APP_DOMAINS = [
+  'app.expertbreeder.com',        // Production app
+  'expert-breeder.web.app',       // Firebase default
   'expert-breeder.firebaseapp.com',
   'localhost',
+  '127.0.0.1',
 ];
 
 export interface SubdomainInfo {
@@ -23,20 +24,32 @@ export interface SubdomainInfo {
 
 /**
  * Get subdomain from current hostname
+ * Returns null if this is the main app domain
+ * Returns the subdomain name if it's a breeder website
  */
 export function getSubdomainFromHost(): string | null {
   const hostname = window.location.hostname;
 
-  // Check if this is the main domain
-  if (MAIN_DOMAINS.some(domain => hostname === domain || hostname.endsWith('localhost'))) {
+  // Check if this is the main app domain (app.expertbreeder.com, localhost, etc.)
+  if (MAIN_APP_DOMAINS.some(domain =>
+    hostname === domain ||
+    hostname.includes('localhost') ||
+    hostname.includes('127.0.0.1')
+  )) {
     return null;
   }
 
   // Extract subdomain from expertbreeder.com
   // e.g., "happypaws.expertbreeder.com" -> "happypaws"
+  // But NOT "app.expertbreeder.com" (already handled above)
   const match = hostname.match(/^([^.]+)\.expertbreeder\.com$/);
   if (match) {
-    return match[1].toLowerCase();
+    const subdomain = match[1].toLowerCase();
+    // Double-check it's not the app subdomain
+    if (subdomain === 'app') {
+      return null;
+    }
+    return subdomain;
   }
 
   return null;
