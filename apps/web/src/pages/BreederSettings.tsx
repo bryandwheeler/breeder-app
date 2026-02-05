@@ -21,6 +21,7 @@ import { WorkflowManager } from '@/components/WorkflowManager';
 import { ScheduledEmailsManager } from '@/components/ScheduledEmailsManager';
 import { WaitlistFormBuilder } from '@/components/settings/WaitlistFormBuilder';
 import { NotificationPreferences } from '@/components/NotificationPreferences';
+import { StaffManagement } from '@/pages/StaffManagement';
 
 export function BreederSettings() {
   const { currentUser } = useAuth();
@@ -150,6 +151,7 @@ export function BreederSettings() {
           <ScrollableTabsTrigger value='workflows'>Workflows</ScrollableTabsTrigger>
           <ScrollableTabsTrigger value='scheduledEmails'>Scheduled</ScrollableTabsTrigger>
           <ScrollableTabsTrigger value='notifications'>Notifications</ScrollableTabsTrigger>
+          <ScrollableTabsTrigger value='staff'>Staff</ScrollableTabsTrigger>
           <ScrollableTabsTrigger value='settings'>Settings</ScrollableTabsTrigger>
         </ScrollableTabsList>
 
@@ -873,6 +875,11 @@ export function BreederSettings() {
         {/* Platform Notification Preferences */}
         <TabsContent value='notifications'>
           <NotificationPreferences />
+        </TabsContent>
+
+        {/* Staff Management */}
+        <TabsContent value='staff'>
+          <StaffManagement />
         </TabsContent>
 
         {/* Settings */}

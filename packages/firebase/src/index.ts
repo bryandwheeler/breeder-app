@@ -29,6 +29,7 @@ export * from './stores/evaluationStore';
 export * from './stores/breederSocialStore';
 export * from './stores/ticketStore';
 export * from './stores/contractStore';
+export * from './stores/staffStore';
 // export * from './stores/workflowStore'; // TODO: Fix complex type errors and missing dependencies
 
 // Re-export subcollection utilities

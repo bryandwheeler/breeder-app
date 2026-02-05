@@ -49,6 +49,7 @@ import { SupportTickets } from '@/pages/SupportTickets';
 import { NewTicket } from '@/pages/NewTicket';
 import { TicketDetail } from '@/pages/TicketDetail';
 import { AdminTickets } from '@/pages/AdminTickets';
+import { AcceptStaffInvitation } from '@/pages/AcceptStaffInvitation';
 import { AdminDashboard } from '@/pages/AdminDashboard';
 import { AdminSettings } from '@/pages/AdminSettings';
 import { AdminCustomers } from '@/pages/AdminCustomers';
@@ -261,6 +262,10 @@ function AppContent() {
                 element={<PublicLitter />}
               />
               <Route path='/buyer-portal' element={<BuyerPortal />} />
+              <Route
+                path='/accept-invitation/:invitationId'
+                element={<AcceptStaffInvitation />}
+              />
 
               {/* Protected routes */}
               <Route

@@ -34,37 +34,194 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'moderator'];
     }
 
-    // Dogs collection - users can read all dogs (for search), admins can read all for analytics
-    match /dogs/{dogId} {
-      // Allow reading all dogs for authenticated users (for search functionality), admins always can read
-      allow read: if isAuthenticated() && (isAdmin() || true);
+    // ============================================================================
+    // Staff Permission Helper Functions
+    // ============================================================================
 
-      // Allow creating if the userId matches the authenticated user or if admin
-      allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
-
-      // Allow updating own dogs or if admin
-      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-
-      // Allow deleting own dogs or if admin
-      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    // Helper function to get staff member document ID
+    // Staff member documents use compound ID: {staffUserId}_{breederId}
+    function getStaffMemberId(staffUserId, breederId) {
+      return staffUserId + '_' + breederId;
     }
 
-    // Litters collection - users can only read/write their own litters, admins can read all
-    match /litters/{litterId} {
-      // Allow reading litters (both get and list operations)
-      // For list operations with where() clauses, Firestore ensures the query matches the security rule
-      allow read: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid);
+    // Helper function to check if user is authorized staff for a breeder
+    function isAuthorizedStaff(breederId) {
+      let staffDocId = getStaffMemberId(request.auth.uid, breederId);
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/staffMembers/$(staffDocId)) &&
+             get(/databases/$(database)/documents/staffMembers/$(staffDocId)).data.status == 'accepted';
+    }
 
-      allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
-      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    // Helper function to check if user has a specific staff permission
+    function hasStaffPermission(breederId, permission) {
+      let staffDocId = getStaffMemberId(request.auth.uid, breederId);
+      return isAuthorizedStaff(breederId) &&
+             get(/databases/$(database)/documents/staffMembers/$(staffDocId)).data.permissions[permission] == true;
+    }
+
+    // Helper function to check if user is owner OR has staff permission
+    function isOwnerOrHasStaffPermission(breederId, permission) {
+      return request.auth.uid == breederId ||
+             isAdmin() ||
+             hasStaffPermission(breederId, permission);
+    }
+
+    // ============================================================================
+    // Staff Management Collections
+    // ============================================================================
+
+    // Staff Members - links users to breeders with permissions
+    // Document ID format: {staffUserId}_{breederId}
+    match /staffMembers/{memberId} {
+      // Read - breeder can see their staff, staff member can see their memberships
+      allow read: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        resource.data.staffUserId == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Create - only the breeder can add staff to their kennel
+      allow create: if isAuthenticated() &&
+        request.resource.data.breederId == request.auth.uid;
+
+      // Update - breeder can update their staff members (permissions, status, etc.)
+      allow update: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        // Staff member can update lastActiveAt
+        (resource.data.staffUserId == request.auth.uid &&
+         request.resource.data.breederId == resource.data.breederId &&
+         request.resource.data.staffUserId == resource.data.staffUserId)
+      );
+
+      // Delete - only the breeder or admin can remove staff
+      allow delete: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // Staff Invitations - pending invitations to join a kennel
+    match /staffInvitations/{invitationId} {
+      // Read - breeder can see invitations they sent, invitee can see invitations sent to them
+      allow read: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        resource.data.email == request.auth.token.email ||
+        isAdmin()
+      );
+
+      // Create - only the breeder can send invitations
+      allow create: if isAuthenticated() &&
+        request.resource.data.breederId == request.auth.uid;
+
+      // Update - breeder can cancel/modify, invitee can accept/decline
+      allow update: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        resource.data.email == request.auth.token.email
+      );
+
+      // Delete - only the breeder or admin can delete invitations
+      allow delete: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // Staff Audit Logs - track staff actions for accountability
+    match /staffAuditLogs/{logId} {
+      // Read - only the breeder can view audit logs
+      allow read: if isAuthenticated() &&
+        resource.data.breederId == request.auth.uid;
+
+      // Create - breeder or authorized staff can create logs
+      allow create: if isAuthenticated() && (
+        request.resource.data.breederId == request.auth.uid ||
+        isAuthorizedStaff(request.resource.data.breederId)
+      );
+
+      // Update/Delete - audit logs are immutable
+      allow update, delete: if false;
+    }
+
+    // Dogs collection - users can read all dogs (for search), admins can read all for analytics
+    // Staff with canViewDogs permission can also read, canEditDogs to update, etc.
+    match /dogs/{dogId} {
+      // Allow reading all dogs for authenticated users (for search functionality)
+      allow read: if isAuthenticated();
+
+      // Allow creating if the userId matches the authenticated user, admin, or staff with permission
+      allow create: if isAuthenticated() && (
+        request.resource.data.userId == request.auth.uid ||
+        isAdmin() ||
+        hasStaffPermission(request.resource.data.userId, 'canCreateDogs')
+      );
+
+      // Allow updating own dogs, admin, or staff with permission
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin() ||
+        hasStaffPermission(resource.data.userId, 'canEditDogs')
+      );
+
+      // Allow deleting own dogs, admin, or staff with permission
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin() ||
+        hasStaffPermission(resource.data.userId, 'canDeleteDogs')
+      );
+    }
+
+    // Litters collection - users can only read/write their own litters, admins and staff can access
+    match /litters/{litterId} {
+      // Allow reading litters for owner, admin, or staff with permission
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canViewLitters')
+      );
+
+      // Allow creating litters for owner, admin, or staff with permission
+      allow create: if isAuthenticated() && (
+        request.resource.data.userId == request.auth.uid ||
+        isAdmin() ||
+        hasStaffPermission(request.resource.data.userId, 'canCreateLitters')
+      );
+
+      // Allow updating litters for owner, admin, or staff with permission
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin() ||
+        hasStaffPermission(resource.data.userId, 'canEditLitters')
+      );
+
+      // Allow deleting litters for owner, admin, or staff with permission
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin() ||
+        hasStaffPermission(resource.data.userId, 'canDeleteLitters')
+      );
 
       // Puppies subcollection
       match /puppies/{puppyId} {
-        allow read: if isAuthenticated() && (isAdmin() || get(/databases/$(database)/documents/litters/$(litterId)).data.userId == request.auth.uid);
-        allow create: if isAuthenticated() && (get(/databases/$(database)/documents/litters/$(litterId)).data.userId == request.auth.uid || isAdmin());
-        allow update: if isAuthenticated() && (get(/databases/$(database)/documents/litters/$(litterId)).data.userId == request.auth.uid || isAdmin());
-        allow delete: if isAuthenticated() && (get(/databases/$(database)/documents/litters/$(litterId)).data.userId == request.auth.uid || isAdmin());
+        allow read: if isAuthenticated() && (
+          isAdmin() ||
+          get(/databases/$(database)/documents/litters/$(litterId)).data.userId == request.auth.uid ||
+          hasStaffPermission(get(/databases/$(database)/documents/litters/$(litterId)).data.userId, 'canViewLitters')
+        );
+        allow create: if isAuthenticated() && (
+          get(/databases/$(database)/documents/litters/$(litterId)).data.userId == request.auth.uid ||
+          isAdmin() ||
+          hasStaffPermission(get(/databases/$(database)/documents/litters/$(litterId)).data.userId, 'canManagePuppies')
+        );
+        allow update: if isAuthenticated() && (
+          get(/databases/$(database)/documents/litters/$(litterId)).data.userId == request.auth.uid ||
+          isAdmin() ||
+          hasStaffPermission(get(/databases/$(database)/documents/litters/$(litterId)).data.userId, 'canManagePuppies')
+        );
+        allow delete: if isAuthenticated() && (
+          get(/databases/$(database)/documents/litters/$(litterId)).data.userId == request.auth.uid ||
+          isAdmin() ||
+          hasStaffPermission(get(/databases/$(database)/documents/litters/$(litterId)).data.userId, 'canDeleteLitters')
+        );
 
         // Evaluations subcollection under puppies
         match /evaluations/{evaluationId} {
@@ -110,35 +267,81 @@ service cloud.firestore {
     }
 
     // Heat cycles - users can only read/write their own heat cycle records
+    // Staff with health record permissions can also access
     match /heatCycles/{cycleId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canViewHealthRecords')
+      );
+      allow create: if isAuthenticated() && (
+        request.resource.data.userId == request.auth.uid ||
+        hasStaffPermission(request.resource.data.userId, 'canAddHealthRecords')
+      );
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canEditHealthRecords')
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canDeleteHealthRecords')
+      );
     }
 
     // Breeding records - users can only read/write their own breeding records
+    // Staff with health record permissions can also access
     match /breedingRecords/{recordId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canViewHealthRecords')
+      );
+      allow create: if isAuthenticated() && (
+        request.resource.data.userId == request.auth.uid ||
+        hasStaffPermission(request.resource.data.userId, 'canAddHealthRecords')
+      );
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canEditHealthRecords')
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canDeleteHealthRecords')
+      );
     }
 
     // Inquiries - users can only read/write their own inquiries
+    // Staff with inquiry permissions can also access
     match /inquiries/{inquiryId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canViewInquiries')
+      );
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canManageInquiries')
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canManageInquiries')
+      );
     }
 
     // Waitlist entries - users can only read/write their own waitlist entries
+    // Staff with waitlist permissions can also access
     match /waitlistEntries/{entryId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canViewWaitlist')
+      );
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canManageWaitlist')
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canManageWaitlist')
+      );
     }
 
     // Care templates - users can only read/write their own care templates
@@ -149,16 +352,24 @@ service cloud.firestore {
     }
 
     // Breeders collection with settings subcollection
+    // Staff can read breeder profile if they have any authorized role
     match /breeders/{breederId} {
-      allow read: if isAuthenticated() && breederId == request.auth.uid;
+      allow read: if isAuthenticated() && (
+        breederId == request.auth.uid ||
+        isAuthorizedStaff(breederId)
+      );
+      // Only breeder can write their own breeder document
       allow write: if isAuthenticated() && breederId == request.auth.uid;
 
       // Settings subcollection (includes waitlistFormConfig)
       match /settings/{settingId} {
         // Allow public read for waitlistFormConfig (for public waitlist forms)
         allow read: if true;
-        // Only breeder can write their settings
-        allow write: if isAuthenticated() && breederId == request.auth.uid;
+        // Only breeder can write their settings, or staff with canAccessSettings
+        allow write: if isAuthenticated() && (
+          breederId == request.auth.uid ||
+          hasStaffPermission(breederId, 'canAccessSettings')
+        );
       }
     }
 
@@ -171,11 +382,21 @@ service cloud.firestore {
     }
 
     // Waitlist (public submissions) - anyone can create, only owner can read/update/delete
+    // Staff with waitlist permissions can also access
     match /waitlist/{waitlistId} {
-      allow read: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+      allow read: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        hasStaffPermission(resource.data.breederId, 'canViewWaitlist')
+      );
       allow create: if true; // Public can submit
-      allow update: if isAuthenticated() && resource.data.breederId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        hasStaffPermission(resource.data.breederId, 'canManageWaitlist')
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        hasStaffPermission(resource.data.breederId, 'canManageWaitlist')
+      );
     }
 
     // Connection requests - users can read requests they sent or received
@@ -191,38 +412,91 @@ service cloud.firestore {
     }
 
     // Stud jobs - users can only read/write their own stud jobs
+    // Staff with stud job permissions can also access
     match /studJobs/{jobId} {
       // Allow reading stud jobs (both get and list operations)
       // For list operations with where() clauses, Firestore ensures the query matches the security rule
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canViewStudJobs')
+      );
 
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && (
+        request.resource.data.userId == request.auth.uid ||
+        hasStaffPermission(request.resource.data.userId, 'canManageStudJobs')
+      );
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canManageStudJobs')
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canManageStudJobs')
+      );
     }
 
     // CRM Customers - users can only read/write their own customers, admins can read all
+    // Staff with customer permissions can also access
     match /customers/{customerId} {
-      allow read: if isAuthenticated() && (isAdmin() || resource.data.breederId == request.auth.uid);
-      allow create: if isAuthenticated() && request.resource.data.breederId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.breederId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.breederId == request.auth.uid ||
+        hasStaffPermission(resource.data.breederId, 'canViewCustomers')
+      );
+      allow create: if isAuthenticated() && (
+        request.resource.data.breederId == request.auth.uid ||
+        hasStaffPermission(request.resource.data.breederId, 'canCreateCustomers')
+      );
+      allow update: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        hasStaffPermission(resource.data.breederId, 'canEditCustomers')
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        hasStaffPermission(resource.data.breederId, 'canDeleteCustomers')
+      );
     }
 
     // CRM Customer segments - users can only read/write their own segments
+    // Staff with customer permissions can also access
     match /customerSegments/{segmentId} {
-      allow read: if isAuthenticated() && resource.data.breederId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.breederId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.breederId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+      allow read: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        hasStaffPermission(resource.data.breederId, 'canViewCustomers')
+      );
+      allow create: if isAuthenticated() && (
+        request.resource.data.breederId == request.auth.uid ||
+        hasStaffPermission(request.resource.data.breederId, 'canCreateCustomers')
+      );
+      allow update: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        hasStaffPermission(resource.data.breederId, 'canEditCustomers')
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        hasStaffPermission(resource.data.breederId, 'canDeleteCustomers')
+      );
     }
 
     // CRM Referrals - users can only read/write their own referrals
+    // Staff with customer permissions can also access
     match /referrals/{referralId} {
-      allow read: if isAuthenticated() && resource.data.breederId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.breederId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.breederId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.breederId == request.auth.uid;
+      allow read: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        hasStaffPermission(resource.data.breederId, 'canViewCustomers')
+      );
+      allow create: if isAuthenticated() && (
+        request.resource.data.breederId == request.auth.uid ||
+        hasStaffPermission(request.resource.data.breederId, 'canCreateCustomers')
+      );
+      allow update: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        hasStaffPermission(resource.data.breederId, 'canEditCustomers')
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        hasStaffPermission(resource.data.breederId, 'canDeleteCustomers')
+      );
     }
 
     // User profiles - users can read/write their own profile, admins can list and update all
@@ -251,10 +525,18 @@ service cloud.firestore {
     }
 
     // Website settings - users can only read/write their own website settings
+    // Staff need canAccessSettings permission since this is a settings area
     match /websiteSettings/{userId} {
-      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow read: if isAuthenticated() && (
+        isOwner(userId) ||
+        isAdmin() ||
+        hasStaffPermission(userId, 'canAccessSettings')
+      );
       allow create: if isAuthenticated() && isOwner(userId);
-      allow update: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && (
+        isOwner(userId) ||
+        hasStaffPermission(userId, 'canAccessSettings')
+      );
       allow delete: if isAuthenticated() && isOwner(userId);
     }
 
@@ -300,18 +582,37 @@ service cloud.firestore {
     }
 
     // Litter care and workflow tasks - scoped to breeder
+    // Staff with task permissions can also access
     match /litterTasks/{taskId} {
       // Breeder (or admin) can read their own litter tasks
-      allow read: if isAuthenticated() &&
-        (resource.data.breederId == request.auth.uid || isAdmin());
+      // Staff with canViewTasks permission can also read
+      allow read: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        isAdmin() ||
+        hasStaffPermission(resource.data.breederId, 'canViewTasks')
+      );
 
       // Creating tasks (e.g., from templates) must set breederId to the caller
-      allow create: if isAuthenticated() &&
-        request.resource.data.breederId == request.auth.uid;
+      // Staff with canManageTasks permission can also create
+      allow create: if isAuthenticated() && (
+        request.resource.data.breederId == request.auth.uid ||
+        hasStaffPermission(request.resource.data.breederId, 'canManageTasks')
+      );
 
-      // Updating or deleting tasks is allowed for the owning breeder or admin
-      allow update, delete: if isAuthenticated() &&
-        (resource.data.breederId == request.auth.uid || isAdmin());
+      // Updating tasks - breeder, admin, or staff with canManageTasks or canCompleteTasks
+      allow update: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        isAdmin() ||
+        hasStaffPermission(resource.data.breederId, 'canManageTasks') ||
+        hasStaffPermission(resource.data.breederId, 'canCompleteTasks')
+      );
+
+      // Deleting tasks - breeder, admin, or staff with canManageTasks
+      allow delete: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        isAdmin() ||
+        hasStaffPermission(resource.data.breederId, 'canManageTasks')
+      );
     }
 
     // Audit logs - any authenticated user can write logs, only admins can read
@@ -653,23 +954,30 @@ service cloud.firestore {
     // ============================================================================
 
     // Contracts - breeders can manage their own contracts, admins can view all
+    // Staff with contract permissions can also access
     match /contracts/{contractId} {
       // List - authenticated users can list (query filters by userId)
       allow list: if isAuthenticated();
 
       // Get - owner can read their own contracts, admins can read all
+      // Staff with canViewContracts permission can also read
       allow get: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
-        isAdmin()
+        isAdmin() ||
+        hasStaffPermission(resource.data.userId, 'canViewContracts')
       );
 
-      // Create - breeder must be the owner
-      allow create: if isAuthenticated() &&
-        request.resource.data.userId == request.auth.uid;
+      // Create - breeder must be the owner, or staff with canCreateContracts
+      allow create: if isAuthenticated() && (
+        request.resource.data.userId == request.auth.uid ||
+        hasStaffPermission(request.resource.data.userId, 'canCreateContracts')
+      );
 
-      // Update - only owner can update their contracts
-      allow update: if isAuthenticated() &&
-        resource.data.userId == request.auth.uid;
+      // Update - owner, or staff with canSendContracts
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasStaffPermission(resource.data.userId, 'canSendContracts')
+      );
 
       // Delete - only owner or admin can delete
       allow delete: if isAuthenticated() && (
@@ -677,27 +985,44 @@ service cloud.firestore {
         isAdmin()
       );
 
-      // Signers subcollection - owner only
+      // Signers subcollection - owner or staff with contract permissions
       match /signers/{signerId} {
-        allow read, write: if isAuthenticated() &&
-          get(/databases/$(database)/documents/contracts/$(contractId)).data.userId == request.auth.uid;
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/contracts/$(contractId)).data.userId == request.auth.uid ||
+          hasStaffPermission(get(/databases/$(database)/documents/contracts/$(contractId)).data.userId, 'canViewContracts')
+        );
+        allow write: if isAuthenticated() && (
+          get(/databases/$(database)/documents/contracts/$(contractId)).data.userId == request.auth.uid ||
+          hasStaffPermission(get(/databases/$(database)/documents/contracts/$(contractId)).data.userId, 'canSendContracts')
+        );
       }
 
       // Audit events subcollection - read only for owner, write only via cloud functions
       match /auditEvents/{eventId} {
         allow read: if isAuthenticated() && (
           get(/databases/$(database)/documents/contracts/$(contractId)).data.userId == request.auth.uid ||
-          isAdmin()
+          isAdmin() ||
+          hasStaffPermission(get(/databases/$(database)/documents/contracts/$(contractId)).data.userId, 'canViewContracts')
         );
         allow write: if false; // Only cloud functions can write audit events
       }
     }
 
     // Contract templates in breeder profiles
+    // Staff with contract permissions can also access
     match /breederProfiles/{userId}/contractTemplates/{templateId} {
-      allow read: if isAuthenticated() && userId == request.auth.uid;
-      allow create: if isAuthenticated() && userId == request.auth.uid;
-      allow update: if isAuthenticated() && userId == request.auth.uid;
+      allow read: if isAuthenticated() && (
+        userId == request.auth.uid ||
+        hasStaffPermission(userId, 'canViewContracts')
+      );
+      allow create: if isAuthenticated() && (
+        userId == request.auth.uid ||
+        hasStaffPermission(userId, 'canCreateContracts')
+      );
+      allow update: if isAuthenticated() && (
+        userId == request.auth.uid ||
+        hasStaffPermission(userId, 'canCreateContracts')
+      );
       allow delete: if isAuthenticated() && userId == request.auth.uid;
     }
 
