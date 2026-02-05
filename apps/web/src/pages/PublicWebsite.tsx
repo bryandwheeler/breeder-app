@@ -1,21 +1,24 @@
 // Public website page router for website builder
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { useWebsiteStore } from '@breeder/firebase';
-import { WebsiteSettings } from '@breeder/types';
+import { useWebsiteStore, useBreederStore } from '@breeder/firebase';
+import { WebsiteSettings, BreederProfile } from '@breeder/types';
 import { Loader2 } from 'lucide-react';
 import { PublicWebsiteHome } from '@/components/PublicWebsiteHome';
 import { PublicWebsiteAbout } from '@/components/PublicWebsiteAbout';
 import { PublicWebsiteContact } from '@/components/PublicWebsiteContact';
 import { PublicWebsitePuppies } from '@/components/PublicWebsitePuppies';
+import { PublicWebsiteSeo } from '@/components/website/PublicWebsiteSeo';
 
 export function PublicWebsite() {
   const { userId } = useParams();
   const [searchParams] = useSearchParams();
   const [websiteSettings, setWebsiteSettings] =
     useState<WebsiteSettings | null>(null);
+  const [breederProfile, setBreederProfile] = useState<BreederProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { getWebsiteSettings } = useWebsiteStore();
+  const { getPublicProfile } = useBreederStore();
 
   const page = searchParams.get('page') || 'home';
 
@@ -25,8 +28,12 @@ export function PublicWebsite() {
     const loadWebsite = async () => {
       try {
         setLoading(true);
-        const settings = await getWebsiteSettings(userId);
+        const [settings, profile] = await Promise.all([
+          getWebsiteSettings(userId),
+          getPublicProfile(userId),
+        ]);
         setWebsiteSettings(settings);
+        setBreederProfile(profile);
       } catch (error) {
         console.error('Error loading website settings:', error);
       } finally {
@@ -35,7 +42,7 @@ export function PublicWebsite() {
     };
 
     loadWebsite();
-  }, [userId, getWebsiteSettings]);
+  }, [userId, getWebsiteSettings, getPublicProfile]);
 
   if (loading) {
     return (
@@ -55,15 +62,42 @@ export function PublicWebsite() {
     );
   }
 
-  // Render the appropriate page
-  switch (page) {
-    case 'about':
-      return <PublicWebsiteAbout settings={websiteSettings} />;
-    case 'contact':
-      return <PublicWebsiteContact settings={websiteSettings} />;
-    case 'puppies':
-      return <PublicWebsitePuppies settings={websiteSettings} />;
-    default:
-      return <PublicWebsiteHome settings={websiteSettings} />;
-  }
+  // Get page-specific title
+  const getPageTitle = () => {
+    switch (page) {
+      case 'about':
+        return 'About Us';
+      case 'contact':
+        return 'Contact';
+      case 'puppies':
+        return 'Available Puppies';
+      default:
+        return undefined; // Use default/homepage title
+    }
+  };
+
+  // Render the appropriate page with SEO
+  const renderPage = () => {
+    switch (page) {
+      case 'about':
+        return <PublicWebsiteAbout settings={websiteSettings} />;
+      case 'contact':
+        return <PublicWebsiteContact settings={websiteSettings} />;
+      case 'puppies':
+        return <PublicWebsitePuppies settings={websiteSettings} />;
+      default:
+        return <PublicWebsiteHome settings={websiteSettings} />;
+    }
+  };
+
+  return (
+    <>
+      <PublicWebsiteSeo
+        settings={websiteSettings}
+        profile={breederProfile}
+        pageTitle={getPageTitle()}
+      />
+      {renderPage()}
+    </>
+  );
 }
