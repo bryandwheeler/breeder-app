@@ -25,6 +25,7 @@ import { StripeSettings } from '@/components/StripeSettings';
 import { DefaultTasksManager } from '@/components/DefaultTasksManager';
 import { ForumCategoryManager } from '@/components/forum';
 import { PlatformEmailSettings } from '@/components/admin/PlatformEmailSettings';
+import { TawkToSettings } from '@/components/admin/TawkToSettings';
 
 export function AdminSettings() {
   const navigate = useNavigate();
@@ -333,7 +334,7 @@ export function AdminSettings() {
 
       {/* Tabbed Management Sections */}
       <Tabs defaultValue='global' className='w-full'>
-        <TabsList className='grid w-full grid-cols-8'>
+        <TabsList className='grid w-full grid-cols-9'>
           <TabsTrigger value='global'>Global Lists</TabsTrigger>
           <TabsTrigger value='tasks'>Task Templates</TabsTrigger>
           <TabsTrigger value='forum'>Forum</TabsTrigger>
@@ -341,6 +342,7 @@ export function AdminSettings() {
           <TabsTrigger value='subscriptions'>Subscriptions</TabsTrigger>
           <TabsTrigger value='stripe'>Stripe</TabsTrigger>
           <TabsTrigger value='platformEmail'>Platform Email</TabsTrigger>
+          <TabsTrigger value='liveChat'>Live Chat</TabsTrigger>
           <TabsTrigger value='audit'>Audit Logs</TabsTrigger>
         </TabsList>
 
@@ -379,6 +381,11 @@ export function AdminSettings() {
         {/* Platform Email Tab */}
         <TabsContent value='platformEmail'>
           <PlatformEmailSettings />
+        </TabsContent>
+
+        {/* Live Chat Tab */}
+        <TabsContent value='liveChat'>
+          <TawkToSettings />
         </TabsContent>
 
         {/* Audit Logs Tab */}

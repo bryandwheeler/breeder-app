@@ -13,3 +13,5 @@ export * from './website';
 export * from './workflow';
 export * from './puppyEvaluation';
 export * from './breederConnection';
+export * from './ticketing';
+export * from './liveChat';

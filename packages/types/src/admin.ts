@@ -2,6 +2,97 @@
 
 export type SubscriptionTier = 'free' | 'builder' | 'pro';
 
+// ============================================================================
+// User Types and Roles
+// ============================================================================
+
+// User types (identity) - who the user is
+export type UserType =
+  | 'breeder'        // Dog breeder using the platform
+  | 'support_staff'  // Support team member (handles tickets, live chat)
+  | 'moderator'      // Community moderator (forum moderation)
+  | 'buyer'          // Puppy buyer/customer (view-only access to their records)
+  | 'veterinarian';  // Vet with access to specific dogs' health records
+
+// Extended roles (permissions) - what the user can do
+export type UserRole = 'user' | 'admin' | 'support' | 'moderator';
+
+// Granular permission flags for fine-tuned access control
+export interface UserPermissions {
+  // Support permissions
+  canManageTickets: boolean;
+  canUseLiveChat: boolean;
+  canViewAllTickets: boolean;
+
+  // Moderator permissions
+  canModerateForums: boolean;
+  canManageCommunity: boolean;
+  canFlagContent: boolean;
+  canBanUsers: boolean;
+
+  // Admin permissions
+  canManageUsers: boolean;
+  canManageSettings: boolean;
+  canViewAnalytics: boolean;
+  canImpersonate: boolean;
+}
+
+// Default permissions by role
+export const DEFAULT_PERMISSIONS: Record<UserRole, UserPermissions> = {
+  user: {
+    canManageTickets: false,
+    canUseLiveChat: false,
+    canViewAllTickets: false,
+    canModerateForums: false,
+    canManageCommunity: false,
+    canFlagContent: false,
+    canBanUsers: false,
+    canManageUsers: false,
+    canManageSettings: false,
+    canViewAnalytics: false,
+    canImpersonate: false,
+  },
+  support: {
+    canManageTickets: true,
+    canUseLiveChat: true,
+    canViewAllTickets: true,
+    canModerateForums: false,
+    canManageCommunity: false,
+    canFlagContent: false,
+    canBanUsers: false,
+    canManageUsers: false,
+    canManageSettings: false,
+    canViewAnalytics: false,
+    canImpersonate: false,
+  },
+  moderator: {
+    canManageTickets: false,
+    canUseLiveChat: false,
+    canViewAllTickets: false,
+    canModerateForums: true,
+    canManageCommunity: true,
+    canFlagContent: true,
+    canBanUsers: true,
+    canManageUsers: false,
+    canManageSettings: false,
+    canViewAnalytics: false,
+    canImpersonate: false,
+  },
+  admin: {
+    canManageTickets: true,
+    canUseLiveChat: true,
+    canViewAllTickets: true,
+    canModerateForums: true,
+    canManageCommunity: true,
+    canFlagContent: true,
+    canBanUsers: true,
+    canManageUsers: true,
+    canManageSettings: true,
+    canViewAnalytics: true,
+    canImpersonate: true,
+  },
+};
+
 export interface SubscriptionFeature {
   name: string;
   description: string;
@@ -46,7 +137,15 @@ export type PlatformEmailTemplateType =
   | 'new_message'
   | 'connection_request'
   | 'connection_approved'
-  | 'connection_declined';
+  | 'connection_declined'
+  // Ticket-related emails
+  | 'ticket_created'
+  | 'ticket_updated'
+  | 'ticket_assigned'
+  | 'ticket_resolved'
+  // Access control emails
+  | 'vet_access_granted'
+  | 'buyer_access_granted';
 
 export interface PlatformEmailTemplate {
   subject: string;
@@ -62,6 +161,50 @@ export interface PlatformEmailSettings {
   templates: Record<PlatformEmailTemplateType, PlatformEmailTemplate>;
 }
 
+// Notification preferences for users
+export type NotificationChannel = 'email' | 'sms' | 'in_app';
+
+export type NotificationEventType =
+  | 'friend_request_received'
+  | 'friend_request_accepted'
+  | 'new_message'
+  | 'connection_request_received'
+  | 'connection_request_approved'
+  | 'connection_request_declined';
+
+export interface NotificationPreference {
+  enabled: boolean;
+  channels: NotificationChannel[];
+}
+
+export interface NotificationPreferences {
+  // Social notifications
+  friendRequestReceived: NotificationPreference;
+  friendRequestAccepted: NotificationPreference;
+  newMessage: NotificationPreference;
+  // Dog connection notifications
+  connectionRequestReceived: NotificationPreference;
+  connectionRequestApproved: NotificationPreference;
+  connectionRequestDeclined: NotificationPreference;
+  // Global settings
+  emailDigest?: 'instant' | 'daily' | 'weekly' | 'none';
+  quietHoursEnabled?: boolean;
+  quietHoursStart?: string; // HH:MM format
+  quietHoursEnd?: string;   // HH:MM format
+}
+
+// Default notification preferences for new users
+export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+  friendRequestReceived: { enabled: true, channels: ['email', 'in_app'] },
+  friendRequestAccepted: { enabled: true, channels: ['email', 'in_app'] },
+  newMessage: { enabled: true, channels: ['in_app'] },
+  connectionRequestReceived: { enabled: true, channels: ['email', 'in_app'] },
+  connectionRequestApproved: { enabled: true, channels: ['email', 'in_app'] },
+  connectionRequestDeclined: { enabled: true, channels: ['email', 'in_app'] },
+  emailDigest: 'instant',
+  quietHoursEnabled: false,
+};
+
 export interface UserProfile {
   uid: string;
   email: string;
@@ -69,18 +212,38 @@ export interface UserProfile {
   photoURL?: string;
   createdAt: string;
   lastLogin?: string;
-  role: 'user' | 'admin';
+  role: UserRole;
+  userType?: UserType; // Defaults to 'breeder' for existing users
   isActive: boolean;
-  // Breeder info
+
+  // Granular permissions (overrides role-based defaults if provided)
+  permissions?: UserPermissions;
+
+  // Breeder info (only applicable when userType === 'breeder')
   kennelName?: string;
   totalDogs?: number;
   totalLitters?: number;
-  // Subscription info
+  phone?: string; // For SMS notifications
+
+  // Notification preferences
+  notificationPreferences?: NotificationPreferences;
+
+  // Subscription info (only for breeders)
   subscriptionTier?: SubscriptionTier;
   subscriptionStartDate?: string;
   subscriptionEndDate?: string;
   appliedCoupon?: string; // coupon code applied to this user
   trialEndDate?: string; // when trial expires
+
+  // Buyer-specific fields (userType === 'buyer')
+  purchasedPuppyIds?: string[]; // IDs of puppies they bought
+  associatedBreederId?: string; // Breeder they bought from
+
+  // Veterinarian-specific fields (userType === 'veterinarian')
+  vetClinicName?: string;
+  vetLicenseNumber?: string;
+  authorizedDogIds?: string[]; // Dogs they can view health records for
+  authorizedByBreederIds?: string[]; // Breeders who authorized them
 }
 
 export interface AppSettings {

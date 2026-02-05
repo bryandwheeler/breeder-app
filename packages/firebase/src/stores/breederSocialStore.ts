@@ -120,7 +120,8 @@ export const useBreederSocialStore = create<BreederSocialStore>((set, get) => ({
         recipientKennelName,
         recipientDisplayName,
         status: 'pending',
-        message: message || undefined,
+        // Only include message field if provided (Firestore rejects undefined values)
+        ...(message ? { message } : {}),
         createdAt: new Date().toISOString(),
       };
 
@@ -128,12 +129,31 @@ export const useBreederSocialStore = create<BreederSocialStore>((set, get) => ({
         collection(db, 'breederFriendships'),
         friendshipData
       );
+
+      // Create in-app notification for recipient
+      await addDoc(collection(db, 'notifications'), {
+        userId: recipientId,
+        type: 'friend_request',
+        title: 'New Friend Request',
+        message: `${friendshipData.requesterDisplayName} from ${friendshipData.requesterKennelName} wants to connect with you`,
+        read: false,
+        actionUrl: '/community',
+        metadata: {
+          friendshipId: docRef.id,
+          requesterId: user.uid,
+          requesterName: friendshipData.requesterDisplayName,
+          requesterKennel: friendshipData.requesterKennelName,
+        },
+        createdAt: new Date().toISOString(),
+      });
+
       set({ loading: false });
       return docRef.id;
     } catch (error) {
-      const message =
+      console.error('[breederSocialStore] sendFriendRequest error:', error);
+      const errorMessage =
         error instanceof Error ? error.message : 'Failed to send friend request';
-      set({ error: message, loading: false });
+      set({ error: errorMessage, loading: false });
       throw error;
     }
   },
@@ -145,10 +165,41 @@ export const useBreederSocialStore = create<BreederSocialStore>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const docRef = doc(db, 'breederFriendships', friendshipId);
+
+      // Get the friendship to find the requester
+      const friendshipDoc = await getDoc(docRef);
+      const friendship = friendshipDoc.data() as BreederFriendship;
+
       await updateDoc(docRef, {
         status: 'accepted',
         acceptedAt: new Date().toISOString(),
       });
+
+      // Create in-app notification for the requester
+      if (friendship) {
+        // Get accepter's info
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const userData = userDoc.data();
+        const accepterName = userData?.displayName || user.email || 'A breeder';
+        const accepterKennel = userData?.kennelName || '';
+
+        await addDoc(collection(db, 'notifications'), {
+          userId: friendship.requesterId,
+          type: 'friend_accepted',
+          title: 'Friend Request Accepted',
+          message: `${accepterName}${accepterKennel ? ` from ${accepterKennel}` : ''} accepted your friend request`,
+          read: false,
+          actionUrl: '/community',
+          metadata: {
+            friendshipId,
+            accepterId: user.uid,
+            accepterName,
+            accepterKennel,
+          },
+          createdAt: new Date().toISOString(),
+        });
+      }
+
       set({ loading: false });
     } catch (error) {
       const message =

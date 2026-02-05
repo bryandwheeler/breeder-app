@@ -26,6 +26,8 @@ import {
   Shield,
   ListTodo,
   Mail,
+  LifeBuoy,
+  Ticket,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
@@ -97,6 +99,7 @@ const breederNavigation: NavGroup[] = [
     items: [
       { name: 'Account Management', path: '/account', icon: Settings },
       { name: 'Settings', path: '/settings', icon: Settings },
+      { name: 'Support', path: '/support', icon: LifeBuoy },
       { name: 'Help', path: '/help', icon: HelpCircle },
     ],
   },
@@ -108,6 +111,7 @@ const adminNavigation: NavGroup[] = [
     items: [
       { name: 'Admin Dashboard', path: '/admin', icon: LayoutDashboard },
       { name: 'Contacts', path: '/admin/customers', icon: Users },
+      { name: 'Tickets', path: '/admin/tickets', icon: Ticket },
       { name: 'Newsletter', path: '/admin/newsletter', icon: Mail },
       { name: 'Admin Settings', path: '/admin/settings', icon: Settings },
     ],

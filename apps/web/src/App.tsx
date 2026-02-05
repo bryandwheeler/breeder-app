@@ -43,6 +43,10 @@ import { Help } from '@/pages/Help';
 import { Tasks } from '@/pages/Tasks';
 import { Login } from '@/pages/Login';
 import { Signup } from '@/pages/Signup';
+import { SupportTickets } from '@/pages/SupportTickets';
+import { NewTicket } from '@/pages/NewTicket';
+import { TicketDetail } from '@/pages/TicketDetail';
+import { AdminTickets } from '@/pages/AdminTickets';
 import { AdminDashboard } from '@/pages/AdminDashboard';
 import { AdminSettings } from '@/pages/AdminSettings';
 import { AdminCustomers } from '@/pages/AdminCustomers';
@@ -80,6 +84,7 @@ import { useAdminStore } from '@breeder/firebase';
 import { useStudJobStore } from '@/store/studJobStore';
 import { useHeatCycleStore } from '@breeder/firebase';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
+import { TawkToWidget } from '@/components/chat/TawkToWidget';
 import { cn } from '@/lib/utils';
 
 function AppContent() {
@@ -569,6 +574,31 @@ function AppContent() {
                   </ProtectedRoute>
                 }
               />
+              {/* Support Tickets Routes */}
+              <Route
+                path='/support'
+                element={
+                  <ProtectedRoute>
+                    <SupportTickets />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/support/new'
+                element={
+                  <ProtectedRoute>
+                    <NewTicket />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/support/tickets/:ticketId'
+                element={
+                  <ProtectedRoute>
+                    <TicketDetail />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path='/admin'
                 element={
@@ -681,6 +711,23 @@ function AppContent() {
                   </ProtectedRoute>
                 }
               />
+              {/* Admin Tickets Routes */}
+              <Route
+                path='/admin/tickets'
+                element={
+                  <ProtectedRoute>
+                    <AdminTickets />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/admin/tickets/:ticketId'
+                element={
+                  <ProtectedRoute>
+                    <TicketDetail />
+                  </ProtectedRoute>
+                }
+              />
               <Route path='*' element={<Navigate to='/' replace />} />
             </Routes>
           </div>
@@ -698,6 +745,7 @@ function AppContent() {
           open={emailSettingsOpen}
           setOpen={setEmailSettingsOpen}
         />
+        <TawkToWidget />
         <Toaster />
       </div>
       </ErrorBoundary>

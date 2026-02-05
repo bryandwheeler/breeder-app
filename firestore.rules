@@ -20,6 +20,20 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // Helper function to check if user is support staff (or admin)
+    function isSupport() {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'support'];
+    }
+
+    // Helper function to check if user is moderator (or admin)
+    function isModerator() {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'moderator'];
+    }
+
     // Dogs collection - users can read all dogs (for search), admins can read all for analytics
     match /dogs/{dogId} {
       // Allow reading all dogs for authenticated users (for search functionality), admins always can read
@@ -217,10 +231,9 @@ service cloud.firestore {
       // Allow users to read their own profile
       allow get: if isAuthenticated() && userId == request.auth.uid;
 
+      // Allow authenticated users to list users (for breeder search in community)
       // Allow admins to list all users (for admin dashboard)
-      allow list: if isAuthenticated() &&
-                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow list: if isAuthenticated();
 
       // Allow users to create their own profile
       allow create: if isAuthenticated() && userId == request.auth.uid;
@@ -436,24 +449,24 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
-    // Forum threads - all authenticated users can read, authors can edit/delete their own
+    // Forum threads - all authenticated users can read, authors and moderators can edit/delete
     match /forumThreads/{threadId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() &&
-        (resource.data.authorId == request.auth.uid || isAdmin());
+        (resource.data.authorId == request.auth.uid || isAdmin() || isModerator());
       allow delete: if isAuthenticated() &&
-        (resource.data.authorId == request.auth.uid || isAdmin());
+        (resource.data.authorId == request.auth.uid || isAdmin() || isModerator());
     }
 
-    // Forum posts - all authenticated users can read, authors can edit/delete their own
+    // Forum posts - all authenticated users can read, authors and moderators can edit/delete
     match /forumPosts/{postId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() &&
-        (resource.data.authorId == request.auth.uid || isAdmin());
+        (resource.data.authorId == request.auth.uid || isAdmin() || isModerator());
       allow delete: if isAuthenticated() &&
-        (resource.data.authorId == request.auth.uid || isAdmin());
+        (resource.data.authorId == request.auth.uid || isAdmin() || isModerator());
     }
 
     // Forum user profiles - all authenticated users can read, users can write their own
@@ -512,6 +525,127 @@ service cloud.firestore {
     match /adminSettings/{settingId} {
       allow read: if isAdmin();
       allow write: if isAdmin();
+    }
+
+    // ============================================================================
+    // Ticketing System Collections
+    // ============================================================================
+
+    // Support tickets - submitters can see their own, support/admin can see all
+    match /tickets/{ticketId} {
+      // List queries - support sees all, users see their own
+      allow list: if isAuthenticated() && (
+        isSupport() ||
+        isAdmin()
+      );
+
+      // Get - submitter can see their own, support/admin can see all
+      allow get: if isAuthenticated() && (
+        resource.data.submitterId == request.auth.uid ||
+        isSupport() ||
+        isAdmin()
+      );
+
+      // Create - any authenticated user can create a ticket
+      allow create: if isAuthenticated() &&
+        request.resource.data.submitterId == request.auth.uid;
+
+      // Update - submitter can update their own (limited), support/admin can update all
+      allow update: if isAuthenticated() && (
+        resource.data.submitterId == request.auth.uid ||
+        isSupport() ||
+        isAdmin()
+      );
+
+      // Delete - only admin can delete tickets
+      allow delete: if isAdmin();
+
+      // Ticket messages subcollection
+      match /messages/{messageId} {
+        // Read - submitter can see non-internal messages, support/admin can see all
+        allow read: if isAuthenticated() && (
+          // Support/admin can read all messages including internal notes
+          isSupport() ||
+          isAdmin() ||
+          // Submitter can only read non-internal messages
+          (get(/databases/$(database)/documents/tickets/$(ticketId)).data.submitterId == request.auth.uid &&
+           resource.data.isInternal == false)
+        );
+
+        // Create - submitter or support/admin can add messages
+        allow create: if isAuthenticated() && (
+          get(/databases/$(database)/documents/tickets/$(ticketId)).data.submitterId == request.auth.uid ||
+          isSupport() ||
+          isAdmin()
+        ) && (
+          // Submitter cannot create internal notes
+          (get(/databases/$(database)/documents/tickets/$(ticketId)).data.submitterId == request.auth.uid &&
+           request.resource.data.isInternal == false) ||
+          isSupport() ||
+          isAdmin()
+        );
+
+        // Update - only message sender or admin can edit
+        allow update: if isAuthenticated() && (
+          resource.data.senderId == request.auth.uid ||
+          isAdmin()
+        );
+
+        // Delete - only admin can delete messages
+        allow delete: if isAdmin();
+      }
+    }
+
+    // ============================================================================
+    // Access Control Collections (Vet & Buyer Portals)
+    // ============================================================================
+
+    // Vet authorizations - breeder grants vet access to specific dogs
+    match /vetAuthorizations/{authId} {
+      // Read - vet can see their authorizations, breeder can see authorizations they granted
+      allow read: if isAuthenticated() && (
+        resource.data.vetUserId == request.auth.uid ||
+        resource.data.breederId == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Create - only breeder can grant vet access
+      allow create: if isAuthenticated() &&
+        request.resource.data.breederId == request.auth.uid;
+
+      // Update - only breeder can modify (e.g., revoke, extend)
+      allow update: if isAuthenticated() &&
+        resource.data.breederId == request.auth.uid;
+
+      // Delete - only breeder or admin can delete
+      allow delete: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // Buyer access - breeder grants buyer access to their puppy records
+    match /buyerAccess/{accessId} {
+      // Read - buyer can see their access, breeder can see access they granted
+      allow read: if isAuthenticated() && (
+        resource.data.buyerUserId == request.auth.uid ||
+        resource.data.breederId == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Create - only breeder can grant buyer access
+      allow create: if isAuthenticated() &&
+        request.resource.data.breederId == request.auth.uid;
+
+      // Update - only breeder can modify
+      allow update: if isAuthenticated() &&
+        resource.data.breederId == request.auth.uid;
+
+      // Delete - only breeder or admin can delete
+      allow delete: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        isAdmin()
+      );
     }
 
     // ============================================================================
