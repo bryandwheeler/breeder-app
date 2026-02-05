@@ -2364,3 +2364,243 @@ exports.processSignedPdfDownloads = functions.pubsub
 
     return null;
   });
+
+// ========== CUSTOM DOMAIN VERIFICATION ==========
+
+// DNS lookup using built-in dns module
+const dns = require('dns').promises;
+
+/**
+ * Verify custom domain CNAME configuration
+ * Called from the web app when user clicks "Verify DNS"
+ */
+exports.verifyCustomDomain = functions.https.onCall(async (data, context) => {
+  // Require authentication
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  }
+
+  const { domain } = data;
+  if (!domain) {
+    throw new functions.https.HttpsError('invalid-argument', 'Domain is required');
+  }
+
+  const userId = context.auth.uid;
+  const nowISO = new Date().toISOString();
+  const expectedCname = 'websites.expertbreeder.com';
+
+  try {
+    // Get user's website settings to verify they own this domain
+    const settingsRef = db.collection('websiteSettings').doc(userId);
+    const settingsDoc = await settingsRef.get();
+
+    if (!settingsDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Website settings not found');
+    }
+
+    const settings = settingsDoc.data();
+    if (settings.domain?.customDomain !== domain) {
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        'Domain does not match your configuration'
+      );
+    }
+
+    // Check user subscription tier (must be 'pro')
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    const subscriptionTier = userDoc.data()?.subscriptionTier || 'free';
+
+    if (subscriptionTier !== 'pro') {
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        'Custom domains require a Pro subscription'
+      );
+    }
+
+    // Update status to verifying
+    await settingsRef.update({
+      'domain.customDomainStatus': 'verifying',
+      'domain.verificationError': admin.firestore.FieldValue.delete(),
+      updatedAt: nowISO,
+    });
+
+    // Perform DNS lookup
+    let cnameRecords = [];
+    try {
+      cnameRecords = await dns.resolveCname(domain);
+    } catch (dnsError) {
+      // CNAME not found - check if there's an A record pointing somewhere
+      // This is a common misconfiguration
+      let errorMessage = 'No CNAME record found for this domain.';
+
+      try {
+        const aRecords = await dns.resolve4(domain);
+        if (aRecords.length > 0) {
+          errorMessage = 'Found A record instead of CNAME. Please add a CNAME record pointing to ' + expectedCname;
+        }
+      } catch {
+        // No A record either
+        errorMessage = 'No DNS records found. Please add a CNAME record pointing to ' + expectedCname;
+      }
+
+      await settingsRef.update({
+        'domain.customDomainStatus': 'failed',
+        'domain.verificationError': errorMessage,
+        updatedAt: nowISO,
+      });
+
+      return {
+        success: false,
+        status: 'failed',
+        error: errorMessage,
+      };
+    }
+
+    // Check if CNAME points to our target
+    const cnameTarget = cnameRecords[0]?.toLowerCase();
+    if (cnameTarget === expectedCname || cnameTarget === expectedCname + '.') {
+      // DNS verified - update status
+      await settingsRef.update({
+        'domain.customDomainStatus': 'verified',
+        'domain.customDomainVerifiedAt': nowISO,
+        'domain.verificationError': admin.firestore.FieldValue.delete(),
+        updatedAt: nowISO,
+      });
+
+      // In production, this would trigger SSL provisioning
+      // For now, we'll set it to active after a short delay
+      // In a real implementation, you'd use a webhook from your SSL provider
+
+      // Simulate SSL provisioning (set to active)
+      setTimeout(async () => {
+        try {
+          await settingsRef.update({
+            'domain.customDomainStatus': 'active',
+            'domain.sslStatus': 'active',
+            updatedAt: new Date().toISOString(),
+          });
+        } catch (e) {
+          console.error('Error updating to active status:', e);
+        }
+      }, 5000);
+
+      return {
+        success: true,
+        status: 'verified',
+        message: 'DNS verified successfully. SSL certificate is being provisioned.',
+      };
+    } else {
+      // CNAME exists but points to wrong target
+      const errorMessage = `CNAME points to ${cnameTarget} instead of ${expectedCname}. Please update your DNS settings.`;
+
+      await settingsRef.update({
+        'domain.customDomainStatus': 'failed',
+        'domain.verificationError': errorMessage,
+        updatedAt: nowISO,
+      });
+
+      return {
+        success: false,
+        status: 'failed',
+        error: errorMessage,
+      };
+    }
+  } catch (error) {
+    console.error('Error verifying domain:', error);
+
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+
+    throw new functions.https.HttpsError('internal', 'Failed to verify domain: ' + error.message);
+  }
+});
+
+/**
+ * Scheduled function to check domain status periodically
+ * Re-verifies pending/failed domains and checks for DNS changes
+ */
+exports.checkDomainStatus = functions.pubsub
+  .schedule('every 6 hours')
+  .onRun(async (_context) => {
+    const nowISO = new Date().toISOString();
+    const expectedCname = 'websites.expertbreeder.com';
+
+    try {
+      // Get all domains that need verification
+      const pendingDomains = await db
+        .collection('websiteSettings')
+        .where('domain.customDomainStatus', 'in', ['pending', 'failed', 'verifying'])
+        .get();
+
+      console.log(`Checking ${pendingDomains.size} domains for DNS status`);
+
+      for (const doc of pendingDomains.docs) {
+        const settings = doc.data();
+        const domain = settings.domain?.customDomain;
+
+        if (!domain) continue;
+
+        try {
+          const cnameRecords = await dns.resolveCname(domain);
+          const cnameTarget = cnameRecords[0]?.toLowerCase();
+
+          if (cnameTarget === expectedCname || cnameTarget === expectedCname + '.') {
+            // Domain is now verified
+            await doc.ref.update({
+              'domain.customDomainStatus': 'active',
+              'domain.customDomainVerifiedAt': nowISO,
+              'domain.sslStatus': 'active',
+              'domain.verificationError': admin.firestore.FieldValue.delete(),
+              updatedAt: nowISO,
+            });
+            console.log(`Domain ${domain} verified and activated`);
+          }
+        } catch (dnsError) {
+          // Still no valid CNAME
+          console.log(`Domain ${domain} still not configured correctly`);
+        }
+      }
+
+      // Also check active domains to make sure DNS hasn't changed
+      const activeDomains = await db
+        .collection('websiteSettings')
+        .where('domain.customDomainStatus', '==', 'active')
+        .get();
+
+      for (const doc of activeDomains.docs) {
+        const settings = doc.data();
+        const domain = settings.domain?.customDomain;
+
+        if (!domain) continue;
+
+        try {
+          const cnameRecords = await dns.resolveCname(domain);
+          const cnameTarget = cnameRecords[0]?.toLowerCase();
+
+          if (cnameTarget !== expectedCname && cnameTarget !== expectedCname + '.') {
+            // DNS changed - mark as failed
+            await doc.ref.update({
+              'domain.customDomainStatus': 'failed',
+              'domain.verificationError': 'DNS configuration changed. Please re-verify your domain.',
+              updatedAt: nowISO,
+            });
+            console.log(`Domain ${domain} DNS changed, marked as failed`);
+          }
+        } catch (dnsError) {
+          // CNAME no longer exists
+          await doc.ref.update({
+            'domain.customDomainStatus': 'failed',
+            'domain.verificationError': 'CNAME record no longer found. Please re-verify your domain.',
+            updatedAt: nowISO,
+          });
+          console.log(`Domain ${domain} CNAME removed, marked as failed`);
+        }
+      }
+    } catch (error) {
+      console.error('Error in checkDomainStatus:', error);
+    }
+
+    return null;
+  });

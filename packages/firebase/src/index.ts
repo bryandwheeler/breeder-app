@@ -25,6 +25,7 @@ export * from './stores/scheduledEmailStore';
 export * from './stores/taskStore';
 export * from './stores/waitlistStore';
 export * from './stores/websiteStore';
+export * from './stores/themePresetStore';
 export * from './stores/evaluationStore';
 export * from './stores/breederSocialStore';
 export * from './stores/ticketStore';

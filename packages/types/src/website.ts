@@ -1,5 +1,71 @@
 // Website builder and customization types
 
+// Domain settings for subdomain and custom domain support
+export type DomainStatus = 'pending' | 'verifying' | 'verified' | 'active' | 'failed' | 'suspended';
+export type SslStatus = 'pending' | 'provisioning' | 'active' | 'failed';
+
+export interface DomainSettings {
+  // Subdomain (claimed by breeder)
+  subdomain: string; // e.g., "happypaws" for happypaws.expertbreeder.com
+  subdomainAvailable: boolean;
+  subdomainClaimedAt?: string;
+
+  // Custom domain (Pro tier only)
+  customDomain?: string; // e.g., "www.happypawskennel.com"
+  customDomainStatus?: DomainStatus;
+  customDomainVerifiedAt?: string;
+  cnameTarget: string; // "websites.expertbreeder.com"
+  sslStatus?: SslStatus;
+  verificationError?: string;
+  lastVerificationAttempt?: string;
+}
+
+// Enhanced SEO settings
+export interface SeoSettings {
+  metaTitle?: string; // Default page title
+  metaTitleTemplate?: string; // e.g., "{{pageTitle}} | {{kennelName}}"
+  metaDescription?: string;
+
+  // Open Graph
+  ogImage?: string; // URL to OG image
+  ogTitle?: string;
+  ogDescription?: string;
+
+  // Social
+  twitterHandle?: string;
+  facebookAppId?: string;
+
+  // Advanced
+  canonicalUrl?: string;
+  noIndex?: boolean; // Hide from search engines
+}
+
+// Theme preset for quick website styling
+export type ThemePresetCategory = 'professional' | 'playful' | 'elegant' | 'modern';
+
+export interface ThemePreset {
+  id: string;
+  name: string;
+  description: string;
+  thumbnail?: string; // Preview image URL
+  theme: WebsiteTheme;
+  category: ThemePresetCategory;
+  isPremium: boolean; // Pro-only presets
+  order: number; // Display order
+  isActive: boolean; // Can be disabled by admin
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Reserved subdomains that cannot be claimed
+export const RESERVED_SUBDOMAINS = [
+  'admin', 'api', 'www', 'app', 'mail', 'email', 'support', 'help',
+  'blog', 'docs', 'dev', 'staging', 'test', 'demo', 'portal',
+  'dashboard', 'login', 'signup', 'register', 'account', 'settings',
+  'static', 'assets', 'cdn', 'images', 'media', 'files',
+  'expertbreeder', 'expert-breeder', 'breeder',
+];
+
 export interface WebsiteTheme {
   primaryColor: string; // hex color
   secondaryColor: string; // hex color
@@ -74,11 +140,26 @@ export interface WebsiteSettings {
   showPricing: boolean;
   createdAt: string;
   updatedAt: string;
+
   // Branding
   logoUrl?: string; // URL to logo image
   logoUrlDark?: string; // URL to dark mode logo image
   businessName?: string; // Business/kennel name for header
   mainImageUrl?: string; // Hero/main image URL
+
+  // Domain settings (subdomain/custom domain)
+  domain?: DomainSettings;
+
+  // SEO settings
+  seo?: SeoSettings;
+
+  // Theme preset tracking
+  appliedPresetId?: string;
+
+  // Website enabled/published state
+  websiteEnabled: boolean;
+  publishedAt?: string;
+
   // Breeder profile fields
   kennelName?: string;
   tagline?: string;

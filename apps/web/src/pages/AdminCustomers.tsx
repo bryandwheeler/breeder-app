@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@breeder/firebase';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,12 +15,22 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 import { SubscriptionTier } from '@breeder/types';
 import { format } from 'date-fns';
-import { ExternalLink, Mail, DollarSign, Calendar } from 'lucide-react';
+import { ExternalLink, Mail, DollarSign, Calendar, Loader2, Crown, Zap, User } from 'lucide-react';
 
 interface CustomerSubscription {
   uid: string;
@@ -45,6 +55,8 @@ export function AdminCustomers() {
   const [selectedCustomer, setSelectedCustomer] =
     useState<CustomerSubscription | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [updatingTier, setUpdatingTier] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -101,6 +113,48 @@ export function AdminCustomers() {
       `https://dashboard.stripe.com/customers/${customerId}`,
       '_blank'
     );
+  };
+
+  const handleUpdateTier = async (uid: string, newTier: SubscriptionTier) => {
+    setUpdatingTier(true);
+    try {
+      const userRef = doc(db, 'users', uid);
+      await updateDoc(userRef, {
+        subscriptionTier: newTier,
+        subscriptionStatus: 'active',
+        // Set a manual subscription marker
+        subscriptionSource: 'admin_override',
+        subscriptionUpdatedAt: new Date().toISOString(),
+      });
+
+      // Update local state
+      setCustomers((prev) =>
+        prev.map((c) =>
+          c.uid === uid ? { ...c, subscriptionTier: newTier, subscriptionStatus: 'active' } : c
+        )
+      );
+
+      // Update selected customer if open
+      if (selectedCustomer?.uid === uid) {
+        setSelectedCustomer((prev) =>
+          prev ? { ...prev, subscriptionTier: newTier, subscriptionStatus: 'active' } : null
+        );
+      }
+
+      toast({
+        title: 'Subscription Updated',
+        description: `User subscription changed to ${newTier.charAt(0).toUpperCase() + newTier.slice(1)}`,
+      });
+    } catch (error: any) {
+      console.error('Error updating subscription:', error);
+      toast({
+        title: 'Update Failed',
+        description: error.message || 'Failed to update subscription tier',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingTier(false);
+    }
   };
 
   if (loading) {
@@ -194,10 +248,39 @@ export function AdminCustomers() {
                   </TableCell>
                   <TableCell>{customer.email}</TableCell>
                   <TableCell>
-                    <Badge className={tierColors[customer.subscriptionTier]}>
-                      {customer.subscriptionTier.charAt(0).toUpperCase() +
-                        customer.subscriptionTier.slice(1)}
-                    </Badge>
+                    <Select
+                      value={customer.subscriptionTier}
+                      onValueChange={(value: SubscriptionTier) =>
+                        handleUpdateTier(customer.uid, value)
+                      }
+                    >
+                      <SelectTrigger className="w-[110px] h-8">
+                        <Badge className={tierColors[customer.subscriptionTier]}>
+                          {customer.subscriptionTier.charAt(0).toUpperCase() +
+                            customer.subscriptionTier.slice(1)}
+                        </Badge>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="free">
+                          <div className="flex items-center gap-2">
+                            <User className="h-3 w-3 text-gray-500" />
+                            Free
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="builder">
+                          <div className="flex items-center gap-2">
+                            <Zap className="h-3 w-3 text-blue-500" />
+                            Builder
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="pro">
+                          <div className="flex items-center gap-2">
+                            <Crown className="h-3 w-3 text-amber-500" />
+                            Pro
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -249,9 +332,12 @@ export function AdminCustomers() {
 
       {/* Customer Details Dialog */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Customer Details</DialogTitle>
+            <DialogDescription>
+              View and manage customer subscription
+            </DialogDescription>
           </DialogHeader>
           {selectedCustomer && (
             <div className='space-y-4'>
@@ -263,14 +349,6 @@ export function AdminCustomers() {
                 <div>
                   <p className='text-sm text-muted-foreground'>Email</p>
                   <p className='font-medium'>{selectedCustomer.email}</p>
-                </div>
-                <div>
-                  <p className='text-sm text-muted-foreground'>Current Plan</p>
-                  <Badge
-                    className={tierColors[selectedCustomer.subscriptionTier]}
-                  >
-                    {selectedCustomer.subscriptionTier}
-                  </Badge>
                 </div>
                 <div>
                   <p className='text-sm text-muted-foreground'>Status</p>
@@ -295,22 +373,68 @@ export function AdminCustomers() {
                       : 'N/A'}
                   </p>
                 </div>
-                <div>
-                  <p className='text-sm text-muted-foreground'>
-                    Stripe Customer ID
-                  </p>
-                  <p className='font-mono text-sm'>
-                    {selectedCustomer.stripeCustomerId}
-                  </p>
-                </div>
               </div>
 
-              <div className='pt-4 border-t'>
+              {/* Subscription Tier Management */}
+              <div className='pt-4 border-t space-y-3'>
+                <Label htmlFor="subscription-tier">Subscription Tier</Label>
+                <Select
+                  value={selectedCustomer.subscriptionTier}
+                  onValueChange={(value: SubscriptionTier) =>
+                    handleUpdateTier(selectedCustomer.uid, value)
+                  }
+                  disabled={updatingTier}
+                >
+                  <SelectTrigger id="subscription-tier" className="w-full">
+                    {updatingTier ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Updating...
+                      </div>
+                    ) : (
+                      <SelectValue />
+                    )}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="free">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-gray-500" />
+                        <span>Free</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="builder">
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-blue-500" />
+                        <span>Builder</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="pro">
+                      <div className="flex items-center gap-2">
+                        <Crown className="h-4 w-4 text-amber-500" />
+                        <span>Pro</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Manually change this user's subscription tier. This overrides Stripe billing.
+                </p>
+              </div>
+
+              {/* Stripe Link */}
+              <div className='pt-4 border-t space-y-2'>
+                <p className='text-sm text-muted-foreground'>
+                  Stripe Customer ID
+                </p>
+                <p className='font-mono text-sm'>
+                  {selectedCustomer.stripeCustomerId}
+                </p>
                 {selectedCustomer.stripeCustomerId !== 'N/A' && (
                   <Button
                     onClick={() =>
                       handleOpenStripe(selectedCustomer.stripeCustomerId)
                     }
+                    variant="outline"
                     className='w-full'
                   >
                     <ExternalLink className='h-4 w-4 mr-2' />

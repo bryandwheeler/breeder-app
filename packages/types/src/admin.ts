@@ -99,6 +99,16 @@ export interface SubscriptionFeature {
   enabled: boolean;
 }
 
+// Website features available per subscription tier
+export interface WebsiteFeatures {
+  enabled: boolean;
+  subdomainAllowed: boolean;
+  customDomainAllowed: boolean;
+  themePresetsAccess: 'none' | 'basic' | 'all';
+  advancedSeoAccess: boolean;
+  maxCustomPages: number;
+}
+
 export interface SubscriptionTierConfig {
   name: string;
   displayName: string;
@@ -110,6 +120,7 @@ export interface SubscriptionTierConfig {
   maxLitters: number;
   maxCustomers: number;
   maxWaitlistEntries: number;
+  websiteFeatures?: WebsiteFeatures;
 }
 
 export interface CouponCode {
