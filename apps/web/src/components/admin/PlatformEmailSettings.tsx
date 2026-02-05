@@ -325,12 +325,16 @@ export function PlatformEmailSettings() {
 
     setSendingTest(true);
     try {
-      const sendPlatformNotification = httpsCallable(
-        functions,
-        'sendPlatformNotification',
-      );
+      const sendPlatformNotification = httpsCallable<
+        {
+          to: string;
+          templateType: string;
+          variables: Record<string, string>;
+        },
+        { sent: boolean; reason?: string }
+      >(functions, 'sendPlatformNotification');
 
-      await sendPlatformNotification({
+      const result = await sendPlatformNotification({
         to: testEmail,
         templateType: 'friend_request',
         variables: {
@@ -344,10 +348,18 @@ export function PlatformEmailSettings() {
         },
       });
 
-      toast({
-        title: 'Test email sent',
-        description: `A test email was sent to ${testEmail}`,
-      });
+      if (result.data.sent) {
+        toast({
+          title: 'Test email sent',
+          description: `A test email was sent to ${testEmail}`,
+        });
+      } else {
+        toast({
+          title: 'Email not sent',
+          description: result.data.reason || 'SendGrid may not be configured properly',
+          variant: 'destructive',
+        });
+      }
     } catch (error) {
       toast({
         title: 'Failed to send',
