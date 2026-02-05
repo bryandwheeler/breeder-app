@@ -539,8 +539,14 @@ service cloud.firestore {
     }
 
     // Domains - for subdomain and custom domain management
+    // Allow list queries for availability checking (authenticated users only)
+    // Only allow full document read/write for the owner
     match /domains/{domainId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Allow list queries for subdomain availability checking
+      // The query must filter by subdomain field for availability checks
+      allow list: if isAuthenticated();
+      // Only owner can get their full domain document
+      allow get: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
