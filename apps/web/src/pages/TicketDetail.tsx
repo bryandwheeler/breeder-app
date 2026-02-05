@@ -25,6 +25,7 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
+  Paperclip,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 
@@ -145,8 +146,8 @@ export function TicketDetail() {
 
   if (!currentTicket) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className='flex items-center justify-center py-12'>
+        <Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
       </div>
     );
   }
@@ -156,50 +157,54 @@ export function TicketDetail() {
   const isResolved = currentTicket.status === 'resolved';
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* Header */}
-      <div className="flex items-start gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/support')}>
-          <ArrowLeft className="h-5 w-5" />
+      <div className='flex items-start gap-4'>
+        <Button
+          variant='ghost'
+          size='icon'
+          onClick={() => navigate('/support')}
+        >
+          <ArrowLeft className='h-5 w-5' />
         </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm text-muted-foreground font-mono">
+        <div className='flex-1'>
+          <div className='flex items-center gap-2 mb-1'>
+            <span className='text-sm text-muted-foreground font-mono'>
               {currentTicket.ticketNumber}
             </span>
             <Badge variant={getStatusBadgeVariant(currentTicket.status)}>
               {TICKET_STATUS_LABELS[currentTicket.status]}
             </Badge>
           </div>
-          <h1 className="text-2xl font-bold">{currentTicket.subject}</h1>
+          <h1 className='text-2xl font-bold'>{currentTicket.subject}</h1>
         </div>
-        <div className="flex gap-2">
+        <div className='flex gap-2'>
           {isOwnTicket && !isClosed && (
-            <Button variant="outline" onClick={handleCloseTicket}>
+            <Button variant='outline' onClick={handleCloseTicket}>
               Close Ticket
             </Button>
           )}
           {isOwnTicket && isClosed && (
-            <Button variant="outline" onClick={handleReopenTicket}>
+            <Button variant='outline' onClick={handleReopenTicket}>
               Reopen Ticket
             </Button>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
         {/* Messages */}
-        <div className="lg:col-span-2">
+        <div className='lg:col-span-2'>
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
+            <CardHeader className='pb-2'>
+              <CardTitle className='text-lg flex items-center gap-2'>
+                <MessageSquare className='h-5 w-5' />
                 Conversation
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
-              <ScrollArea className="h-[500px] p-4">
-                <div className="space-y-4">
+            <CardContent className='p-0'>
+              <ScrollArea className='h-[500px] p-4'>
+                <div className='space-y-4'>
                   {currentTicketMessages
                     .filter((m) => !m.isInternal)
                     .map((message) => (
@@ -215,25 +220,25 @@ export function TicketDetail() {
 
               {/* Reply Form */}
               {!isClosed && (
-                <div className="border-t p-4">
-                  <div className="flex gap-2">
+                <div className='border-t p-4'>
+                  <div className='flex gap-2'>
                     <Textarea
-                      placeholder="Type your reply..."
+                      placeholder='Type your reply...'
                       value={replyContent}
                       onChange={(e) => setReplyContent(e.target.value)}
                       rows={3}
-                      className="flex-1"
+                      className='flex-1'
                     />
                   </div>
-                  <div className="flex justify-end mt-2">
+                  <div className='flex justify-end mt-2'>
                     <Button
                       onClick={handleSendReply}
                       disabled={!replyContent.trim() || submitting}
                     >
                       {submitting ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className='h-4 w-4 mr-2 animate-spin' />
                       ) : (
-                        <Send className="h-4 w-4 mr-2" />
+                        <Send className='h-4 w-4 mr-2' />
                       )}
                       Send Reply
                     </Button>
@@ -242,9 +247,10 @@ export function TicketDetail() {
               )}
 
               {isClosed && (
-                <div className="border-t p-4 bg-muted/50">
-                  <p className="text-sm text-muted-foreground text-center">
-                    This ticket is closed. Reopen it to continue the conversation.
+                <div className='border-t p-4 bg-muted/50'>
+                  <p className='text-sm text-muted-foreground text-center'>
+                    This ticket is closed. Reopen it to continue the
+                    conversation.
                   </p>
                 </div>
               )}
@@ -253,33 +259,39 @@ export function TicketDetail() {
         </div>
 
         {/* Ticket Info Sidebar */}
-        <div className="space-y-4">
+        <div className='space-y-4'>
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Ticket Details</CardTitle>
+            <CardHeader className='pb-2'>
+              <CardTitle className='text-lg'>Ticket Details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className='space-y-4'>
               <div>
-                <label className="text-sm text-muted-foreground">Category</label>
-                <p className="font-medium">
+                <label className='text-sm text-muted-foreground'>
+                  Category
+                </label>
+                <p className='font-medium'>
                   {TICKET_CATEGORY_LABELS[currentTicket.category]}
                 </p>
               </div>
               <div>
-                <label className="text-sm text-muted-foreground">Priority</label>
-                <p className="font-medium">
+                <label className='text-sm text-muted-foreground'>
+                  Priority
+                </label>
+                <p className='font-medium'>
                   {TICKET_PRIORITY_LABELS[currentTicket.priority]}
                 </p>
               </div>
               <div>
-                <label className="text-sm text-muted-foreground">Created</label>
-                <p className="font-medium">
+                <label className='text-sm text-muted-foreground'>Created</label>
+                <p className='font-medium'>
                   {format(new Date(currentTicket.createdAt), 'PPp')}
                 </p>
               </div>
               <div>
-                <label className="text-sm text-muted-foreground">Last Updated</label>
-                <p className="font-medium">
+                <label className='text-sm text-muted-foreground'>
+                  Last Updated
+                </label>
+                <p className='font-medium'>
                   {formatDistanceToNow(new Date(currentTicket.updatedAt), {
                     addSuffix: true,
                   })}
@@ -287,16 +299,18 @@ export function TicketDetail() {
               </div>
               {currentTicket.assignedToName && (
                 <div>
-                  <label className="text-sm text-muted-foreground">
+                  <label className='text-sm text-muted-foreground'>
                     Assigned To
                   </label>
-                  <p className="font-medium">{currentTicket.assignedToName}</p>
+                  <p className='font-medium'>{currentTicket.assignedToName}</p>
                 </div>
               )}
               {currentTicket.resolvedAt && (
                 <div>
-                  <label className="text-sm text-muted-foreground">Resolved</label>
-                  <p className="font-medium">
+                  <label className='text-sm text-muted-foreground'>
+                    Resolved
+                  </label>
+                  <p className='font-medium'>
                     {format(new Date(currentTicket.resolvedAt), 'PPp')}
                   </p>
                 </div>
@@ -306,35 +320,35 @@ export function TicketDetail() {
 
           {/* Status Info */}
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className='pt-6'>
               {currentTicket.status === 'waiting_on_customer' && (
-                <div className="flex items-start gap-3 text-amber-600">
-                  <AlertCircle className="h-5 w-5 mt-0.5" />
+                <div className='flex items-start gap-3 text-amber-600'>
+                  <AlertCircle className='h-5 w-5 mt-0.5' />
                   <div>
-                    <p className="font-medium">Action Required</p>
-                    <p className="text-sm">
+                    <p className='font-medium'>Action Required</p>
+                    <p className='text-sm'>
                       We're waiting for your response to continue.
                     </p>
                   </div>
                 </div>
               )}
               {currentTicket.status === 'waiting_on_support' && (
-                <div className="flex items-start gap-3 text-blue-600">
-                  <Clock className="h-5 w-5 mt-0.5" />
+                <div className='flex items-start gap-3 text-blue-600'>
+                  <Clock className='h-5 w-5 mt-0.5' />
                   <div>
-                    <p className="font-medium">Waiting for Support</p>
-                    <p className="text-sm">
+                    <p className='font-medium'>Waiting for Support</p>
+                    <p className='text-sm'>
                       Our team will respond as soon as possible.
                     </p>
                   </div>
                 </div>
               )}
               {currentTicket.status === 'resolved' && (
-                <div className="flex items-start gap-3 text-green-600">
-                  <CheckCircle className="h-5 w-5 mt-0.5" />
+                <div className='flex items-start gap-3 text-green-600'>
+                  <CheckCircle className='h-5 w-5 mt-0.5' />
                   <div>
-                    <p className="font-medium">Resolved</p>
-                    <p className="text-sm">
+                    <p className='font-medium'>Resolved</p>
+                    <p className='text-sm'>
                       This issue has been resolved. Close the ticket if you're
                       satisfied.
                     </p>
@@ -361,30 +375,54 @@ function MessageBubble({
 
   return (
     <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
-      <Avatar className="h-8 w-8 flex-shrink-0">
-        <AvatarFallback className={isSupport ? 'bg-primary text-primary-foreground' : ''}>
+      <Avatar className='h-8 w-8 flex-shrink-0'>
+        <AvatarFallback
+          className={isSupport ? 'bg-primary text-primary-foreground' : ''}
+        >
           {isSupport ? 'S' : message.senderName.charAt(0).toUpperCase()}
         </AvatarFallback>
       </Avatar>
       <div className={`flex-1 max-w-[80%] ${isOwn ? 'text-right' : ''}`}>
-        <div className="flex items-center gap-2 mb-1">
+        <div className='flex items-center gap-2 mb-1'>
           {!isOwn && (
-            <span className="font-medium text-sm">
+            <span className='font-medium text-sm'>
               {isSupport ? 'Support Team' : message.senderName}
             </span>
           )}
-          <span className="text-xs text-muted-foreground">
+          <span className='text-xs text-muted-foreground'>
             {format(new Date(message.createdAt), 'MMM d, h:mm a')}
           </span>
         </div>
         <div
           className={`rounded-lg p-3 ${
-            isOwn
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted'
+            isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted'
           }`}
         >
-          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+          <p className='text-sm whitespace-pre-wrap'>{message.content}</p>
+          {message.attachments && message.attachments.length > 0 && (
+            <div className='mt-2 space-y-1'>
+              {message.attachments.map((attachment) => (
+                <div
+                  key={attachment.id}
+                  className={`flex items-center gap-2 text-xs ${
+                    isOwn ? 'justify-end' : ''
+                  }`}
+                >
+                  <a
+                    href={attachment.url}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='inline-flex items-center gap-1 rounded border px-2 py-1 hover:bg-muted/80'
+                  >
+                    <Paperclip className='h-3 w-3' />
+                    <span className='max-w-[160px] truncate'>
+                      {attachment.name}
+                    </span>
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

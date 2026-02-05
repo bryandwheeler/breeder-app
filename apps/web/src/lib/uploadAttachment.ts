@@ -1,6 +1,11 @@
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from 'firebase/storage';
 import { storage, auth } from '@breeder/firebase';
-import { VetVisitAttachment } from '@breeder/types';
+import { VetVisitAttachment, TicketAttachment } from '@breeder/types';
 
 /**
  * Upload a file attachment to Firebase Storage
@@ -12,7 +17,7 @@ import { VetVisitAttachment } from '@breeder/types';
 export async function uploadVetVisitAttachment(
   file: File,
   dogId: string,
-  visitId: string
+  visitId: string,
 ): Promise<VetVisitAttachment> {
   const user = auth.currentUser;
   if (!user) throw new Error('Must be logged in to upload attachments');
@@ -53,6 +58,50 @@ export async function uploadVetVisitAttachment(
 }
 
 /**
+ * Upload a support ticket attachment to Firebase Storage
+ * @param file - The file to upload
+ * @returns TicketAttachment object with download URL
+ */
+export async function uploadTicketAttachment(
+  file: File,
+): Promise<TicketAttachment> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Must be logged in to upload attachments');
+
+  // Validate file size (10MB limit)
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  if (file.size > maxSize) {
+    throw new Error('File size must be less than 10MB');
+  }
+
+  // Create a unique filename
+  const timestamp = Date.now();
+  const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const filename = `support-tickets/${user.uid}/${timestamp}_${sanitizedName}`;
+  const storagePath = `users/${user.uid}/${filename}`;
+
+  // Create a storage reference
+  const storageRef = ref(storage, storagePath);
+
+  // Upload the file
+  await uploadBytes(storageRef, file);
+
+  // Get the download URL
+  const downloadURL = await getDownloadURL(storageRef);
+
+  // Return attachment object
+  return {
+    id: crypto.randomUUID(),
+    name: file.name,
+    url: downloadURL,
+    type: file.type || 'application/octet-stream',
+    size: file.size,
+    uploadedAt: new Date().toISOString(),
+    uploadedBy: user.uid,
+  };
+}
+
+/**
  * Delete an attachment from Firebase Storage
  * @param url - The download URL of the attachment
  */
@@ -79,7 +128,10 @@ function getFileType(file: File): VetVisitAttachment['type'] {
   }
 
   // Images
-  if (type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|bmp)$/.test(name)) {
+  if (
+    type.startsWith('image/') ||
+    /\.(jpg|jpeg|png|gif|webp|bmp)$/.test(name)
+  ) {
     return 'image';
   }
 
@@ -98,7 +150,8 @@ function getFileType(file: File): VetVisitAttachment['type'] {
     type.includes('word') ||
     type.includes('document') ||
     type === 'application/msword' ||
-    type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    type ===
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
     type === 'text/plain' ||
     type === 'application/rtf' ||
     /\.(doc|docx|txt|rtf)$/.test(name)

@@ -3,7 +3,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTicketStore } from '@breeder/firebase';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,17 +27,32 @@ import {
   TicketPriority,
   TICKET_CATEGORY_LABELS,
   TICKET_PRIORITY_LABELS,
+  TicketAttachment,
 } from '@breeder/types';
-import { ArrowLeft, Send, Loader2, Bug, Lightbulb, HelpCircle, CreditCard, Wrench, MessageSquare } from 'lucide-react';
+import { uploadTicketAttachment, formatFileSize } from '@/lib/uploadAttachment';
+import {
+  ArrowLeft,
+  Send,
+  Loader2,
+  Bug,
+  Lightbulb,
+  HelpCircle,
+  CreditCard,
+  Wrench,
+  MessageSquare,
+  Upload,
+  Paperclip,
+  X,
+} from 'lucide-react';
 
 const CATEGORY_ICONS: Record<TicketCategory, React.ReactNode> = {
-  bug_report: <Bug className="h-5 w-5" />,
-  feature_request: <Lightbulb className="h-5 w-5" />,
-  account_issue: <HelpCircle className="h-5 w-5" />,
-  billing: <CreditCard className="h-5 w-5" />,
-  technical_support: <Wrench className="h-5 w-5" />,
-  general_inquiry: <MessageSquare className="h-5 w-5" />,
-  other: <HelpCircle className="h-5 w-5" />,
+  bug_report: <Bug className='h-5 w-5' />,
+  feature_request: <Lightbulb className='h-5 w-5' />,
+  account_issue: <HelpCircle className='h-5 w-5' />,
+  billing: <CreditCard className='h-5 w-5' />,
+  technical_support: <Wrench className='h-5 w-5' />,
+  general_inquiry: <MessageSquare className='h-5 w-5' />,
+  other: <HelpCircle className='h-5 w-5' />,
 };
 
 export function NewTicket() {
@@ -44,6 +65,45 @@ export function NewTicket() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<TicketCategory>('general_inquiry');
   const [priority, setPriority] = useState<TicketPriority>('medium');
+  const [attachments, setAttachments] = useState<TicketAttachment[]>([]);
+  const [uploadingAttachments, setUploadingAttachments] = useState(false);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    setUploadingAttachments(true);
+
+    try {
+      const uploaded: TicketAttachment[] = [];
+
+      for (const file of files) {
+        try {
+          const attachment = await uploadTicketAttachment(file);
+          uploaded.push(attachment);
+        } catch (error) {
+          console.error('[NewTicket] attachment upload error:', error);
+          const message =
+            error instanceof Error
+              ? error.message
+              : 'Failed to upload attachment';
+          toast({
+            title: 'Attachment upload failed',
+            description: message,
+            variant: 'destructive',
+          });
+        }
+      }
+
+      if (uploaded.length) {
+        setAttachments((prev) => [...prev, ...uploaded]);
+      }
+    } finally {
+      setUploadingAttachments(false);
+      // Reset the input so the same file can be selected again if needed
+      e.target.value = '';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +132,7 @@ export function NewTicket() {
         description: description.trim(),
         category,
         priority,
+        attachments,
       });
 
       toast({
@@ -90,15 +151,19 @@ export function NewTicket() {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className='space-y-6 max-w-2xl mx-auto'>
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/support')}>
-          <ArrowLeft className="h-5 w-5" />
+      <div className='flex items-center gap-4'>
+        <Button
+          variant='ghost'
+          size='icon'
+          onClick={() => navigate('/support')}
+        >
+          <ArrowLeft className='h-5 w-5' />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">New Support Ticket</h1>
-          <p className="text-muted-foreground">
+          <h1 className='text-3xl font-bold'>New Support Ticket</h1>
+          <p className='text-muted-foreground'>
             Describe your issue and we'll help you resolve it
           </p>
         </div>
@@ -108,37 +173,38 @@ export function NewTicket() {
         <CardHeader>
           <CardTitle>Submit a Ticket</CardTitle>
           <CardDescription>
-            Fill out the form below to create a new support request. Our team will respond as soon as possible.
+            Fill out the form below to create a new support request. Our team
+            will respond as soon as possible.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className='space-y-6'>
             {/* Category Selection */}
-            <div className="space-y-2">
+            <div className='space-y-2'>
               <Label>Category</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>
                 {(Object.keys(TICKET_CATEGORY_LABELS) as TicketCategory[]).map(
                   (cat) => (
                     <Button
                       key={cat}
-                      type="button"
+                      type='button'
                       variant={category === cat ? 'default' : 'outline'}
-                      className="h-auto py-3 flex flex-col items-center gap-2"
+                      className='h-auto py-3 flex flex-col items-center gap-2'
                       onClick={() => setCategory(cat)}
                     >
                       {CATEGORY_ICONS[cat]}
-                      <span className="text-xs text-center">
+                      <span className='text-xs text-center'>
                         {TICKET_CATEGORY_LABELS[cat]}
                       </span>
                     </Button>
-                  )
+                  ),
                 )}
               </div>
             </div>
 
             {/* Priority */}
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
+            <div className='space-y-2'>
+              <Label htmlFor='priority'>Priority</Label>
               <Select
                 value={priority}
                 onValueChange={(value) => setPriority(value as TicketPriority)}
@@ -147,16 +213,16 @@ export function NewTicket() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">
+                  <SelectItem value='low'>
                     Low - General question, no urgency
                   </SelectItem>
-                  <SelectItem value="medium">
+                  <SelectItem value='medium'>
                     Medium - Issue affecting workflow
                   </SelectItem>
-                  <SelectItem value="high">
+                  <SelectItem value='high'>
                     High - Significant impact on operations
                   </SelectItem>
-                  <SelectItem value="urgent">
+                  <SelectItem value='urgent'>
                     Urgent - Critical issue, needs immediate attention
                   </SelectItem>
                 </SelectContent>
@@ -164,53 +230,127 @@ export function NewTicket() {
             </div>
 
             {/* Subject */}
-            <div className="space-y-2">
-              <Label htmlFor="subject">Subject *</Label>
+            <div className='space-y-2'>
+              <Label htmlFor='subject'>Subject *</Label>
               <Input
-                id="subject"
-                placeholder="Brief summary of your issue"
+                id='subject'
+                placeholder='Brief summary of your issue'
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 maxLength={200}
               />
-              <p className="text-xs text-muted-foreground">
+              <p className='text-xs text-muted-foreground'>
                 {subject.length}/200 characters
               </p>
             </div>
 
             {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
+            <div className='space-y-2'>
+              <Label htmlFor='description'>Description *</Label>
               <Textarea
-                id="description"
-                placeholder="Please provide as much detail as possible. Include steps to reproduce the issue if applicable."
+                id='description'
+                placeholder='Please provide as much detail as possible. Include steps to reproduce the issue if applicable.'
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={8}
               />
-              <p className="text-xs text-muted-foreground">
+              <p className='text-xs text-muted-foreground'>
                 The more detail you provide, the faster we can help you.
               </p>
             </div>
 
+            {/* Attachments */}
+            <div className='space-y-2'>
+              <Label>Attachments (optional)</Label>
+              <div className='mt-1 space-y-3'>
+                <div className='flex items-center gap-2'>
+                  <Input
+                    id='ticket-attachments'
+                    type='file'
+                    multiple
+                    accept='image/*,.pdf,.doc,.docx,.txt,.eml,.msg,.heic,.heif'
+                    onChange={handleFileSelect}
+                    disabled={uploadingAttachments}
+                    className='hidden'
+                  />
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    onClick={() =>
+                      document.getElementById('ticket-attachments')?.click()
+                    }
+                    disabled={uploadingAttachments}
+                  >
+                    {uploadingAttachments ? (
+                      <>
+                        <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className='h-4 w-4 mr-2' />
+                        Add Attachments
+                      </>
+                    )}
+                  </Button>
+                  <span className='text-xs text-muted-foreground'>
+                    Screenshots, PDFs, documents (max 10MB each)
+                  </span>
+                </div>
+
+                {attachments.length > 0 && (
+                  <div className='space-y-1.5'>
+                    {attachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className='flex items-center justify-between gap-2 rounded-md border bg-muted/40 px-2 py-1 text-sm'
+                      >
+                        <div className='flex items-center gap-2 min-w-0 flex-1'>
+                          <Paperclip className='h-3.5 w-3.5 text-muted-foreground' />
+                          <span className='truncate'>{attachment.name}</span>
+                          <span className='text-xs text-muted-foreground'>
+                            {formatFileSize(attachment.size)}
+                          </span>
+                        </div>
+                        <Button
+                          type='button'
+                          variant='ghost'
+                          size='icon'
+                          className='h-6 w-6'
+                          onClick={() =>
+                            setAttachments((prev) =>
+                              prev.filter((a) => a.id !== attachment.id),
+                            )
+                          }
+                        >
+                          <X className='h-3 w-3' />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Submit */}
-            <div className="flex justify-end gap-4">
+            <div className='flex justify-end gap-4'>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={() => navigate('/support')}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button type='submit' disabled={loading || uploadingAttachments}>
                 {loading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className='h-4 w-4 mr-2 animate-spin' />
                     Submitting...
                   </>
                 ) : (
                   <>
-                    <Send className="h-4 w-4 mr-2" />
+                    <Send className='h-4 w-4 mr-2' />
                     Submit Ticket
                   </>
                 )}
