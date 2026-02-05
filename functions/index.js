@@ -1776,3 +1776,591 @@ exports.sendPlatformNotification = functions.https.onCall(async (data, context) 
   const result = await sendPlatformNotificationEmail(to, templateType, variables || {});
   return result;
 });
+
+// ============================================================================
+// SignNow E-Signature Contract Functions
+// ============================================================================
+
+// Lazy-load SignNow client configuration
+let signNowConfig = null;
+async function getSignNowConfig() {
+  if (signNowConfig === null) {
+    const configDoc = await db.collection('adminSettings').doc('signNow').get();
+    if (!configDoc.exists || !configDoc.data().isConfigured) {
+      throw new Error('SignNow is not configured');
+    }
+    signNowConfig = configDoc.data();
+  }
+  return signNowConfig;
+}
+
+// Get SignNow access token
+async function getSignNowAccessToken() {
+  const config = await getSignNowConfig();
+  const fetch = (await import('node-fetch')).default;
+
+  const response = await fetch(`${config.apiUrl}/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${config.basicAuthToken}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials&scope=*',
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(`SignNow auth error: ${error.error_description || response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.access_token;
+}
+
+// 21. Upload Contract to SignNow
+exports.uploadContractToSignNow = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated');
+  }
+
+  const { contractId, pdfBase64, fileName } = data;
+  if (!contractId || !pdfBase64) {
+    throw new functions.https.HttpsError('invalid-argument', 'contractId and pdfBase64 are required');
+  }
+
+  const nowISO = new Date().toISOString();
+
+  try {
+    // Verify contract ownership
+    const contractRef = db.collection('contracts').doc(contractId);
+    const contractDoc = await contractRef.get();
+    if (!contractDoc.exists || contractDoc.data().userId !== context.auth.uid) {
+      throw new functions.https.HttpsError('permission-denied', 'Not authorized to access this contract');
+    }
+
+    const config = await getSignNowConfig();
+    const accessToken = await getSignNowAccessToken();
+    const fetch = (await import('node-fetch')).default;
+    const FormData = (await import('form-data')).default;
+
+    // Upload document to SignNow
+    const formData = new FormData();
+    formData.append('file', Buffer.from(pdfBase64, 'base64'), {
+      filename: fileName || 'contract.pdf',
+      contentType: 'application/pdf',
+    });
+
+    const uploadResponse = await fetch(`${config.apiUrl}/document`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        ...formData.getHeaders(),
+      },
+      body: formData,
+    });
+
+    if (!uploadResponse.ok) {
+      const error = await uploadResponse.json().catch(() => ({}));
+      throw new Error(`Upload failed: ${error.message || uploadResponse.statusText}`);
+    }
+
+    const uploadResult = await uploadResponse.json();
+
+    // Update contract with SignNow document ID
+    await contractRef.update({
+      signNowDocumentId: uploadResult.id,
+      status: 'sent',
+      updatedAt: nowISO,
+    });
+
+    // Record audit event
+    await contractRef.collection('auditEvents').add({
+      eventType: 'uploaded_to_signnow',
+      timestamp: nowISO,
+      actorType: 'breeder',
+      actorId: context.auth.uid,
+      description: 'Document uploaded to SignNow',
+      metadata: { signNowDocumentId: uploadResult.id },
+    });
+
+    console.log(`Contract ${contractId} uploaded to SignNow: ${uploadResult.id}`);
+    return { success: true, documentId: uploadResult.id };
+  } catch (error) {
+    console.error('Error uploading to SignNow:', error);
+    throw new functions.https.HttpsError('internal', error.message);
+  }
+});
+
+// 22. Create Signing Invite
+exports.createSigningInvite = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated');
+  }
+
+  const { contractId, signers, message, subject } = data;
+  if (!contractId || !signers || signers.length === 0) {
+    throw new functions.https.HttpsError('invalid-argument', 'contractId and signers are required');
+  }
+
+  const nowISO = new Date().toISOString();
+
+  try {
+    // Verify contract ownership
+    const contractRef = db.collection('contracts').doc(contractId);
+    const contractDoc = await contractRef.get();
+    if (!contractDoc.exists || contractDoc.data().userId !== context.auth.uid) {
+      throw new functions.https.HttpsError('permission-denied', 'Not authorized');
+    }
+
+    const contract = contractDoc.data();
+    if (!contract.signNowDocumentId) {
+      throw new functions.https.HttpsError('failed-precondition', 'Document not uploaded to SignNow');
+    }
+
+    const config = await getSignNowConfig();
+    const accessToken = await getSignNowAccessToken();
+    const fetch = (await import('node-fetch')).default;
+
+    // Create invite for each signer
+    const inviteResults = [];
+    for (const signer of signers) {
+      const inviteBody = {
+        to: [{
+          email: signer.email,
+          role: signer.role || 'Signer',
+          role_id: signer.id,
+          order: signer.order || 1,
+        }],
+        from: contract.mergeData?.breeder_email || context.auth.token.email,
+        subject: subject || `Please sign: ${contract.name}`,
+        message: message || 'Please review and sign this document.',
+      };
+
+      const inviteResponse = await fetch(
+        `${config.apiUrl}/document/${contract.signNowDocumentId}/invite`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(inviteBody),
+        }
+      );
+
+      if (!inviteResponse.ok) {
+        const error = await inviteResponse.json().catch(() => ({}));
+        throw new Error(`Invite failed for ${signer.email}: ${error.message || inviteResponse.statusText}`);
+      }
+
+      const inviteResult = await inviteResponse.json();
+      inviteResults.push({ ...signer, inviteId: inviteResult.id });
+
+      // Update signer in subcollection
+      await contractRef.collection('signers').doc(signer.id).set({
+        ...signer,
+        inviteId: inviteResult.id,
+        status: 'sent',
+        updatedAt: nowISO,
+      }, { merge: true });
+    }
+
+    // Update contract status
+    await contractRef.update({
+      status: 'sent',
+      sentAt: nowISO,
+      updatedAt: nowISO,
+    });
+
+    // Record audit event
+    await contractRef.collection('auditEvents').add({
+      eventType: 'invite_sent',
+      timestamp: nowISO,
+      actorType: 'breeder',
+      actorId: context.auth.uid,
+      description: `Invites sent to ${signers.length} signer(s)`,
+      metadata: { signerEmails: signers.map(s => s.email) },
+    });
+
+    console.log(`Invites sent for contract ${contractId}`);
+    return { success: true, invites: inviteResults };
+  } catch (error) {
+    console.error('Error creating signing invite:', error);
+    throw new functions.https.HttpsError('internal', error.message);
+  }
+});
+
+// 23. Get Embedded Signing Link
+exports.getEmbeddedSigningLink = functions.https.onCall(async (data, context) => {
+  const { contractId, signerId, redirectUrl } = data;
+  if (!contractId || !signerId) {
+    throw new functions.https.HttpsError('invalid-argument', 'contractId and signerId are required');
+  }
+
+  const nowISO = new Date().toISOString();
+
+  try {
+    const contractRef = db.collection('contracts').doc(contractId);
+    const contractDoc = await contractRef.get();
+    if (!contractDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Contract not found');
+    }
+
+    const contract = contractDoc.data();
+
+    // Get signer
+    const signerRef = contractRef.collection('signers').doc(signerId);
+    const signerDoc = await signerRef.get();
+    if (!signerDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Signer not found');
+    }
+
+    const signer = signerDoc.data();
+
+    const config = await getSignNowConfig();
+    const accessToken = await getSignNowAccessToken();
+    const fetch = (await import('node-fetch')).default;
+
+    // Generate embedded signing link
+    const linkResponse = await fetch(`${config.apiUrl}/link`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        document_id: contract.signNowDocumentId,
+        invite_id: signer.inviteId,
+        auth_method: 'none',
+        redirect_uri: redirectUrl || `${process.env.APP_URL || 'https://expert-breeder.web.app'}/contracts/${contractId}/signed`,
+      }),
+    });
+
+    if (!linkResponse.ok) {
+      const error = await linkResponse.json().catch(() => ({}));
+      throw new Error(`Failed to get signing link: ${error.message || linkResponse.statusText}`);
+    }
+
+    const linkResult = await linkResponse.json();
+
+    // Update signer with embedded URL (expires in 30 minutes)
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    await signerRef.update({
+      embeddedSigningUrl: linkResult.url,
+      embeddedUrlExpiresAt: expiresAt,
+      signingMethod: 'embedded',
+      updatedAt: nowISO,
+    });
+
+    console.log(`Embedded signing link generated for contract ${contractId}, signer ${signerId}`);
+    return {
+      success: true,
+      signingUrl: linkResult.url,
+      expiresAt,
+    };
+  } catch (error) {
+    console.error('Error getting embedded signing link:', error);
+    throw new functions.https.HttpsError('internal', error.message);
+  }
+});
+
+// 24. SignNow Webhook Handler
+exports.handleSignNowWebhook = functions.https.onRequest(async (req, res) => {
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method not allowed');
+  }
+
+  const nowISO = new Date().toISOString();
+
+  try {
+    const event = req.body;
+    const eventType = event.event || event.type;
+    const documentId = event.document_id || event.data?.document_id;
+
+    console.log(`SignNow webhook received: ${eventType} for document ${documentId}`);
+
+    // Log webhook event for debugging
+    const eventRef = await db.collection('signNowWebhookEvents').add({
+      eventType,
+      documentId,
+      timestamp: nowISO,
+      rawPayload: event,
+      processed: false,
+    });
+
+    if (!documentId) {
+      console.log('No document ID in webhook payload');
+      await eventRef.update({ processed: true, error: 'No document ID' });
+      return res.json({ received: true });
+    }
+
+    // Find contract by SignNow document ID
+    const contractsQuery = await db.collection('contracts')
+      .where('signNowDocumentId', '==', documentId)
+      .limit(1)
+      .get();
+
+    if (contractsQuery.empty) {
+      console.log(`No contract found for SignNow document ${documentId}`);
+      await eventRef.update({ processed: true, error: 'Contract not found' });
+      return res.json({ received: true });
+    }
+
+    const contractDoc = contractsQuery.docs[0];
+    const contractRef = contractDoc.ref;
+
+    // Process event based on type
+    switch (eventType) {
+      case 'document.viewed':
+      case 'document_viewed': {
+        const viewerEmail = event.data?.viewer_email || event.signer_email;
+        if (viewerEmail) {
+          // Find and update signer
+          const signersQuery = await contractRef.collection('signers')
+            .where('email', '==', viewerEmail)
+            .limit(1)
+            .get();
+
+          if (!signersQuery.empty) {
+            await signersQuery.docs[0].ref.update({
+              status: 'viewed',
+              viewedAt: nowISO,
+              updatedAt: nowISO,
+            });
+          }
+
+          await contractRef.update({
+            status: 'viewed',
+            updatedAt: nowISO,
+          });
+
+          await contractRef.collection('auditEvents').add({
+            eventType: 'viewed',
+            timestamp: nowISO,
+            actorType: 'signer',
+            actorEmail: viewerEmail,
+            description: `Document viewed by ${viewerEmail}`,
+          });
+        }
+        break;
+      }
+
+      case 'document.signed':
+      case 'document_signed': {
+        const signerEmail = event.data?.signer_email || event.signer_email;
+        if (signerEmail) {
+          // Update signer status
+          const signersQuery = await contractRef.collection('signers')
+            .where('email', '==', signerEmail)
+            .limit(1)
+            .get();
+
+          if (!signersQuery.empty) {
+            await signersQuery.docs[0].ref.update({
+              status: 'signed',
+              signedAt: nowISO,
+              signedFromIp: event.data?.ip_address || event.ip_address,
+              updatedAt: nowISO,
+            });
+          }
+
+          await contractRef.collection('auditEvents').add({
+            eventType: 'signed',
+            timestamp: nowISO,
+            actorType: 'signer',
+            actorEmail: signerEmail,
+            description: `Document signed by ${signerEmail}`,
+            ipAddress: event.data?.ip_address || event.ip_address,
+          });
+
+          // Check if all signers have signed
+          const allSigners = await contractRef.collection('signers').get();
+          const allSigned = allSigners.docs.every(d => d.data().status === 'signed');
+
+          if (allSigned) {
+            await contractRef.update({
+              status: 'signed',
+              completedAt: nowISO,
+              updatedAt: nowISO,
+            });
+
+            await contractRef.collection('auditEvents').add({
+              eventType: 'completed',
+              timestamp: nowISO,
+              actorType: 'system',
+              description: 'All parties have signed the document',
+            });
+
+            // Queue signed PDF download
+            await db.collection('signNowDownloadQueue').add({
+              contractId: contractDoc.id,
+              documentId,
+              status: 'pending',
+              createdAt: nowISO,
+              retryCount: 0,
+            });
+
+            console.log(`Contract ${contractDoc.id} completed, queued for PDF download`);
+          } else {
+            await contractRef.update({
+              status: 'partially_signed',
+              updatedAt: nowISO,
+            });
+          }
+        }
+        break;
+      }
+
+      case 'document.declined':
+      case 'document_declined': {
+        const declinerEmail = event.data?.signer_email || event.signer_email;
+        const declineReason = event.data?.decline_reason || event.decline_reason;
+
+        if (declinerEmail) {
+          const signersQuery = await contractRef.collection('signers')
+            .where('email', '==', declinerEmail)
+            .limit(1)
+            .get();
+
+          if (!signersQuery.empty) {
+            await signersQuery.docs[0].ref.update({
+              status: 'declined',
+              declinedAt: nowISO,
+              declineReason,
+              updatedAt: nowISO,
+            });
+          }
+
+          await contractRef.update({
+            status: 'declined',
+            updatedAt: nowISO,
+          });
+
+          await contractRef.collection('auditEvents').add({
+            eventType: 'declined',
+            timestamp: nowISO,
+            actorType: 'signer',
+            actorEmail: declinerEmail,
+            description: `Document declined by ${declinerEmail}`,
+            metadata: { reason: declineReason },
+          });
+        }
+        break;
+      }
+
+      default:
+        console.log(`Unhandled SignNow event type: ${eventType}`);
+    }
+
+    await eventRef.update({ processed: true, processedAt: nowISO });
+    res.json({ received: true });
+
+  } catch (error) {
+    console.error('Error handling SignNow webhook:', error);
+    res.status(500).send('Internal error');
+  }
+});
+
+// 25. Process Signed PDF Download Queue
+exports.processSignedPdfDownloads = functions.pubsub
+  .schedule('every 5 minutes')
+  .onRun(async (context) => {
+    const nowISO = new Date().toISOString();
+
+    try {
+      const pendingDownloads = await db.collection('signNowDownloadQueue')
+        .where('status', '==', 'pending')
+        .limit(10)
+        .get();
+
+      if (pendingDownloads.empty) {
+        return null;
+      }
+
+      console.log(`Processing ${pendingDownloads.size} signed PDF downloads`);
+
+      const config = await getSignNowConfig();
+      const accessToken = await getSignNowAccessToken();
+      const fetch = (await import('node-fetch')).default;
+
+      for (const downloadDoc of pendingDownloads.docs) {
+        const { contractId, documentId, retryCount } = downloadDoc.data();
+
+        try {
+          await downloadDoc.ref.update({ status: 'processing' });
+
+          // Download signed PDF from SignNow
+          const pdfResponse = await fetch(
+            `${config.apiUrl}/document/${documentId}/download?type=collapsed`,
+            {
+              headers: { 'Authorization': `Bearer ${accessToken}` },
+            }
+          );
+
+          if (!pdfResponse.ok) {
+            throw new Error(`Failed to download PDF: ${pdfResponse.statusText}`);
+          }
+
+          const pdfBuffer = await pdfResponse.buffer();
+
+          // Upload to Firebase Storage
+          const storage = admin.storage();
+          const bucket = storage.bucket();
+          const filePath = `contracts/${contractId}/signed_${Date.now()}.pdf`;
+          const file = bucket.file(filePath);
+
+          await file.save(pdfBuffer, {
+            metadata: { contentType: 'application/pdf' },
+          });
+
+          // Get download URL
+          const [signedUrl] = await file.getSignedUrl({
+            action: 'read',
+            expires: '03-01-2030', // Long expiration
+          });
+
+          // Update contract with signed PDF URL
+          const contractRef = db.collection('contracts').doc(contractId);
+          await contractRef.update({
+            signedPdfUrl: signedUrl,
+            updatedAt: nowISO,
+          });
+
+          await contractRef.collection('auditEvents').add({
+            eventType: 'downloaded',
+            timestamp: nowISO,
+            actorType: 'system',
+            description: 'Signed PDF downloaded and stored',
+          });
+
+          await downloadDoc.ref.update({
+            status: 'completed',
+            completedAt: nowISO,
+          });
+
+          console.log(`Signed PDF downloaded for contract ${contractId}`);
+
+        } catch (error) {
+          console.error(`Error downloading PDF for ${contractId}:`, error);
+
+          // Retry up to 3 times
+          if (retryCount < 3) {
+            await downloadDoc.ref.update({
+              status: 'pending',
+              retryCount: retryCount + 1,
+              lastError: error.message,
+            });
+          } else {
+            await downloadDoc.ref.update({
+              status: 'failed',
+              error: error.message,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error in processSignedPdfDownloads:', error);
+    }
+
+    return null;
+  });

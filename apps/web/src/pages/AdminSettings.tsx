@@ -26,6 +26,7 @@ import { DefaultTasksManager } from '@/components/DefaultTasksManager';
 import { ForumCategoryManager } from '@/components/forum';
 import { PlatformEmailSettings } from '@/components/admin/PlatformEmailSettings';
 import { TawkToSettings } from '@/components/admin/TawkToSettings';
+import { SignNowSettings } from '@/components/admin/SignNowSettings';
 
 export function AdminSettings() {
   const navigate = useNavigate();
@@ -334,13 +335,14 @@ export function AdminSettings() {
 
       {/* Tabbed Management Sections */}
       <Tabs defaultValue='global' className='w-full'>
-        <TabsList className='grid w-full grid-cols-9'>
+        <TabsList className='grid w-full grid-cols-10'>
           <TabsTrigger value='global'>Global Lists</TabsTrigger>
           <TabsTrigger value='tasks'>Task Templates</TabsTrigger>
           <TabsTrigger value='forum'>Forum</TabsTrigger>
           <TabsTrigger value='registries'>Registries</TabsTrigger>
           <TabsTrigger value='subscriptions'>Subscriptions</TabsTrigger>
           <TabsTrigger value='stripe'>Stripe</TabsTrigger>
+          <TabsTrigger value='contracts'>Contracts</TabsTrigger>
           <TabsTrigger value='platformEmail'>Platform Email</TabsTrigger>
           <TabsTrigger value='liveChat'>Live Chat</TabsTrigger>
           <TabsTrigger value='audit'>Audit Logs</TabsTrigger>
@@ -376,6 +378,11 @@ export function AdminSettings() {
         {/* Stripe Settings Tab */}
         <TabsContent value='stripe'>
           <StripeSettings />
+        </TabsContent>
+
+        {/* Contracts (SignNow) Tab */}
+        <TabsContent value='contracts'>
+          <SignNowSettings />
         </TabsContent>
 
         {/* Platform Email Tab */}

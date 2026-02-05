@@ -28,6 +28,7 @@ import {
   Mail,
   LifeBuoy,
   Ticket,
+  FileSignature,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
@@ -85,6 +86,7 @@ const breederNavigation: NavGroup[] = [
       { name: 'Inquiries', path: '/inquiries', icon: MessageSquare },
       { name: 'Connections', path: '/connections', icon: GitFork },
       { name: 'Community', path: '/community', icon: Users },
+      { name: 'Contracts', path: '/contracts', icon: FileSignature },
       { name: 'Newsletter', path: '/newsletter', icon: Mail },
       { name: 'Forum', path: '/forum', icon: MessagesSquare },
       { name: 'Analytics', path: '/analytics', icon: BarChart3 },

@@ -649,6 +649,71 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // SignNow Contract Management Collections
+    // ============================================================================
+
+    // Contracts - breeders can manage their own contracts, admins can view all
+    match /contracts/{contractId} {
+      // List - authenticated users can list (query filters by userId)
+      allow list: if isAuthenticated();
+
+      // Get - owner can read their own contracts, admins can read all
+      allow get: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Create - breeder must be the owner
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+
+      // Update - only owner can update their contracts
+      allow update: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
+
+      // Delete - only owner or admin can delete
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Signers subcollection - owner only
+      match /signers/{signerId} {
+        allow read, write: if isAuthenticated() &&
+          get(/databases/$(database)/documents/contracts/$(contractId)).data.userId == request.auth.uid;
+      }
+
+      // Audit events subcollection - read only for owner, write only via cloud functions
+      match /auditEvents/{eventId} {
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/contracts/$(contractId)).data.userId == request.auth.uid ||
+          isAdmin()
+        );
+        allow write: if false; // Only cloud functions can write audit events
+      }
+    }
+
+    // Contract templates in breeder profiles
+    match /breederProfiles/{userId}/contractTemplates/{templateId} {
+      allow read: if isAuthenticated() && userId == request.auth.uid;
+      allow create: if isAuthenticated() && userId == request.auth.uid;
+      allow update: if isAuthenticated() && userId == request.auth.uid;
+      allow delete: if isAuthenticated() && userId == request.auth.uid;
+    }
+
+    // SignNow webhook events - admin only read, cloud functions write
+    match /signNowWebhookEvents/{eventId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only cloud functions can write
+    }
+
+    // SignNow download queue - admin only read, cloud functions write
+    match /signNowDownloadQueue/{queueId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only cloud functions can write
+    }
+
+    // ============================================================================
     // Collection Group Rules (for cross-collection queries)
     // ============================================================================
 

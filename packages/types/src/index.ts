@@ -15,3 +15,4 @@ export * from './puppyEvaluation';
 export * from './breederConnection';
 export * from './ticketing';
 export * from './liveChat';
+export * from './signnow';

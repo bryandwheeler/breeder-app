@@ -37,6 +37,8 @@ import { BuyerPortal } from '@/pages/BuyerPortal';
 import { HealthRecords } from '@/pages/HealthRecords';
 import { StudJobsPage } from '@/pages/StudJobsPage';
 import { LitterForecast } from '@/pages/LitterForecast';
+import { Contracts } from '@/pages/Contracts';
+import { ContractDetail } from '@/pages/ContractDetail';
 import { BreedingPlanner } from '@/pages/BreedingPlanner';
 import { CustomerAnalytics } from '@/pages/CustomerAnalytics';
 import { Help } from '@/pages/Help';
@@ -555,6 +557,22 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <StudJobsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/contracts'
+                element={
+                  <ProtectedRoute>
+                    <Contracts />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/contracts/:contractId'
+                element={
+                  <ProtectedRoute>
+                    <ContractDetail />
                   </ProtectedRoute>
                 }
               />
