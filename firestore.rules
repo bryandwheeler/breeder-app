@@ -247,11 +247,12 @@ service cloud.firestore {
         (resource.data.userId == request.auth.uid || profileId == request.auth.uid);
     }
 
-    // Dog connection requests - users can read requests they sent or received
+    // Dog connection requests - users can read requests they sent or received, admins can read all (for impersonation)
     match /dogConnectionRequests/{requestId} {
       allow read: if isAuthenticated() &&
         (resource.data.requesterId == request.auth.uid ||
-         resource.data.ownerId == request.auth.uid);
+         resource.data.ownerId == request.auth.uid ||
+         isAdmin());
       allow create: if isAuthenticated() && request.resource.data.requesterId == request.auth.uid;
       allow update: if isAuthenticated() &&
         (resource.data.ownerId == request.auth.uid ||
@@ -259,19 +260,23 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && resource.data.requesterId == request.auth.uid;
     }
 
-    // Notifications - users can only read/write their own notifications
+    // Notifications - users can only read/write their own notifications, admins can read all (for impersonation)
     match /notifications/{notificationId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Heat cycles - users can only read/write their own heat cycle records
-    // Staff with health record permissions can also access
+    // Staff with health record permissions can also access, admins can read all (for impersonation)
     match /heatCycles/{cycleId} {
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
+        isAdmin() ||
         hasStaffPermission(resource.data.userId, 'canViewHealthRecords')
       );
       allow create: if isAuthenticated() && (
@@ -289,10 +294,11 @@ service cloud.firestore {
     }
 
     // Breeding records - users can only read/write their own breeding records
-    // Staff with health record permissions can also access
+    // Staff with health record permissions can also access, admins can read all (for impersonation)
     match /breedingRecords/{recordId} {
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
+        isAdmin() ||
         hasStaffPermission(resource.data.userId, 'canViewHealthRecords')
       );
       allow create: if isAuthenticated() && (
@@ -310,10 +316,11 @@ service cloud.firestore {
     }
 
     // Inquiries - users can only read/write their own inquiries
-    // Staff with inquiry permissions can also access
+    // Staff with inquiry permissions can also access, admins can read all (for impersonation)
     match /inquiries/{inquiryId} {
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
+        isAdmin() ||
         hasStaffPermission(resource.data.userId, 'canViewInquiries')
       );
       allow create: if isAuthenticated();
@@ -328,10 +335,11 @@ service cloud.firestore {
     }
 
     // Waitlist entries - users can only read/write their own waitlist entries
-    // Staff with waitlist permissions can also access
+    // Staff with waitlist permissions can also access, admins can read all (for impersonation)
     match /waitlistEntries/{entryId} {
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
+        isAdmin() ||
         hasStaffPermission(resource.data.userId, 'canViewWaitlist')
       );
       allow create: if isAuthenticated();
@@ -383,10 +391,11 @@ service cloud.firestore {
     }
 
     // Waitlist (public submissions) - anyone can create, only owner can read/update/delete
-    // Staff with waitlist permissions can also access
+    // Staff with waitlist permissions can also access, admins can read all (for impersonation)
     match /waitlist/{waitlistId} {
       allow read: if isAuthenticated() && (
         resource.data.breederId == request.auth.uid ||
+        isAdmin() ||
         hasStaffPermission(resource.data.breederId, 'canViewWaitlist')
       );
       allow create: if true; // Public can submit
@@ -400,11 +409,12 @@ service cloud.firestore {
       );
     }
 
-    // Connection requests - users can read requests they sent or received
+    // Connection requests - users can read requests they sent or received, admins can read all (for impersonation)
     match /connectionRequests/{requestId} {
       allow read: if isAuthenticated() &&
         (resource.data.requesterId == request.auth.uid ||
-         resource.data.ownerId == request.auth.uid);
+         resource.data.ownerId == request.auth.uid ||
+         isAdmin());
       allow create: if isAuthenticated() && request.resource.data.requesterId == request.auth.uid;
       allow update: if isAuthenticated() &&
         (resource.data.ownerId == request.auth.uid ||
@@ -413,12 +423,13 @@ service cloud.firestore {
     }
 
     // Stud jobs - users can only read/write their own stud jobs
-    // Staff with stud job permissions can also access
+    // Staff with stud job permissions can also access, admins can read all (for impersonation)
     match /studJobs/{jobId} {
       // Allow reading stud jobs (both get and list operations)
       // For list operations with where() clauses, Firestore ensures the query matches the security rule
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
+        isAdmin() ||
         hasStaffPermission(resource.data.userId, 'canViewStudJobs')
       );
 
