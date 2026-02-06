@@ -463,6 +463,12 @@ export interface Puppy {
   updates?: PuppyUpdate[];
   milestones?: Milestone[];
   notes?: string;
+
+  // Website visibility
+  showOnWebsite?: boolean;
+  websiteDescription?: string;
+  websitePrice?: number;
+  websiteFeatured?: boolean;
 }
 
 // Uploaded Contract Document

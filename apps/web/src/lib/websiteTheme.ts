@@ -80,8 +80,15 @@ export function getFontFamilyClass(fontFamily?: string): string {
 
 /**
  * Get logo URL with fallback to Expert Breeder logo
+ * @param settings - Website settings
+ * @param forDarkBackground - If true, returns the dark mode logo (for use on dark backgrounds)
  */
-export function getLogoUrl(settings: WebsiteSettings): string {
+export function getLogoUrl(settings: WebsiteSettings, forDarkBackground = false): string {
+  if (forDarkBackground) {
+    // For dark backgrounds, prefer dark logo, fall back to regular logo
+    return settings.logoUrlDark || settings.logoUrl || '/expert-breeder-logo.png';
+  }
+  // For light backgrounds, use regular logo
   return settings.logoUrl || '/expert-breeder-logo.png';
 }
 

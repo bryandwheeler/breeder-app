@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { useDogStore, useCrmStore, getExternalBreederInfo, useWaitlistStore, useEvaluationStore } from '@breeder/firebase';
+import { useDogStore, useCrmStore, getExternalBreederInfo, useWaitlistStore, useEvaluationStore, useWebsiteStore } from '@breeder/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +38,7 @@ export function LitterDetails() {
   const { currentUser } = useAuth();
   const { customers } = useCrmStore();
   const { waitlist, subscribeToWaitlist, getWaitlistForLitter, assignPuppyToWaitlistEntry } = useWaitlistStore();
+  const { syncPuppyToWebsite, removePuppyFromWebsite } = useWebsiteStore();
   const litter = litters.find((l) => l.id === id);
   const [editingPuppy, setEditingPuppy] = useState<Puppy | null>(null);
   const [puppyDialogOpen, setPuppyDialogOpen] = useState(false);
@@ -164,8 +165,36 @@ export function LitterDetails() {
       }
     }
 
+    // Sync website visibility
+    if (currentUser?.uid) {
+      const breed = dam?.breed || '';
+      if (cleanedPuppy.showOnWebsite) {
+        await syncPuppyToWebsite(currentUser.uid, litter, cleanedPuppy, breed);
+      } else {
+        // If previously on website but now toggled off, remove it
+        await removePuppyFromWebsite(currentUser.uid, cleanedPuppy.id);
+      }
+    }
+
     setPuppyDialogOpen(false);
     setEditingPuppy(null);
+  };
+
+  const handleToggleWebsite = async (puppy: Puppy) => {
+    const toggled = { ...puppy, showOnWebsite: !puppy.showOnWebsite };
+    const updatedPuppies = litter.puppies.map((p) =>
+      p.id === puppy.id ? toggled : p
+    );
+    await updateLitter(litter.id, { puppies: updatedPuppies });
+
+    if (currentUser?.uid) {
+      const breed = dam?.breed || '';
+      if (toggled.showOnWebsite) {
+        await syncPuppyToWebsite(currentUser.uid, litter, toggled, breed);
+      } else {
+        await removePuppyFromWebsite(currentUser.uid, puppy.id);
+      }
+    }
   };
 
   const handleDeletePuppy = async (puppyId: string) => {
@@ -173,6 +202,11 @@ export function LitterDetails() {
 
     const updatedPuppies = litter.puppies.filter((p) => p.id !== puppyId);
     await updateLitter(litter.id, { puppies: updatedPuppies });
+
+    // Also remove from website if it was listed
+    if (currentUser?.uid) {
+      await removePuppyFromWebsite(currentUser.uid, puppyId);
+    }
   };
 
   const handleDeletePuppyPhoto = async (puppy: Puppy, photoIndex: number) => {
@@ -622,6 +656,7 @@ export function LitterDetails() {
                   onPhotoDelete={handleDeletePuppyPhoto}
                   onGenerateContract={handleGenerateContract}
                   onGenerateHealthGuarantee={handleGenerateHealthGuarantee}
+                  onToggleWebsite={handleToggleWebsite}
                 />
               );
             })}

@@ -233,9 +233,10 @@ service cloud.firestore {
       }
     }
 
-    // Breeder profiles - users can read all profiles (for search) but only write their own
+    // Breeder profiles - public read for website display, only write their own
     match /breederProfiles/{profileId} {
-      allow read: if isAuthenticated();
+      // Public read allowed for public website rendering
+      allow read: if true;
       // Allow create if the userId in the document matches the authenticated user
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       // Allow update if the existing document's userId matches the authenticated user
@@ -539,13 +540,13 @@ service cloud.firestore {
     }
 
     // Domains - for subdomain and custom domain management
-    // Allow list queries for availability checking (authenticated users only)
+    // Allow public list queries for subdomain resolution (needed for public websites)
     // Only allow full document read/write for the owner
     match /domains/{domainId} {
-      // Allow list queries for subdomain availability checking
-      // The query must filter by subdomain field for availability checks
-      allow list: if isAuthenticated();
-      // Only owner can get their full domain document
+      // Allow public list queries for subdomain resolution
+      // This is needed so visitors can access breeder websites via subdomain
+      allow list: if true;
+      // Only owner can get their full domain document details
       allow get: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;

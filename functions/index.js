@@ -2604,3 +2604,576 @@ exports.checkDomainStatus = functions.pubsub
 
     return null;
   });
+
+// ========== FIREBASE HOSTING CUSTOM DOMAIN AUTOMATION ==========
+
+// Firebase project and site configuration
+const FIREBASE_PROJECT_ID = 'expert-breeder';
+const FIREBASE_SITE_ID = 'expert-breeder'; // Usually same as project ID
+
+// Lazy-load GoogleAuth to avoid deployment timeout
+let googleAuthClient = null;
+
+/**
+ * Get an authenticated access token for Firebase Hosting API
+ */
+async function getHostingAccessToken() {
+  if (!googleAuthClient) {
+    const { GoogleAuth } = require('google-auth-library');
+    googleAuthClient = new GoogleAuth({
+      scopes: ['https://www.googleapis.com/auth/firebase.hosting'],
+    });
+  }
+  const client = await googleAuthClient.getClient();
+  const accessToken = await client.getAccessToken();
+  return accessToken.token;
+}
+
+/**
+ * Add a custom domain to Firebase Hosting
+ * This initiates the domain verification and SSL provisioning process
+ */
+exports.addCustomDomainToHosting = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  }
+
+  const { domain } = data;
+  if (!domain) {
+    throw new functions.https.HttpsError('invalid-argument', 'Domain is required');
+  }
+
+  const userId = context.auth.uid;
+  const nowISO = new Date().toISOString();
+
+  try {
+    // Verify user owns this domain configuration
+    const settingsRef = db.collection('websiteSettings').doc(userId);
+    const settingsDoc = await settingsRef.get();
+
+    if (!settingsDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Website settings not found');
+    }
+
+    // Check subscription tier (must be 'pro')
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    const subscriptionTier = userDoc.data()?.subscriptionTier || 'free';
+
+    if (subscriptionTier !== 'pro') {
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        'Custom domains require a Pro subscription'
+      );
+    }
+
+    // Normalize domain (remove protocol if present)
+    const normalizedDomain = domain.toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/\/$/, '');
+
+    // Update Firestore with pending status
+    await settingsRef.update({
+      'domain.customDomain': normalizedDomain,
+      'domain.customDomainStatus': 'pending',
+      'domain.verificationError': admin.firestore.FieldValue.delete(),
+      updatedAt: nowISO,
+    });
+
+    // Get access token for Firebase Hosting API
+    const accessToken = await getHostingAccessToken();
+    const fetch = (await import('node-fetch')).default;
+
+    console.log(`[addCustomDomainToHosting] Adding domain: ${normalizedDomain}`);
+
+    // Use the correct API endpoint: customDomains (not just domains)
+    // See: https://firebasehosting.googleapis.com/$discovery/rest?version=v1beta1
+    const customDomainsUrl = `https://firebasehosting.googleapis.com/v1beta1/projects/${FIREBASE_PROJECT_ID}/sites/${FIREBASE_SITE_ID}/customDomains`;
+
+    // First check if domain already exists
+    const getDomainUrl = `${customDomainsUrl}/${encodeURIComponent(normalizedDomain)}`;
+    console.log(`[addCustomDomainToHosting] Checking if domain exists: ${getDomainUrl}`);
+
+    let domainData;
+    let status = 'pending';
+    let sslStatus = 'pending';
+
+    const checkResponse = await fetch(getDomainUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+
+    if (checkResponse.ok) {
+      // Domain already exists
+      domainData = await checkResponse.json();
+      console.log(`[addCustomDomainToHosting] Domain exists:`, JSON.stringify(domainData, null, 2));
+    } else {
+      // Domain doesn't exist, create it using POST with customDomainId query parameter
+      console.log(`[addCustomDomainToHosting] Domain not found, creating...`);
+
+      const createUrl = `${customDomainsUrl}?customDomainId=${encodeURIComponent(normalizedDomain)}`;
+      console.log(`[addCustomDomainToHosting] Creating domain at: ${createUrl}`);
+
+      const createResponse = await fetch(createUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      const createData = await createResponse.json();
+      console.log(`[addCustomDomainToHosting] Create response:`, JSON.stringify(createData, null, 2));
+
+      if (!createResponse.ok) {
+        console.error('Firebase Hosting API error:', createData);
+        await settingsRef.update({
+          'domain.customDomainStatus': 'failed',
+          'domain.verificationError': createData.error?.message || 'Failed to add domain to hosting',
+          updatedAt: nowISO,
+        });
+        throw new functions.https.HttpsError(
+          'internal',
+          createData.error?.message || 'Failed to add domain to Firebase Hosting'
+        );
+      }
+
+      domainData = createData;
+    }
+
+    // Parse domain status
+    // CustomDomain status fields: ownershipState, certState, hostState
+    const ownershipState = domainData.ownershipState || domainData.ownership?.status;
+    const certState = domainData.certState || domainData.cert?.state;
+    const hostState = domainData.hostState;
+
+    console.log(`[addCustomDomainToHosting] States - ownership: ${ownershipState}, cert: ${certState}, host: ${hostState}`);
+
+    // Determine overall status
+    if (ownershipState === 'OWNERSHIP_ACTIVE' && certState === 'CERT_ACTIVE') {
+      status = 'active';
+      sslStatus = 'active';
+    } else if (ownershipState === 'OWNERSHIP_ACTIVE') {
+      status = 'verified';
+      sslStatus = certState === 'CERT_ACTIVE' ? 'active' : 'provisioning';
+    } else if (ownershipState === 'OWNERSHIP_PENDING') {
+      status = 'pending_verification';
+    } else {
+      status = 'pending';
+    }
+
+    // Parse required DNS records from requiredDnsUpdates
+    // Firebase API returns DnsRecordSet objects: { domainName, records: [{ type, rdata, requiredAction }] }
+    const requiredDnsUpdates = domainData.requiredDnsUpdates || {};
+    const desiredRecordSets = requiredDnsUpdates.desired || [];
+    console.log('[addCustomDomainToHosting] requiredDnsUpdates.desired:', JSON.stringify(desiredRecordSets, null, 2));
+
+    const aRecords = [];
+    const txtRecords = [];
+    let acmeChallengeToken = null;
+
+    for (const recordSet of desiredRecordSets) {
+      const domainName = recordSet.domainName || '';
+      const records = recordSet.records || [];
+
+      // Also handle flat format (type/rrdatas) in case API returns that
+      if (recordSet.type && !records.length) {
+        if (recordSet.type === 'A') {
+          aRecords.push(...(recordSet.rrdatas || []));
+        } else if (recordSet.type === 'TXT') {
+          if (domainName.includes('_acme-challenge')) {
+            acmeChallengeToken = recordSet.rrdatas?.[0] || null;
+          } else {
+            txtRecords.push(...(recordSet.rrdatas || []));
+          }
+        }
+        continue;
+      }
+
+      // Handle DnsRecordSet format: { domainName, records: [{ type, rdata, requiredAction }] }
+      for (const record of records) {
+        if (record.type === 'A') {
+          if (record.rdata) aRecords.push(record.rdata);
+        } else if (record.type === 'TXT') {
+          if (domainName.includes('_acme-challenge')) {
+            acmeChallengeToken = record.rdata;
+            console.log('[addCustomDomainToHosting] Found ACME challenge token:', acmeChallengeToken);
+          } else {
+            if (record.rdata) txtRecords.push(record.rdata);
+          }
+        }
+      }
+    }
+
+    // Also check domainData.cert.verification and domainData.verification paths for ACME
+    if (!acmeChallengeToken) {
+      const certVerification = domainData.cert?.verification?.dns?.desired || domainData.verification?.dns?.desired || [];
+      for (const entry of certVerification) {
+        if (entry.domainName?.includes('_acme-challenge')) {
+          const acmeRecord = (entry.records || []).find(r => r.type === 'TXT');
+          if (acmeRecord?.rdata) {
+            acmeChallengeToken = acmeRecord.rdata;
+            console.log('[addCustomDomainToHosting] Found ACME token in cert.verification:', acmeChallengeToken);
+          }
+        }
+      }
+    }
+
+    // Use default Firebase Hosting IPs if none specified
+    const firebaseARecords = aRecords.length > 0 ? aRecords : ['199.36.158.100'];
+    console.log('[addCustomDomainToHosting] Parsed - A records:', firebaseARecords, 'TXT records:', txtRecords, 'ACME token:', acmeChallengeToken);
+
+    // Update Firestore with the status and configuration info
+    const updateData = {
+      'domain.customDomain': normalizedDomain,
+      'domain.customDomainStatus': status,
+      'domain.sslStatus': sslStatus,
+      'domain.aRecords': firebaseARecords,
+      'domain.cnameTarget': 'expert-breeder.web.app',
+      updatedAt: nowISO,
+    };
+
+    // Add TXT records if available (for ownership verification)
+    if (txtRecords.length > 0) {
+      updateData['domain.verificationToken'] = txtRecords[0];
+    }
+
+    // Add ACME challenge token if available (for SSL verification)
+    if (acmeChallengeToken) {
+      updateData['domain.acmeChallengeToken'] = acmeChallengeToken;
+    }
+
+    // Clear any previous error
+    updateData['domain.verificationError'] = admin.firestore.FieldValue.delete();
+
+    await settingsRef.update(updateData);
+
+    return {
+      success: true,
+      domain: normalizedDomain,
+      status,
+      sslStatus,
+      aRecords: firebaseARecords,
+      txtRecords,
+      acmeChallengeToken,
+      cnameTarget: 'expert-breeder.web.app',
+      message: status === 'active'
+        ? 'Domain is active and SSL is configured'
+        : status === 'verified'
+        ? 'Domain is verified, SSL is being provisioned'
+        : status === 'pending_verification'
+        ? 'Please add the required DNS records to verify domain ownership'
+        : 'Domain is being configured',
+    };
+  } catch (error) {
+    console.error('Error adding custom domain:', error);
+
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+
+    throw new functions.https.HttpsError('internal', 'Failed to add custom domain: ' + error.message);
+  }
+});
+
+/**
+ * Check custom domain status from Firebase Hosting API
+ * Returns current verification and SSL status
+ */
+exports.getCustomDomainStatus = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  }
+
+  const { domain } = data;
+  if (!domain) {
+    throw new functions.https.HttpsError('invalid-argument', 'Domain is required');
+  }
+
+  const userId = context.auth.uid;
+  const nowISO = new Date().toISOString();
+
+  try {
+    // Verify user owns this domain
+    const settingsRef = db.collection('websiteSettings').doc(userId);
+    const settingsDoc = await settingsRef.get();
+
+    if (!settingsDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Website settings not found');
+    }
+
+    const settings = settingsDoc.data();
+    if (settings.domain?.customDomain !== domain) {
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        'Domain does not match your configuration'
+      );
+    }
+
+    // Get access token and fetch status from Firebase Hosting
+    const accessToken = await getHostingAccessToken();
+    const fetch = (await import('node-fetch')).default;
+
+    // Normalize domain (remove trailing dot if present)
+    const normalizedDomain = domain.replace(/\.$/, '');
+
+    // Use the customDomains endpoint (not domains)
+    const customDomainsUrl = `https://firebasehosting.googleapis.com/v1beta1/projects/${FIREBASE_PROJECT_ID}/sites/${FIREBASE_SITE_ID}/customDomains/${encodeURIComponent(normalizedDomain)}`;
+
+    console.log('Fetching domain status from:', customDomainsUrl);
+
+    const response = await fetch(customDomainsUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return {
+          success: false,
+          status: 'not_found',
+          message: 'Domain not found in Firebase Hosting. Please add it first.',
+        };
+      }
+      const errorText = await response.text();
+      console.error('Failed to get domain status:', response.status, errorText);
+      throw new Error(`Failed to get domain status: ${response.status}`);
+    }
+
+    const domainData = await response.json();
+    console.log('Domain status response:', JSON.stringify(domainData, null, 2));
+
+    // Extract status information from CustomDomain response
+    let status = 'pending';
+    let sslStatus = 'pending';
+    let verificationToken = null;
+    let acmeChallengeToken = null;
+    const aRecords = [];
+
+    // Parse ownership and cert states from CustomDomain response
+    // certState can be at top level (certState) or nested (cert.state)
+    const ownershipState = domainData.ownershipState;
+    const certState = domainData.certState || domainData.cert?.state;
+    const hostState = domainData.hostState;
+
+    console.log('Parsed states:', { ownershipState, certState, hostState });
+
+    // Parse required DNS updates for verification token, A records, and ACME token
+    // Firebase API returns DnsRecordSet objects: { domainName, records: [{ type, rdata, requiredAction }] }
+    const requiredDnsUpdates = domainData.requiredDnsUpdates || {};
+    const desiredRecordSets = requiredDnsUpdates.desired || [];
+    console.log('requiredDnsUpdates.desired:', JSON.stringify(desiredRecordSets, null, 2));
+
+    for (const recordSet of desiredRecordSets) {
+      const domainName = recordSet.domainName || '';
+      const records = recordSet.records || [];
+
+      // Handle flat format (type/rrdatas) in case API returns that
+      if (recordSet.type && !records.length) {
+        if (recordSet.type === 'A') {
+          aRecords.push(...(recordSet.rrdatas || []));
+        } else if (recordSet.type === 'TXT') {
+          if (domainName.includes('_acme-challenge')) {
+            acmeChallengeToken = recordSet.rrdatas?.[0] || null;
+          } else if (!verificationToken) {
+            verificationToken = recordSet.rrdatas?.[0] || null;
+          }
+        }
+        continue;
+      }
+
+      // Handle DnsRecordSet format: { domainName, records: [{ type, rdata, requiredAction }] }
+      for (const record of records) {
+        if (record.type === 'A') {
+          if (record.rdata) aRecords.push(record.rdata);
+        } else if (record.type === 'TXT') {
+          if (domainName.includes('_acme-challenge')) {
+            acmeChallengeToken = record.rdata;
+            console.log('Found ACME challenge token:', acmeChallengeToken);
+          } else if (!verificationToken) {
+            verificationToken = record.rdata;
+          }
+        }
+      }
+    }
+
+    // Also check cert.verification and verification paths for ACME
+    if (!acmeChallengeToken) {
+      const certVerification = domainData.cert?.verification?.dns?.desired || domainData.verification?.dns?.desired || [];
+      for (const entry of certVerification) {
+        if (entry.domainName?.includes('_acme-challenge')) {
+          const acmeRecord = (entry.records || []).find(r => r.type === 'TXT');
+          if (acmeRecord?.rdata) {
+            acmeChallengeToken = acmeRecord.rdata;
+            console.log('Found ACME token in cert.verification:', acmeChallengeToken);
+          }
+        }
+      }
+    }
+
+    // If no A records found, use Firebase's default
+    if (aRecords.length === 0) {
+      aRecords.push('199.36.158.100');
+    }
+
+    console.log('Parsed - A records:', aRecords, 'verificationToken:', verificationToken, 'ACME token:', acmeChallengeToken);
+
+    // Determine status based on CustomDomain states
+    if (ownershipState === 'OWNERSHIP_ACTIVE' && certState === 'CERT_ACTIVE') {
+      status = 'active';
+      sslStatus = 'active';
+    } else if (ownershipState === 'OWNERSHIP_ACTIVE' && certState === 'CERT_PROPAGATING') {
+      status = 'verified';
+      sslStatus = 'provisioning';
+    } else if (ownershipState === 'OWNERSHIP_ACTIVE') {
+      status = 'verified';
+      sslStatus = certState === 'CERT_ACTIVE' ? 'active' : 'provisioning';
+    } else if (ownershipState === 'OWNERSHIP_PENDING') {
+      status = 'pending_verification';
+    } else if (ownershipState === 'OWNERSHIP_MISSING') {
+      status = 'pending_verification';
+    }
+
+    // Build update data, only including defined values
+    const updateData = {
+      'domain.customDomainStatus': status,
+      'domain.sslStatus': sslStatus,
+      updatedAt: nowISO,
+    };
+
+    // Only set firebaseHostingStatus if we have meaningful state info
+    if (ownershipState || certState) {
+      updateData['domain.firebaseHostingStatus'] = `ownership:${ownershipState || 'unknown'},cert:${certState || 'unknown'}`;
+    }
+
+    if (verificationToken) {
+      updateData['domain.verificationToken'] = verificationToken;
+    }
+
+    if (acmeChallengeToken) {
+      updateData['domain.acmeChallengeToken'] = acmeChallengeToken;
+    }
+
+    if (aRecords.length > 0) {
+      updateData['domain.aRecords'] = aRecords;
+    }
+
+    if (status === 'active') {
+      updateData['domain.customDomainVerifiedAt'] = nowISO;
+      updateData['domain.verificationError'] = admin.firestore.FieldValue.delete();
+      // Clear verification tokens when active
+      updateData['domain.acmeChallengeToken'] = admin.firestore.FieldValue.delete();
+    }
+
+    await settingsRef.update(updateData);
+
+    return {
+      success: true,
+      domain: normalizedDomain,
+      status,
+      sslStatus,
+      verificationToken,
+      acmeChallengeToken,
+      aRecords,
+      ownershipState,
+      certState,
+      message: status === 'active'
+        ? 'Domain is active with SSL'
+        : status === 'verified'
+        ? 'Domain verified, SSL is being provisioned'
+        : 'Waiting for domain verification',
+    };
+  } catch (error) {
+    console.error('Error getting domain status:', error);
+
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+
+    throw new functions.https.HttpsError('internal', 'Failed to get domain status: ' + error.message);
+  }
+});
+
+/**
+ * Remove a custom domain from Firebase Hosting
+ */
+exports.removeCustomDomainFromHosting = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  }
+
+  const { domain } = data;
+  if (!domain) {
+    throw new functions.https.HttpsError('invalid-argument', 'Domain is required');
+  }
+
+  const userId = context.auth.uid;
+  const nowISO = new Date().toISOString();
+
+  try {
+    // Verify user owns this domain
+    const settingsRef = db.collection('websiteSettings').doc(userId);
+    const settingsDoc = await settingsRef.get();
+
+    if (!settingsDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Website settings not found');
+    }
+
+    const settings = settingsDoc.data();
+    if (settings.domain?.customDomain !== domain) {
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        'Domain does not match your configuration'
+      );
+    }
+
+    // Get access token and delete from Firebase Hosting
+    const accessToken = await getHostingAccessToken();
+    const fetch = (await import('node-fetch')).default;
+
+    const hostingApiUrl = `https://firebasehosting.googleapis.com/v1beta1/projects/${FIREBASE_PROJECT_ID}/sites/${FIREBASE_SITE_ID}/domains/${domain}`;
+
+    const response = await fetch(hostingApiUrl, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok && response.status !== 404) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Failed to remove domain');
+    }
+
+    // Clear domain settings in Firestore
+    await settingsRef.update({
+      'domain.customDomain': admin.firestore.FieldValue.delete(),
+      'domain.customDomainStatus': admin.firestore.FieldValue.delete(),
+      'domain.customDomainVerifiedAt': admin.firestore.FieldValue.delete(),
+      'domain.sslStatus': admin.firestore.FieldValue.delete(),
+      'domain.verificationToken': admin.firestore.FieldValue.delete(),
+      'domain.aRecords': admin.firestore.FieldValue.delete(),
+      'domain.firebaseHostingStatus': admin.firestore.FieldValue.delete(),
+      'domain.verificationError': admin.firestore.FieldValue.delete(),
+      updatedAt: nowISO,
+    });
+
+    return {
+      success: true,
+      message: 'Custom domain removed successfully',
+    };
+  } catch (error) {
+    console.error('Error removing custom domain:', error);
+
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+
+    throw new functions.https.HttpsError('internal', 'Failed to remove domain: ' + error.message);
+  }
+});

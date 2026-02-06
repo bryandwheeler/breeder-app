@@ -1,5 +1,6 @@
 import { useEffect, useState, ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { useWebsiteStore, useBreederStore } from '@breeder/firebase';
 import { WebsiteSettings, BreederProfile } from '@breeder/types';
 import { PublicWebsiteHome } from '@/components/PublicWebsiteHome';
@@ -150,13 +151,13 @@ function PublicWebsiteByBreederId({ breederId }: { breederId: string }) {
   };
 
   return (
-    <>
+    <HelmetProvider>
       <PublicWebsiteSeo
         settings={websiteSettings}
         profile={breederProfile}
         pageTitle={getPageTitle()}
       />
       {renderPage()}
-    </>
+    </HelmetProvider>
   );
 }

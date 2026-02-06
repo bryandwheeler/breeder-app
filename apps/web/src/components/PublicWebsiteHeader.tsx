@@ -13,7 +13,10 @@ export function PublicWebsiteHeader({ settings }: PublicWebsiteHeaderProps) {
   const { primary: primaryColor } = getThemeColors(settings);
   const headerStyle = settings.theme.headerStyle || 'full';
   const fontClass = getFontFamilyClass(settings.theme.fontFamily);
-  const logoUrl = getLogoUrl(settings);
+
+  // Use dark logo for dark backgrounds (full, banner, overlay styles)
+  const isDarkBackground = ['full', 'banner', 'overlay'].includes(headerStyle);
+  const logoUrl = getLogoUrl(settings, isDarkBackground);
 
   const menuItems = settings.menuItems || [
     { label: 'Home', page: 'home' },

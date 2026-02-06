@@ -18,6 +18,8 @@ import {
   SeoSettings,
   WebsiteTheme,
   RESERVED_SUBDOMAINS,
+  Puppy,
+  Litter,
 } from '@breeder/types';
 
 interface WebsiteState {
@@ -69,6 +71,10 @@ interface WebsiteState {
     listing: Partial<AvailablePuppyListing>
   ) => Promise<void>;
   deletePuppyListing: (userId: string, listingId: string) => Promise<void>;
+
+  // Puppy-to-website sync
+  syncPuppyToWebsite: (userId: string, litter: Litter, puppy: Puppy, breed?: string) => Promise<void>;
+  removePuppyFromWebsite: (userId: string, puppyId: string) => Promise<void>;
 
   // Public lookup
   getWebsiteBySubdomain: (subdomain: string) => Promise<WebsiteSettings | null>;
@@ -375,8 +381,18 @@ export const useWebsiteStore = create<WebsiteState>((set, get) => ({
       const current = get().websiteSettings;
       const settingsRef = doc(db, 'websiteSettings', userId);
 
+      // Filter out undefined values (Firestore doesn't accept undefined)
+      const cleanedDomain = Object.fromEntries(
+        Object.entries(domain).filter(([, value]) => value !== undefined)
+      );
+
+      // Merge with existing domain settings
+      const mergedDomain = current?.domain
+        ? { ...current.domain, ...cleanedDomain }
+        : cleanedDomain;
+
       await updateDoc(settingsRef, {
-        domain: current?.domain ? { ...current.domain, ...domain } : domain,
+        domain: mergedDomain,
         updatedAt: new Date().toISOString(),
       });
 
@@ -469,6 +485,79 @@ export const useWebsiteStore = create<WebsiteState>((set, get) => ({
       }
     } catch (error) {
       console.error('[websiteStore] Error unpublishing website:', error);
+      throw error;
+    }
+  },
+
+  // Puppy-to-website sync: creates/updates an AvailablePuppyListing from a Puppy
+  syncPuppyToWebsite: async (userId: string, litter: Litter, puppy: Puppy, breed?: string) => {
+    try {
+      const current = get().websiteSettings || await get().getWebsiteSettings(userId);
+      if (!current) throw new Error('Website settings not found');
+
+      const now = new Date().toISOString();
+      const existingListings = current.puppyListings || [];
+      const existingIndex = existingListings.findIndex((l) => l.id === puppy.id);
+
+      const listing: AvailablePuppyListing = {
+        id: puppy.id,
+        litterId: litter.id,
+        name: puppy.name || puppy.tempName || 'Unnamed Puppy',
+        breed: breed || '',
+        gender: puppy.sex,
+        dateOfBirth: litter.dateOfBirth,
+        description: puppy.websiteDescription || '',
+        price: puppy.websitePrice || puppy.salePrice || 0,
+        photos: puppy.photos || [],
+        available: puppy.status === 'available' || puppy.status === 'pending',
+        reserved: puppy.status === 'reserved',
+        featured: puppy.websiteFeatured || false,
+        createdAt: existingIndex >= 0 ? existingListings[existingIndex].createdAt : now,
+        updatedAt: now,
+      };
+
+      let updatedListings: AvailablePuppyListing[];
+      if (existingIndex >= 0) {
+        updatedListings = existingListings.map((l) => l.id === puppy.id ? listing : l);
+      } else {
+        updatedListings = [...existingListings, listing];
+      }
+
+      const settingsRef = doc(db, 'websiteSettings', userId);
+      await updateDoc(settingsRef, {
+        puppyListings: updatedListings,
+        updatedAt: now,
+      });
+      const updated = await get().getWebsiteSettings(userId);
+      if (updated) {
+        set({ websiteSettings: updated });
+      }
+    } catch (error) {
+      console.error('[websiteStore] Error syncing puppy to website:', error);
+      throw error;
+    }
+  },
+
+  removePuppyFromWebsite: async (userId: string, puppyId: string) => {
+    try {
+      const current = get().websiteSettings || await get().getWebsiteSettings(userId);
+      if (!current) throw new Error('Website settings not found');
+
+      const filteredListings = (current.puppyListings || []).filter(
+        (l) => l.id !== puppyId
+      );
+
+      const settingsRef = doc(db, 'websiteSettings', userId);
+      await updateDoc(settingsRef, {
+        puppyListings: filteredListings,
+        updatedAt: new Date().toISOString(),
+      });
+      const updated = await get().getWebsiteSettings(userId);
+      if (updated) {
+        set({ websiteSettings: updated });
+      }
+    } catch (error) {
+      console.error('[websiteStore] Error removing puppy from website:', error);
       throw error;
     }
   },

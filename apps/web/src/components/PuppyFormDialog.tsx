@@ -1338,6 +1338,54 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
             />
           </div>
 
+          {/* Website Visibility */}
+          <div className='space-y-3 p-4 border rounded-lg bg-muted/50'>
+            <div className='flex items-center gap-2'>
+              <input
+                type='checkbox'
+                id='showOnWebsite'
+                checked={formData.showOnWebsite || false}
+                onChange={(e) => setFormData({ ...formData, showOnWebsite: e.target.checked })}
+                className='h-4 w-4 rounded border-gray-300'
+              />
+              <Label htmlFor='showOnWebsite' className='font-medium'>Show on public website</Label>
+            </div>
+            {formData.showOnWebsite && (
+              <div className='space-y-3 pl-6'>
+                <div>
+                  <Label htmlFor='websitePrice'>Website Price ($)</Label>
+                  <Input
+                    id='websitePrice'
+                    type='number'
+                    value={formData.websitePrice || formData.salePrice || ''}
+                    onChange={(e) => setFormData({ ...formData, websitePrice: e.target.value ? Number(e.target.value) : undefined })}
+                    placeholder='Price to display on website'
+                  />
+                </div>
+                <div>
+                  <Label htmlFor='websiteDescription'>Website Description</Label>
+                  <Textarea
+                    id='websiteDescription'
+                    value={formData.websiteDescription || ''}
+                    onChange={(e) => setFormData({ ...formData, websiteDescription: e.target.value })}
+                    placeholder='Description for the public website listing'
+                    rows={2}
+                  />
+                </div>
+                <div className='flex items-center gap-2'>
+                  <input
+                    type='checkbox'
+                    id='websiteFeatured'
+                    checked={formData.websiteFeatured || false}
+                    onChange={(e) => setFormData({ ...formData, websiteFeatured: e.target.checked })}
+                    className='h-4 w-4 rounded border-gray-300'
+                  />
+                  <Label htmlFor='websiteFeatured'>Feature on homepage</Label>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Desktop buttons */}
           <div className='hidden sm:flex justify-end gap-2 pt-4'>
             <Button type='button' variant='outline' onClick={() => setOpen(false)} disabled={saving}>

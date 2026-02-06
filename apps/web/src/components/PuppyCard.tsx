@@ -3,7 +3,7 @@ import { Puppy, Buyer, WaitlistEntry } from '@breeder/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, User, FileText, Users, ExternalLink, CheckCircle2, Eye, ClipboardCheck } from 'lucide-react';
+import { Edit, Trash2, User, FileText, Users, ExternalLink, CheckCircle2, Eye, ClipboardCheck, Globe } from 'lucide-react';
 import { ImageGalleryDialog } from '@/components/ImageGalleryDialog';
 
 interface PuppyCardProps {
@@ -18,9 +18,10 @@ interface PuppyCardProps {
   onGenerateContract?: (puppy: Puppy) => void;
   onGenerateHealthGuarantee?: (puppy: Puppy) => void;
   onPhotoDelete?: (puppy: Puppy, photoIndex: number) => void;
+  onToggleWebsite?: (puppy: Puppy) => void;
 }
 
-export function PuppyCard({ puppy, buyer, waitlistEntry, evaluationCount, onView, onEdit, onDelete, onReserve, onGenerateContract, onGenerateHealthGuarantee, onPhotoDelete }: PuppyCardProps) {
+export function PuppyCard({ puppy, buyer, waitlistEntry, evaluationCount, onView, onEdit, onDelete, onReserve, onGenerateContract, onGenerateHealthGuarantee, onPhotoDelete, onToggleWebsite }: PuppyCardProps) {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
 
@@ -77,9 +78,26 @@ export function PuppyCard({ puppy, buyer, waitlistEntry, evaluationCount, onView
                   {evaluationCount} eval{evaluationCount !== 1 ? 's' : ''}
                 </Badge>
               )}
+              {puppy.showOnWebsite && (
+                <Badge variant='secondary' className='flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'>
+                  <Globe className='h-3 w-3' />
+                  Website
+                </Badge>
+              )}
             </div>
           </div>
           <div className='flex gap-1'>
+            {onToggleWebsite && (
+              <Button
+                size='sm'
+                variant='ghost'
+                onClick={() => onToggleWebsite(puppy)}
+                title={puppy.showOnWebsite ? 'Remove from website' : 'Show on website'}
+                className={puppy.showOnWebsite ? 'text-green-600 hover:text-green-700' : ''}
+              >
+                <Globe className='h-4 w-4' />
+              </Button>
+            )}
             {onView && (
               <Button size='sm' variant='ghost' onClick={() => onView(puppy)} title='View Details'>
                 <Eye className='h-4 w-4' />

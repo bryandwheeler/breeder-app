@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useWebsiteStore } from '@breeder/firebase';
 import { WebsiteCustomizer } from '@/components/WebsiteCustomizer';
-import { PuppyShopManager } from '@/components/PuppyShopManager';
+import { Link } from 'react-router-dom';
 import { SubdomainSetup } from '@/components/website/SubdomainSetup';
 import { ThemePresetGallery } from '@/components/website/ThemePresetGallery';
 import { SeoSettingsForm } from '@/components/website/SeoSettingsForm';
@@ -336,11 +336,48 @@ export function WebsiteDesign() {
             <CardHeader>
               <CardTitle>Available Puppies</CardTitle>
               <CardDescription>
-                Manage which puppies appear on your public website
+                Puppies shown on your website are managed from your litter pages. Use the globe icon on each puppy card to toggle website visibility.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <PuppyShopManager />
+              {websiteSettings?.puppyListings && websiteSettings.puppyListings.length > 0 ? (
+                <div className='space-y-3'>
+                  {websiteSettings.puppyListings.map((listing) => (
+                    <div key={listing.id} className='flex items-center justify-between p-3 border rounded-lg'>
+                      <div className='flex items-center gap-3'>
+                        {listing.photos && listing.photos.length > 0 ? (
+                          <img src={listing.photos[0]} alt={listing.name} className='w-10 h-10 rounded object-cover' />
+                        ) : (
+                          <div className='w-10 h-10 rounded bg-muted flex items-center justify-center text-lg'>🐾</div>
+                        )}
+                        <div>
+                          <div className='font-medium'>{listing.name}</div>
+                          <div className='text-xs text-muted-foreground'>
+                            {listing.breed} &middot; {listing.gender === 'male' ? 'Male' : 'Female'}
+                            {listing.price > 0 && ` · $${listing.price.toLocaleString()}`}
+                          </div>
+                        </div>
+                      </div>
+                      <div className='flex items-center gap-2'>
+                        {listing.featured && <Badge variant='secondary'>Featured</Badge>}
+                        <Badge variant={listing.available ? 'default' : 'outline'}>
+                          {listing.reserved ? 'Reserved' : listing.available ? 'Available' : 'Unavailable'}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className='text-sm text-muted-foreground'>No puppies are currently shown on your website.</p>
+              )}
+              <div className='mt-4'>
+                <Link to='/litters'>
+                  <Button variant='outline' size='sm'>
+                    <ShoppingBag className='mr-2 h-4 w-4' />
+                    Manage from Litters
+                  </Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

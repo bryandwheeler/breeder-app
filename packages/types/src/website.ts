@@ -1,7 +1,7 @@
 // Website builder and customization types
 
 // Domain settings for subdomain and custom domain support
-export type DomainStatus = 'pending' | 'verifying' | 'verified' | 'active' | 'failed' | 'suspended';
+export type DomainStatus = 'pending' | 'pending_verification' | 'verifying' | 'verified' | 'active' | 'failed' | 'suspended';
 export type SslStatus = 'pending' | 'provisioning' | 'active' | 'failed';
 
 export interface DomainSettings {
@@ -14,10 +14,16 @@ export interface DomainSettings {
   customDomain?: string; // e.g., "www.happypawskennel.com"
   customDomainStatus?: DomainStatus;
   customDomainVerifiedAt?: string;
-  cnameTarget: string; // "websites.expertbreeder.com"
+  cnameTarget: string; // "expert-breeder.web.app" for Firebase Hosting
   sslStatus?: SslStatus;
   verificationError?: string;
   lastVerificationAttempt?: string;
+
+  // Firebase Hosting verification
+  verificationToken?: string; // TXT record value for domain ownership verification
+  acmeChallengeToken?: string; // TXT record value for SSL/ACME challenge (_acme-challenge subdomain)
+  aRecords?: string[]; // A record IPs provided by Firebase Hosting
+  firebaseHostingStatus?: string; // Raw status from Firebase Hosting API
 }
 
 // Enhanced SEO settings
