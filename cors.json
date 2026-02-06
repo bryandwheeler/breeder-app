@@ -1,0 +1,14 @@
+[
+  {
+    "origin": [
+      "https://app.expertbreeder.com",
+      "https://expert-breeder.web.app",
+      "https://expert-breeder.firebaseapp.com",
+      "http://localhost:5173",
+      "http://localhost:5174"
+    ],
+    "method": ["GET", "HEAD"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Content-Length", "Content-Range"]
+  }
+]

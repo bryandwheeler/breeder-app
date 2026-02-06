@@ -283,7 +283,6 @@ export function ImageCropDialog({ open, setOpen, imageSrc, onCropComplete }: Ima
                 ref={imgRef}
                 src={resizedSrc}
                 alt='Crop preview'
-                crossOrigin='anonymous'
                 style={{ maxHeight: '60vh', maxWidth: '100%' }}
                 onLoad={onImageLoad}
               />
