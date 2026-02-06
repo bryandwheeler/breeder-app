@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Puppy, Buyer, ShotRecord, WeightEntry, BreedingRights, CoOwnership, Registration, WaitlistEntry } from '@breeder/types';
-import { X, Upload, Plus, Trash2, Users, User } from 'lucide-react';
+import { X, Upload, Plus, Trash2, Users, User, Crop } from 'lucide-react';
 import { storage, auth } from '@breeder/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ImageCropDialog } from '@/components/ImageCropDialog';
@@ -55,6 +55,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
   const [photoUrl, setPhotoUrl] = useState('');
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string>('');
+  const [cropPhotoIndex, setCropPhotoIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [selectedBuyerOption, setSelectedBuyerOption] = useState<string>('');
   const [saving, setSaving] = useState(false);
@@ -191,6 +192,7 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
       const reader = new FileReader();
       reader.onload = () => {
         setImageToCrop(reader.result as string);
+        setCropPhotoIndex(null); // null = new photo
         setCropDialogOpen(true);
         setUploading(false);
       };
@@ -221,7 +223,8 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
 
       // Create a unique filename with user prefix for storage rules
       const timestamp = Date.now();
-      const filename = `puppies/${timestamp}_cropped.jpg`;
+      const suffix = cropPhotoIndex !== null ? 'recropped' : 'cropped';
+      const filename = `puppies/${timestamp}_${suffix}.jpg`;
       const storagePath = `users/${user.uid}/${filename}`;
       const storageRef = ref(storage, storagePath);
 
@@ -231,9 +234,27 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
       // Get the download URL
       const downloadUrl = await getDownloadURL(storageRef);
 
-      // Add the URL to photos
-      const newPhotos = [...formData.photos, downloadUrl];
-      const updatedFormData = { ...formData, photos: newPhotos };
+      let newPhotos: string[];
+      let updates: Partial<Puppy> = {};
+
+      if (cropPhotoIndex !== null) {
+        // Re-crop: replace at same index
+        const oldUrl = formData.photos[cropPhotoIndex];
+        newPhotos = [...formData.photos];
+        newPhotos[cropPhotoIndex] = downloadUrl;
+        // Update website photo references if applicable
+        if (formData.websitePrimaryPhoto === oldUrl) {
+          updates.websitePrimaryPhoto = downloadUrl;
+        }
+        if (formData.websitePhotos) {
+          updates.websitePhotos = formData.websitePhotos.map((p) => p === oldUrl ? downloadUrl : p);
+        }
+      } else {
+        // New photo: append
+        newPhotos = [...formData.photos, downloadUrl];
+      }
+
+      const updatedFormData = { ...formData, ...updates, photos: newPhotos };
       setFormData(updatedFormData);
 
       // Auto-save photo for existing puppies
@@ -245,7 +266,14 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
       alert('Failed to upload image. Please try again.');
     } finally {
       setUploading(false);
+      setCropPhotoIndex(null);
     }
+  };
+
+  const handleRecropPhoto = (index: number) => {
+    setImageToCrop(formData.photos[index]);
+    setCropPhotoIndex(index);
+    setCropDialogOpen(true);
   };
 
   const removePhoto = (index: number) => {
@@ -1150,21 +1178,35 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
             {formData.photos.length > 0 && (
               <div className='grid grid-cols-3 gap-2'>
                 {formData.photos.map((url, index) => (
-                  <div key={index} className='relative'>
+                  <div key={index} className='relative group'>
                     <img
                       src={url}
                       alt={`Puppy ${index + 1}`}
                       className='w-full h-24 object-cover rounded'
                     />
-                    <Button
-                      type='button'
-                      variant='destructive'
-                      size='sm'
-                      className='absolute top-1 right-1 h-6 w-6 p-0'
-                      onClick={() => removePhoto(index)}
-                    >
-                      <X className='h-4 w-4' />
-                    </Button>
+                    <div className='absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition'>
+                      <Button
+                        type='button'
+                        variant='secondary'
+                        size='sm'
+                        className='h-6 w-6 p-0'
+                        onClick={() => handleRecropPhoto(index)}
+                        disabled={uploading}
+                        title='Re-crop'
+                      >
+                        <Crop className='h-3.5 w-3.5' />
+                      </Button>
+                      <Button
+                        type='button'
+                        variant='destructive'
+                        size='sm'
+                        className='h-6 w-6 p-0'
+                        onClick={() => removePhoto(index)}
+                        title='Delete'
+                      >
+                        <X className='h-3.5 w-3.5' />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

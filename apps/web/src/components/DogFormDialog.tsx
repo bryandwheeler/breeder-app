@@ -38,7 +38,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2, Upload, Search, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Upload, Search, Loader2, Crop } from 'lucide-react';
 import { useState, useRef, useImperativeHandle, forwardRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { storage, auth } from '@breeder/firebase';
@@ -118,6 +118,7 @@ const DogFormContent = forwardRef<DogFormHandle, {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string>('');
+  const [cropPhotoIndex, setCropPhotoIndex] = useState<number | null>(null);
   const [programStatus, setProgramStatus] = useState<
     'owned' | 'guardian' | 'external_stud' | 'co-owned' | 'retired'
   >(dog?.programStatus || 'owned');
@@ -346,15 +347,15 @@ const DogFormContent = forwardRef<DogFormHandle, {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
+    // Validate file type (include HEIC for iOS)
+    if (!file.type.startsWith('image/') && !file.name.toLowerCase().endsWith('.heic') && !file.name.toLowerCase().endsWith('.heif')) {
       alert('Please select an image file');
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image size must be less than 5MB');
+    // Validate file size (max 10MB for mobile - HEIC can be larger)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image size must be less than 10MB');
       return;
     }
 
@@ -362,12 +363,19 @@ const DogFormContent = forwardRef<DogFormHandle, {
     const reader = new FileReader();
     reader.onload = () => {
       setImageToCrop(reader.result as string);
+      setCropPhotoIndex(null); // null = new photo
       setCropDialogOpen(true);
     };
     reader.readAsDataURL(file);
 
     // Reset the input
     e.target.value = '';
+  };
+
+  const handleRecropPhoto = (index: number) => {
+    setImageToCrop(photos[index]);
+    setCropPhotoIndex(index);
+    setCropDialogOpen(true);
   };
 
   const handleCropComplete = async (croppedBlob: Blob) => {
@@ -381,7 +389,8 @@ const DogFormContent = forwardRef<DogFormHandle, {
 
       // Create a unique filename with user prefix for storage rules
       const timestamp = Date.now();
-      const filename = `dogs/${timestamp}_cropped.jpg`;
+      const suffix = cropPhotoIndex !== null ? 'recropped' : 'cropped';
+      const filename = `dogs/${timestamp}_${suffix}.jpg`;
       const storagePath = `users/${user.uid}/${filename}`;
       const storageRef = ref(storage, storagePath);
 
@@ -391,15 +400,22 @@ const DogFormContent = forwardRef<DogFormHandle, {
       // Get the download URL
       const downloadUrl = await getDownloadURL(storageRef);
 
-      // Add the URL to photos
-      const newPhotos = [...photos, downloadUrl];
+      let newPhotos: string[];
+      if (cropPhotoIndex !== null) {
+        // Re-crop: replace the photo at the same index
+        newPhotos = [...photos];
+        newPhotos[cropPhotoIndex] = downloadUrl;
+      } else {
+        // New photo: append
+        newPhotos = [...photos, downloadUrl];
+      }
       setPhotos(newPhotos);
 
       // Auto-save photo for existing dogs
       if (dog) {
         await updateDog(dog.id, { photos: newPhotos });
         toast({
-          title: 'Photo added',
+          title: cropPhotoIndex !== null ? 'Photo updated' : 'Photo added',
           description: 'Photo has been saved automatically.',
         });
       }
@@ -408,6 +424,7 @@ const DogFormContent = forwardRef<DogFormHandle, {
       alert('Failed to upload image. Please try again.');
     } finally {
       setUploadingPhoto(false);
+      setCropPhotoIndex(null);
     }
   };
 
@@ -1634,18 +1651,37 @@ const DogFormContent = forwardRef<DogFormHandle, {
                   alt='dog'
                   className='w-full h-32 object-cover rounded-lg border'
                 />
-                <Button
-                  size='icon'
-                  variant='destructive'
-                  className='absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition'
-                  onClick={() =>
-                    setPhotos((prev) => prev.filter((_, idx) => idx !== i))
-                  }
-                  type='button'
-                  disabled={uploadingPhoto}
-                >
-                  <Trash2 className='h-4 w-4' />
-                </Button>
+                <div className='absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition'>
+                  <Button
+                    size='icon'
+                    variant='secondary'
+                    className='h-7 w-7'
+                    onClick={() => handleRecropPhoto(i)}
+                    type='button'
+                    disabled={uploadingPhoto}
+                    title='Re-crop'
+                  >
+                    <Crop className='h-3.5 w-3.5' />
+                  </Button>
+                  <Button
+                    size='icon'
+                    variant='destructive'
+                    className='h-7 w-7'
+                    onClick={() => {
+                      const newPhotos = photos.filter((_, idx) => idx !== i);
+                      setPhotos(newPhotos);
+                      if (dog) {
+                        updateDog(dog.id, { photos: newPhotos });
+                        toast({ title: 'Photo deleted', description: 'Photo has been removed.' });
+                      }
+                    }}
+                    type='button'
+                    disabled={uploadingPhoto}
+                    title='Delete'
+                  >
+                    <Trash2 className='h-3.5 w-3.5' />
+                  </Button>
+                </div>
               </div>
             ))}
             <label
@@ -1665,7 +1701,7 @@ const DogFormContent = forwardRef<DogFormHandle, {
               )}
               <input
                 type='file'
-                accept='image/*'
+                accept='image/*,.heic,.heif'
                 className='hidden'
                 onChange={handlePhotoAdd}
                 disabled={uploadingPhoto}

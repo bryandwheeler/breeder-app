@@ -54,6 +54,10 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { ImageGalleryDialog } from '@/components/ImageGalleryDialog';
+import { ImageCropDialog } from '@/components/ImageCropDialog';
+import { Crop, Upload } from 'lucide-react';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, storage } from '@breeder/firebase';
 
 export function DogProfile() {
   const { id } = useParams<{ id: string }>();
@@ -69,6 +73,11 @@ export function DogProfile() {
   const [activeTab, setActiveTab] = useState('overview');
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
+  const [managePhotos, setManagePhotos] = useState(false);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string>('');
+  const [cropPhotoIndex, setCropPhotoIndex] = useState<number | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const dog = dogs.find((d) => d.id === id);
 
   // Get litters for this dog (if female)
@@ -208,6 +217,67 @@ export function DogProfile() {
   const handleEditDog = () => {
     setEditingDog(dog);
     setDogFormOpen(true);
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/') && !file.name.toLowerCase().endsWith('.heic') && !file.name.toLowerCase().endsWith('.heif')) {
+      alert('Please select an image file');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image size must be less than 10MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageToCrop(reader.result as string);
+      setCropPhotoIndex(null);
+      setCropDialogOpen(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleRecropPhoto = (index: number) => {
+    setImageToCrop(dog.photos![index]);
+    setCropPhotoIndex(index);
+    setCropDialogOpen(true);
+  };
+
+  const handlePhotoCropComplete = async (croppedBlob: Blob) => {
+    setUploadingPhoto(true);
+    try {
+      const user = auth.currentUser;
+      if (!user) throw new Error('Must be logged in');
+      const timestamp = Date.now();
+      const suffix = cropPhotoIndex !== null ? 'recropped' : 'cropped';
+      const storageRef = ref(storage, `users/${user.uid}/dogs/${timestamp}_${suffix}.jpg`);
+      await uploadBytes(storageRef, croppedBlob);
+      const downloadUrl = await getDownloadURL(storageRef);
+
+      let newPhotos: string[];
+      if (cropPhotoIndex !== null && dog.photos) {
+        newPhotos = [...dog.photos];
+        newPhotos[cropPhotoIndex] = downloadUrl;
+      } else {
+        newPhotos = [...(dog.photos || []), downloadUrl];
+      }
+      await updateDog(dog.id, { photos: newPhotos });
+    } catch (error) {
+      console.error('Error processing photo:', error);
+      alert('Failed to process photo. Please try again.');
+    } finally {
+      setUploadingPhoto(false);
+      setCropPhotoIndex(null);
+    }
+  };
+
+  const handleDeletePhoto = async (index: number) => {
+    const newPhotos = [...(dog.photos || [])];
+    newPhotos.splice(index, 1);
+    await updateDog(dog.id, { photos: newPhotos });
   };
 
   const handleEditStudJob = (job: any) => {
@@ -785,38 +855,92 @@ export function DogProfile() {
             <CardContent>
               <Accordion type="multiple" className="w-full">
                 {/* Photos Section */}
-                {dog.photos && dog.photos.length > 0 && (
-                  <AccordionItem value="photos">
-                    <AccordionTrigger>
-                      <span className='font-semibold'>Photos ({dog.photos.length})</span>
-                    </AccordionTrigger>
-                    <AccordionContent>
+                <AccordionItem value="photos">
+                  <AccordionTrigger>
+                    <span className='font-semibold'>Photos {dog.photos && dog.photos.length > 0 ? `(${dog.photos.length})` : ''}</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className='flex justify-end gap-2 mb-3'>
+                      <input
+                        type='file'
+                        accept='image/*,.heic,.heif'
+                        onChange={handlePhotoUpload}
+                        disabled={uploadingPhoto}
+                        className='hidden'
+                        id='dog-profile-photo-upload'
+                      />
+                      <label htmlFor='dog-profile-photo-upload'>
+                        <Button type='button' variant='outline' size='sm' disabled={uploadingPhoto} asChild>
+                          <span className='cursor-pointer'>
+                            <Upload className='h-4 w-4 mr-1' />
+                            {uploadingPhoto ? 'Uploading...' : 'Add Photo'}
+                          </span>
+                        </Button>
+                      </label>
+                      {dog.photos && dog.photos.length > 0 && (
+                        <Button
+                          variant='outline'
+                          size='sm'
+                          onClick={() => setManagePhotos(!managePhotos)}
+                          className={managePhotos ? 'text-primary border-primary' : ''}
+                        >
+                          {managePhotos ? 'Done' : 'Manage'}
+                        </Button>
+                      )}
+                    </div>
+                    {dog.photos && dog.photos.length > 0 ? (
                       <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
                         {dog.photos.map((photo, i) => (
-                          <button
-                            key={i}
-                            onClick={() => {
-                              setGalleryInitialIndex(i);
-                              setGalleryOpen(true);
-                            }}
-                            className='relative group'
-                          >
+                          <div key={i} className='relative group'>
                             <img
                               src={photo}
                               alt={`${dog.name} ${i + 1}`}
-                              className='w-full h-48 object-cover rounded-lg shadow-md hover:scale-105 transition cursor-pointer'
+                              className='w-full h-48 object-cover rounded-lg shadow-md cursor-pointer'
+                              onClick={() => {
+                                if (!managePhotos) {
+                                  setGalleryInitialIndex(i);
+                                  setGalleryOpen(true);
+                                }
+                              }}
                             />
-                            <div className='absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-lg transition flex items-center justify-center'>
-                              <span className='text-white opacity-0 group-hover:opacity-100 text-sm font-medium'>
-                                View
-                              </span>
-                            </div>
-                          </button>
+                            {managePhotos ? (
+                              <div className='absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center gap-2'>
+                                <Button
+                                  size='sm'
+                                  variant='secondary'
+                                  className='h-8 w-8 p-0'
+                                  onClick={() => handleRecropPhoto(i)}
+                                  disabled={uploadingPhoto}
+                                  title='Re-crop'
+                                >
+                                  <Crop className='h-4 w-4' />
+                                </Button>
+                                <Button
+                                  size='sm'
+                                  variant='destructive'
+                                  className='h-8 w-8 p-0'
+                                  onClick={() => handleDeletePhoto(i)}
+                                  disabled={uploadingPhoto}
+                                  title='Delete'
+                                >
+                                  <Trash2 className='h-4 w-4' />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className='absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-lg transition flex items-center justify-center'>
+                                <span className='text-white opacity-0 group-hover:opacity-100 text-sm font-medium'>
+                                  View
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         ))}
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                )}
+                    ) : (
+                      <p className='text-sm text-muted-foreground text-center py-4'>No photos yet. Click "Add Photo" to upload.</p>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
 
                 {/* Additional Information */}
                 <AccordionItem value="additional-info">
@@ -1352,13 +1476,17 @@ export function DogProfile() {
           images={dog.photos}
           initialIndex={galleryInitialIndex}
           title={`${dog.name}'s Photos`}
-          onDelete={async (index) => {
-            const newPhotos = [...dog.photos!];
-            newPhotos.splice(index, 1);
-            await updateDog(dog.id, { photos: newPhotos });
-          }}
+          onDelete={(index) => handleDeletePhoto(index)}
         />
       )}
+
+      {/* Crop Dialog for re-crop or new uploads */}
+      <ImageCropDialog
+        open={cropDialogOpen}
+        setOpen={setCropDialogOpen}
+        imageSrc={imageToCrop}
+        onCropComplete={handlePhotoCropComplete}
+      />
     </div>
   );
 }
