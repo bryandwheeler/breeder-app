@@ -7,6 +7,7 @@ import {
 } from 'react';
 import {
   User,
+  AuthCredential,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
@@ -17,14 +18,26 @@ import {
   sendPasswordResetEmail,
   updateProfile,
   getAdditionalUserInfo,
+  linkWithCredential,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
 } from 'firebase/auth';
 import { auth, googleProvider, facebookProvider, db } from '@breeder/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { logUserLogin, logUserSignup } from '@/lib/auditLog';
 
+interface PendingLink {
+  credential: AuthCredential;
+  email: string;
+  providerName: string;
+}
+
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
+  redirectError: string | null;
+  pendingLink: PendingLink | null;
+  clearPendingLink: () => void;
   signup: (
     email: string,
     password: string,
@@ -50,6 +63,12 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [redirectError, setRedirectError] = useState<string | null>(null);
+  const [pendingLink, setPendingLink] = useState<PendingLink | null>(null);
+
+  function clearPendingLink() {
+    setPendingLink(null);
+  }
 
   // Decide whether to use redirect instead of popup
   // NOTE: We now prefer popup on most devices because redirect has sessionStorage issues on iOS
@@ -130,6 +149,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { user } = await signInWithEmailAndPassword(auth, email, password);
     await ensureUserProfile(user, false);
 
+    // If there's a pending OAuth credential, link it to this account
+    if (pendingLink?.credential) {
+      try {
+        await linkWithCredential(user, pendingLink.credential);
+        console.log(`[AuthContext] Successfully linked ${pendingLink.providerName} provider`);
+      } catch (linkErr: any) {
+        // provider-already-linked is fine — means it was already connected
+        if (linkErr?.code !== 'auth/provider-already-linked') {
+          console.warn('[AuthContext] Failed to link provider:', linkErr?.message);
+        }
+      } finally {
+        setPendingLink(null);
+      }
+    }
+
     // Log the login
     await logUserLogin(
       user.uid,
@@ -167,12 +201,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         );
       }
     } catch (err: any) {
-      // Fallback to redirect for COOP/popup-blocked environments
-      console.warn(
-        '[AuthContext] Google popup failed, falling back to redirect:',
-        err?.message
-      );
-      await signInWithRedirect(auth, googleProvider);
+      if (err?.code === 'auth/account-exists-with-different-credential') {
+        const oauthCredential = GoogleAuthProvider.credentialFromError(err);
+        const email = err.customData?.email;
+        if (oauthCredential && email) {
+          setPendingLink({ credential: oauthCredential, email, providerName: 'Google' });
+        }
+        throw err;
+      }
+      // Only fall back to redirect when the popup was actually blocked/prevented
+      const popupErrors = [
+        'auth/popup-blocked',
+        'auth/popup-closed-by-user',
+        'auth/cancelled-popup-request',
+      ];
+      if (popupErrors.includes(err?.code) || err?.message?.includes('Cross-Origin-Opener-Policy')) {
+        console.warn('[AuthContext] Google popup blocked, falling back to redirect');
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        // Real auth error — surface it to the user
+        throw err;
+      }
     }
   }
 
@@ -201,11 +250,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         );
       }
     } catch (err: any) {
-      console.warn(
-        '[AuthContext] Facebook popup failed, falling back to redirect:',
-        err?.message
-      );
-      await signInWithRedirect(auth, facebookProvider);
+      if (err?.code === 'auth/account-exists-with-different-credential') {
+        const oauthCredential = FacebookAuthProvider.credentialFromError(err);
+        const email = err.customData?.email;
+        if (oauthCredential && email) {
+          setPendingLink({ credential: oauthCredential, email, providerName: 'Facebook' });
+        }
+        throw err;
+      }
+      const popupErrors = [
+        'auth/popup-blocked',
+        'auth/popup-closed-by-user',
+        'auth/cancelled-popup-request',
+      ];
+      if (popupErrors.includes(err?.code) || err?.message?.includes('Cross-Origin-Opener-Policy')) {
+        console.warn('[AuthContext] Facebook popup blocked, falling back to redirect');
+        await signInWithRedirect(auth, facebookProvider);
+      } else {
+        throw err;
+      }
     }
   }
 
@@ -252,6 +315,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Don't show error to user - they'll just see the login page
         } else if (error) {
           console.warn('[AuthContext] Redirect sign-in failed:', error);
+          if (error?.code === 'auth/account-exists-with-different-credential') {
+            // Try to extract credential for linking after email/password sign-in
+            const googleCred = GoogleAuthProvider.credentialFromError(error);
+            const fbCred = FacebookAuthProvider.credentialFromError(error);
+            const oauthCredential = googleCred || fbCred;
+            const email = error.customData?.email;
+            if (oauthCredential && email) {
+              setPendingLink({
+                credential: oauthCredential,
+                email,
+                providerName: googleCred ? 'Google' : 'Facebook',
+              });
+            }
+            setRedirectError('An account already exists with this email. Please sign in with your email and password to link your account.');
+          } else {
+            setRedirectError(error?.message || 'Sign-in failed. Please try again.');
+          }
         }
       });
 
@@ -276,6 +356,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextType = {
     currentUser,
     loading,
+    redirectError,
+    pendingLink,
+    clearPendingLink,
     signup,
     login,
     logout,

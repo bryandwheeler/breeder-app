@@ -45,6 +45,7 @@ import { Help } from '@/pages/Help';
 import { Tasks } from '@/pages/Tasks';
 import { Login } from '@/pages/Login';
 import { Signup } from '@/pages/Signup';
+import { ResetPassword } from '@/pages/ResetPassword';
 import { SupportTickets } from '@/pages/SupportTickets';
 import { NewTicket } from '@/pages/NewTicket';
 import { TicketDetail } from '@/pages/TicketDetail';
@@ -237,6 +238,7 @@ function AppContent() {
               <Routes>
               <Route path='/login' element={<Login />} />
               <Route path='/signup' element={<Signup />} />
+              <Route path='/reset-password' element={<ResetPassword />} />
 
               {/* OAuth Callback routes */}
               <Route path='/auth/gmail/callback' element={<GmailCallback />} />

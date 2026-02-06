@@ -10,7 +10,7 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, loginWithGoogle, loginWithFacebook, currentUser } = useAuth();
+  const { login, loginWithGoogle, loginWithFacebook, currentUser, redirectError, pendingLink } = useAuth();
   const navigate = useNavigate();
 
   // Fallback effect for browsers where Navigate component doesn't work (iOS Chrome)
@@ -65,13 +65,32 @@ export function Login() {
     }
   }
 
+  function socialLoginErrorMessage(err: any, provider: string): string {
+    const code = err?.code;
+    if (code === 'auth/account-exists-with-different-credential') {
+      return `An account already exists with this email. Sign in with your email and password below to automatically link your ${provider} account.`;
+    }
+    if (code === 'auth/user-disabled') {
+      return 'This account has been disabled. Please contact support.';
+    }
+    if (code === 'auth/user-not-found') {
+      return `Your account may be set up with email and password instead of ${provider}. Try signing in with your email and password below, or use "Forgot password?" to set one.`;
+    }
+    if (code === 'auth/network-request-failed') {
+      return 'Network error. Please check your internet connection and try again.';
+    }
+    // Show the error code for debugging if we have one
+    const detail = code ? ` (${code})` : '';
+    return (err.message || `Failed to log in with ${provider}`) + detail;
+  }
+
   async function handleGoogleLogin() {
     try {
       setError('');
       setLoading(true);
       await loginWithGoogle();
     } catch (err: any) {
-      setError(err.message || 'Failed to log in with Google');
+      setError(socialLoginErrorMessage(err, 'Google'));
     } finally {
       setLoading(false);
     }
@@ -83,7 +102,7 @@ export function Login() {
       setLoading(true);
       await loginWithFacebook();
     } catch (err: any) {
-      setError(err.message || 'Failed to log in with Facebook');
+      setError(socialLoginErrorMessage(err, 'Facebook'));
     } finally {
       setLoading(false);
     }
@@ -101,54 +120,17 @@ export function Login() {
           </p>
         </div>
 
-        {error && (
+        {(error || redirectError) && (
           <div className='bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded'>
-            {error}
+            {error || redirectError}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className='space-y-6'>
-          <div>
-            <Label htmlFor='email'>Email</Label>
-            <Input
-              id='email'
-              type='email'
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder='your@email.com'
-              className='mt-1'
-            />
+        {pendingLink && !error && !redirectError && (
+          <div className='bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 px-4 py-3 rounded'>
+            Sign in with your password to link your {pendingLink.providerName} account.
           </div>
-
-          <div>
-            <Label htmlFor='password'>Password</Label>
-            <Input
-              id='password'
-              type='password'
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder='••••••••'
-              className='mt-1'
-            />
-          </div>
-
-          <Button type='submit' className='w-full' disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign In'}
-          </Button>
-        </form>
-
-        <div className='relative my-6'>
-          <div className='absolute inset-0 flex items-center'>
-            <span className='w-full border-t' />
-          </div>
-          <div className='relative flex justify-center text-sm'>
-            <span className='bg-white dark:bg-gray-950 px-4 text-muted-foreground'>
-              Or continue with
-            </span>
-          </div>
-        </div>
+        )}
 
         <div className='grid grid-cols-2 gap-4'>
           <Button
@@ -197,6 +179,51 @@ export function Login() {
             Facebook
           </Button>
         </div>
+
+        <div className='relative my-6'>
+          <div className='absolute inset-0 flex items-center'>
+            <span className='w-full border-t' />
+          </div>
+          <div className='relative flex justify-center text-sm'>
+            <span className='bg-white dark:bg-gray-950 px-4 text-muted-foreground'>
+              Or sign in with email
+            </span>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className='space-y-6'>
+          <div>
+            <Label htmlFor='email'>Email</Label>
+            <Input
+              id='email'
+              type='email'
+              value={pendingLink?.email || email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder='your@email.com'
+              className='mt-1'
+              readOnly={!!pendingLink}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor='password'>Password</Label>
+            <Input
+              id='password'
+              type='password'
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder='••••••••'
+              className='mt-1'
+              autoFocus={!!pendingLink}
+            />
+          </div>
+
+          <Button type='submit' className='w-full' disabled={loading}>
+            {loading ? 'Signing in...' : pendingLink ? `Sign In & Link ${pendingLink.providerName}` : 'Sign In'}
+          </Button>
+        </form>
 
         <div className='text-center text-sm'>
           <span className='text-muted-foreground'>Don't have an account? </span>
