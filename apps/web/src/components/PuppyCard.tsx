@@ -3,11 +3,13 @@ import { Puppy, Buyer, WaitlistEntry } from '@breeder/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, User, FileText, Users, ExternalLink, CheckCircle2, Eye, ClipboardCheck, Globe } from 'lucide-react';
+import { Edit, Trash2, User, FileText, Users, ExternalLink, CheckCircle2, Eye, ClipboardCheck, Globe, Clock } from 'lucide-react';
+import { calculateAgeWeeksAndDays } from '@/lib/utils';
 import { ImageGalleryDialog } from '@/components/ImageGalleryDialog';
 
 interface PuppyCardProps {
   puppy: Puppy;
+  dateOfBirth?: string; // Litter's date of birth for age calculation
   buyer?: Buyer;
   waitlistEntry?: WaitlistEntry; // Waitlist entry assigned to this puppy
   evaluationCount?: number; // Number of evaluations completed for this puppy
@@ -21,7 +23,7 @@ interface PuppyCardProps {
   onToggleWebsite?: (puppy: Puppy) => void;
 }
 
-export function PuppyCard({ puppy, buyer, waitlistEntry, evaluationCount, onView, onEdit, onDelete, onReserve, onGenerateContract, onGenerateHealthGuarantee, onPhotoDelete, onToggleWebsite }: PuppyCardProps) {
+export function PuppyCard({ puppy, dateOfBirth, buyer, waitlistEntry, evaluationCount, onView, onEdit, onDelete, onReserve, onGenerateContract, onGenerateHealthGuarantee, onPhotoDelete, onToggleWebsite }: PuppyCardProps) {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
 
@@ -85,6 +87,12 @@ export function PuppyCard({ puppy, buyer, waitlistEntry, evaluationCount, onView
                 </Badge>
               )}
             </div>
+            {dateOfBirth && (
+              <div className='flex items-center gap-1 mt-1 text-xs text-muted-foreground'>
+                <Clock className='h-3 w-3' />
+                {calculateAgeWeeksAndDays(dateOfBirth)}
+              </div>
+            )}
           </div>
           <div className='flex gap-1'>
             {onToggleWebsite && (
