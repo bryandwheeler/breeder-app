@@ -1,5 +1,5 @@
 // src/pages/DogProfile.tsx – THE ULTIMATE PROFILE PAGE
-import { useDogStore, useCrmStore, getGuardianContactInfo } from '@breeder/firebase';
+import { useDogStore, useCrmStore, useAdminStore, getGuardianContactInfo } from '@breeder/firebase';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -55,7 +55,8 @@ import {
 } from '@/components/ui/accordion';
 import { ImageGalleryDialog } from '@/components/ImageGalleryDialog';
 import { ImageCropDialog } from '@/components/ImageCropDialog';
-import { Crop, Upload } from 'lucide-react';
+import { LinkExternalDogDialog } from '@/components/LinkExternalDogDialog';
+import { Crop, Upload, Link2 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, storage } from '@breeder/firebase';
 
@@ -64,6 +65,7 @@ export function DogProfile() {
   const { dogs, updateDog, litters } = useDogStore();
   const { heatCycles, subscribeToHeatCycles } = useHeatCycleStore();
   const { getStudJobsForStud, deleteStudJob, subscribeToStudJobs } = useStudJobStore();
+  const impersonatedUserId = useAdminStore((s) => s.impersonatedUserId);
   const { customers } = useCrmStore();
   const [dnaDialogOpen, setDnaDialogOpen] = useState(false);
   const [dogFormOpen, setDogFormOpen] = useState(false);
@@ -78,6 +80,7 @@ export function DogProfile() {
   const [imageToCrop, setImageToCrop] = useState<string>('');
   const [cropPhotoIndex, setCropPhotoIndex] = useState<number | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const dog = dogs.find((d) => d.id === id);
 
   // Get litters for this dog (if female)
@@ -91,13 +94,13 @@ export function DogProfile() {
 
   // Subscribe to heat cycles and stud jobs when component mounts
   useEffect(() => {
-    const unsubscribeHeatCycles = subscribeToHeatCycles();
-    const unsubscribeStudJobs = subscribeToStudJobs();
+    const unsubscribeHeatCycles = subscribeToHeatCycles(impersonatedUserId || undefined);
+    const unsubscribeStudJobs = subscribeToStudJobs(impersonatedUserId || undefined);
     return () => {
       unsubscribeHeatCycles();
       unsubscribeStudJobs();
     };
-  }, [subscribeToHeatCycles, subscribeToStudJobs]);
+  }, [subscribeToHeatCycles, subscribeToStudJobs, impersonatedUserId]);
 
   // Breeding Forecast Logic for Females - Must be before early return!
   const breedingForecasts = useMemo(() => {
@@ -354,9 +357,16 @@ export function DogProfile() {
             </Badge>
           )}
         </div>
-        <Button onClick={handleEditDog}>
-          <Edit className='mr-2 h-4 w-4' /> Edit Dog
-        </Button>
+        <div className='flex gap-2'>
+          {!dog.isConnectedDog && (
+            <Button variant='outline' onClick={() => setLinkDialogOpen(true)}>
+              <Link2 className='mr-2 h-4 w-4' /> Link to External Program
+            </Button>
+          )}
+          <Button onClick={handleEditDog}>
+            <Edit className='mr-2 h-4 w-4' /> Edit Dog
+          </Button>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className='w-full'>
@@ -1486,6 +1496,13 @@ export function DogProfile() {
         setOpen={setCropDialogOpen}
         imageSrc={imageToCrop}
         onCropComplete={handlePhotoCropComplete}
+      />
+
+      {/* Link to External Program Dialog */}
+      <LinkExternalDogDialog
+        open={linkDialogOpen}
+        setOpen={setLinkDialogOpen}
+        dog={dog}
       />
     </div>
   );

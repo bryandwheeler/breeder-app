@@ -139,50 +139,56 @@ function AppContent() {
   // Subscribe to breeder profile data when user logs in
   useEffect(() => {
     if (currentUser) {
-      const unsubscribe = subscribeToBreederData();
+      const targetUid = impersonatedUserId || currentUser.uid;
+      const unsubscribe = subscribeToBreederData(targetUid);
       return unsubscribe;
     }
-  }, [currentUser, subscribeToBreederData]);
+  }, [currentUser, subscribeToBreederData, impersonatedUserId]);
 
   // Subscribe to waitlist data when user logs in
   useEffect(() => {
     if (currentUser) {
-      const unsubscribe = subscribeToWaitlist();
+      const targetUid = impersonatedUserId || currentUser.uid;
+      const unsubscribe = subscribeToWaitlist(targetUid);
       return unsubscribe;
     }
-  }, [currentUser, subscribeToWaitlist]);
+  }, [currentUser, subscribeToWaitlist, impersonatedUserId]);
 
   // Subscribe to CRM customer data when user logs in
   useEffect(() => {
     if (currentUser) {
-      const unsubscribe = subscribeToCustomers();
+      const targetUid = impersonatedUserId || currentUser.uid;
+      const unsubscribe = subscribeToCustomers(targetUid);
       return unsubscribe;
     }
-  }, [currentUser, subscribeToCustomers]);
+  }, [currentUser, subscribeToCustomers, impersonatedUserId]);
 
   // Subscribe to notifications when user logs in
   useEffect(() => {
     if (currentUser) {
-      const unsubscribe = subscribeToNotifications(currentUser.uid);
+      const targetUid = impersonatedUserId || currentUser.uid;
+      const unsubscribe = subscribeToNotifications(targetUid);
       return unsubscribe;
     }
-  }, [currentUser, subscribeToNotifications]);
+  }, [currentUser, subscribeToNotifications, impersonatedUserId]);
 
   // Subscribe to stud jobs when user logs in
   useEffect(() => {
     if (currentUser) {
-      const unsubscribe = subscribeToStudJobs();
+      const targetUid = impersonatedUserId || currentUser.uid;
+      const unsubscribe = subscribeToStudJobs(targetUid);
       return unsubscribe;
     }
-  }, [currentUser, subscribeToStudJobs]);
+  }, [currentUser, subscribeToStudJobs, impersonatedUserId]);
 
   // Subscribe to heat cycles when user logs in
   useEffect(() => {
     if (currentUser) {
-      const unsubscribe = subscribeToHeatCycles();
+      const targetUid = impersonatedUserId || currentUser.uid;
+      const unsubscribe = subscribeToHeatCycles(targetUid);
       return unsubscribe;
     }
-  }, [currentUser, subscribeToHeatCycles]);
+  }, [currentUser, subscribeToHeatCycles, impersonatedUserId]);
 
   // Persist sidebar state to localStorage
   useEffect(() => {

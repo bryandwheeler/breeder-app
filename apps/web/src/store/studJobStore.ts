@@ -33,7 +33,7 @@ type Store = {
   getCompletedStudJobs: () => StudJob[];
 
   // Subscription
-  subscribeToStudJobs: () => () => void;
+  subscribeToStudJobs: (targetUid?: string) => () => void;
 };
 
 export const useStudJobStore = create<Store>()((set, get) => ({
@@ -133,16 +133,16 @@ export const useStudJobStore = create<Store>()((set, get) => ({
       );
   },
 
-  subscribeToStudJobs: () => {
-    const user = auth.currentUser;
-    if (!user) return () => {};
+  subscribeToStudJobs: (targetUid) => {
+    const uid = targetUid || auth.currentUser?.uid;
+    if (!uid) return () => {};
 
     set({ loading: true });
 
     // Subscribe to stud jobs
     const studJobsQuery = query(
       collection(db, FIRESTORE_COLLECTIONS.STUD_JOBS),
-      where('userId', '==', user.uid)
+      where('userId', '==', uid)
     );
 
     const unsubscribe = onSnapshot(

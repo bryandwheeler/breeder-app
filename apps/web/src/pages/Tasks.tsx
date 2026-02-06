@@ -32,10 +32,12 @@ import {
 import { cn } from '@/lib/utils';
 import { useTaskStore } from '@breeder/firebase';
 import { useDogStore } from '@breeder/firebase';
+import { useAdminStore } from '@breeder/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function Tasks() {
   const { currentUser } = useAuth();
+  const impersonatedUserId = useAdminStore((s) => s.impersonatedUserId);
   const { litters } = useDogStore();
   const {
     litterTasks,
@@ -48,9 +50,10 @@ export function Tasks() {
 
   useEffect(() => {
     if (!currentUser) return;
-    const unsubscribe = subscribeToBreederTasks(currentUser.uid);
+    const targetUid = impersonatedUserId || currentUser.uid;
+    const unsubscribe = subscribeToBreederTasks(targetUid);
     return unsubscribe;
-  }, [currentUser, subscribeToBreederTasks]);
+  }, [currentUser, subscribeToBreederTasks, impersonatedUserId]);
 
   const littersById = useMemo(() => {
     const map = new Map<string, (typeof litters)[0]>();

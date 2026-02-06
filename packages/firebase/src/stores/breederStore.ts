@@ -49,7 +49,7 @@ type Store = {
   deleteInquiry: (id: string) => Promise<void>;
 
   // Subscription
-  subscribeToBreederData: () => () => void;
+  subscribeToBreederData: (targetUid?: string) => () => void;
 };
 
 export const useBreederStore = create<Store>()((set, get) => ({
@@ -189,16 +189,16 @@ export const useBreederStore = create<Store>()((set, get) => ({
     await deleteDoc(inquiryRef);
   },
 
-  subscribeToBreederData: () => {
-    const user = auth.currentUser;
-    if (!user) return () => {};
+  subscribeToBreederData: (targetUid) => {
+    const uid = targetUid || auth.currentUser?.uid;
+    if (!uid) return () => {};
 
     set({ loading: true });
 
     // Subscribe to profile
     const profileQuery = query(
       collection(db, FIRESTORE_COLLECTIONS.BREEDER_PROFILES),
-      where('userId', '==', user.uid)
+      where('userId', '==', uid)
     );
 
     const unsubscribeProfile = onSnapshot(
@@ -221,7 +221,7 @@ export const useBreederStore = create<Store>()((set, get) => ({
     // Subscribe to testimonials
     const testimonialsQuery = query(
       collection(db, 'testimonials'),
-      where('userId', '==', user.uid)
+      where('userId', '==', uid)
     );
 
     const unsubscribeTestimonials = onSnapshot(
@@ -244,7 +244,7 @@ export const useBreederStore = create<Store>()((set, get) => ({
     // Subscribe to inquiries
     const inquiriesQuery = query(
       collection(db, 'inquiries'),
-      where('userId', '==', user.uid)
+      where('userId', '==', uid)
     );
 
     const unsubscribeInquiries = onSnapshot(

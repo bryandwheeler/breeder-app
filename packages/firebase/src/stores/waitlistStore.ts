@@ -62,7 +62,7 @@ type Store = {
   ) => Promise<void>;
 
   // Subscription
-  subscribeToWaitlist: () => () => void;
+  subscribeToWaitlist: (targetUid?: string) => () => void;
 
   // Form config methods
   loadFormConfig: (breederId: string) => Promise<WaitlistFormConfig>;
@@ -606,15 +606,15 @@ export const useWaitlistStore = create<Store>()((set, get) => ({
     });
   },
 
-  subscribeToWaitlist: () => {
-    const user = auth.currentUser;
-    if (!user) return () => {};
+  subscribeToWaitlist: (targetUid) => {
+    const uid = targetUid || auth.currentUser?.uid;
+    if (!uid) return () => {};
 
     set({ loading: true });
 
     const waitlistQuery = query(
       collection(db, 'waitlist'),
-      where('breederId', '==', user.uid)
+      where('breederId', '==', uid)
     );
 
     const unsubscribe = onSnapshot(

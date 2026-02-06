@@ -107,7 +107,7 @@ interface Store {
   ) => Promise<string>;
 
   // Subscriptions
-  subscribeToCustomers: () => () => void;
+  subscribeToCustomers: (targetUid?: string) => () => void;
   subscribeToSegments: () => () => void;
   subscribeToReferrals: () => () => void;
 
@@ -672,15 +672,15 @@ export const useCrmStore = create<Store>()((set, get) => ({
   },
 
   // Subscriptions
-  subscribeToCustomers: () => {
-    const user = auth.currentUser;
-    if (!user) return () => {};
+  subscribeToCustomers: (targetUid) => {
+    const uid = targetUid || auth.currentUser?.uid;
+    if (!uid) return () => {};
 
     set({ loading: true });
 
     const customersQuery = query(
       collection(db, 'customers'),
-      where('breederId', '==', user.uid)
+      where('breederId', '==', uid)
     );
 
     const unsubscribe = onSnapshot(

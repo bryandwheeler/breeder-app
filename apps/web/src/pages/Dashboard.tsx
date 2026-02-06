@@ -4,6 +4,7 @@ import { useDogStore } from '@breeder/firebase';
 import { useWaitlistStore } from '@breeder/firebase';
 import { useCrmStore } from '@breeder/firebase';
 import { useHeatCycleStore } from '@breeder/firebase';
+import { useAdminStore } from '@breeder/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -72,6 +73,7 @@ export function Dashboard() {
   const { customers } = useCrmStore();
   const { getHeatCyclesForDog } = useHeatCycleStore();
   const { currentUser } = useAuth();
+  const impersonatedUserId = useAdminStore((s) => s.impersonatedUserId);
   const {
     litterTasks,
     subscribeToBreederTasks,
@@ -84,9 +86,10 @@ export function Dashboard() {
 
   useEffect(() => {
     if (!currentUser) return;
-    const unsubscribe = subscribeToBreederTasks(currentUser.uid);
+    const targetUid = impersonatedUserId || currentUser.uid;
+    const unsubscribe = subscribeToBreederTasks(targetUid);
     return unsubscribe;
-  }, [currentUser, subscribeToBreederTasks]);
+  }, [currentUser, subscribeToBreederTasks, impersonatedUserId]);
 
   // Calculate statistics and detailed data
   const stats = useMemo(() => {

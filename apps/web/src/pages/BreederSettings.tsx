@@ -1,6 +1,6 @@
 // Breeder profile and website settings
 import { useState } from 'react';
-import { useBreederStore } from '@breeder/firebase';
+import { useBreederStore, useAdminStore } from '@breeder/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -25,6 +25,7 @@ import { StaffManagement } from '@/pages/StaffManagement';
 
 export function BreederSettings() {
   const { currentUser } = useAuth();
+  const impersonatedUserId = useAdminStore((s) => s.impersonatedUserId);
   const { profile, createProfile, updateProfile, loading } = useBreederStore();
   const [formData, setFormData] = useState<Partial<BreederProfile>>(
     () =>
@@ -88,7 +89,7 @@ export function BreederSettings() {
   };
 
   const publicUrl = currentUser
-    ? `${window.location.origin}/home/${currentUser.uid}`
+    ? `${window.location.origin}/home/${impersonatedUserId || currentUser.uid}`
     : '';
 
   return (

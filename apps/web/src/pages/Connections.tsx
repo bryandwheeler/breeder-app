@@ -23,13 +23,14 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { ConnectionRequestDialog } from '@/components/ConnectionRequestDialog';
+import { DataMergeDialog } from '@/components/DataMergeDialog';
 import { DataSharingPreferencesDialog } from '@/components/DataSharingPreferencesDialog';
 import { DeclineRequestDialog } from '@/components/DeclineRequestDialog';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { format } from 'date-fns';
 import { DogConnectionRequest, DogSharingPreferences, Dog } from '@breeder/types';
 import { useToast } from '@/hooks/use-toast';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@breeder/firebase';
 
 export function Connections() {
@@ -66,6 +67,8 @@ export function Connections() {
   const [selectedConnectedDog, setSelectedConnectedDog] = useState<Dog | null>(
     null
   );
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [mergeRequest, setMergeRequest] = useState<DogConnectionRequest | null>(null);
 
   // Get all connected dogs (dogs that are linked from other kennels)
   const connectedDogs = dogs.filter((dog) => dog.isConnectedDog);
@@ -93,10 +96,11 @@ export function Connections() {
 
   useEffect(() => {
     if (currentUser) {
-      const unsubscribe = subscribeToConnectionRequests(currentUser.uid);
+      const targetUid = impersonatedUserId || currentUser.uid;
+      const unsubscribe = subscribeToConnectionRequests(targetUid);
       return () => unsubscribe();
     }
-  }, [currentUser, subscribeToConnectionRequests]);
+  }, [currentUser, subscribeToConnectionRequests, impersonatedUserId]);
 
   useEffect(() => {
     const targetUid = impersonatedUserId || currentUser?.uid;
@@ -235,26 +239,89 @@ export function Connections() {
         linkedDog.breedingRights = originalDog.breedingRights;
       }
 
-      // Add the linked dog to requester's account (not the current viewer)
-      const newDogId = await addDog(
-        linkedDog as Dog,
-        selectedRequest.requesterId
-      );
+      if (selectedRequest.linkToExisting && selectedRequest.requesterDogId) {
+        // Link to existing dog: don't create a new dog
+        // Build shared data snapshot for merge review
+        const sharedData: Record<string, any> = {};
+        if (preferences.shareBasicInfo) {
+          if (originalDog.name) sharedData.name = originalDog.name;
+          if (originalDog.sex) sharedData.sex = originalDog.sex;
+          if (originalDog.breed) sharedData.breed = originalDog.breed;
+          if (originalDog.color) sharedData.color = originalDog.color;
+        }
+        if (preferences.shareRegistration) {
+          if (originalDog.registrationNumber) sharedData.registrationNumber = originalDog.registrationNumber;
+          if (originalDog.microchipNumber) sharedData.microchipNumber = originalDog.microchipNumber;
+        }
+        if (preferences.sharePhoto && originalDog.profileImage) {
+          sharedData.profileImage = originalDog.profileImage;
+        }
+        if (preferences.shareDateOfBirth && originalDog.dateOfBirth) {
+          sharedData.dateOfBirth = originalDog.dateOfBirth;
+        }
+        if (preferences.sharePedigree) {
+          if (originalDog.sireName) sharedData.sireName = originalDog.sireName;
+          if (originalDog.damName) sharedData.damName = originalDog.damName;
+        }
+        if (preferences.shareHealthTests && originalDog.healthTests) {
+          sharedData.healthTests = originalDog.healthTests;
+        }
+        if (preferences.shareDnaProfile && originalDog.dnaProfile) {
+          sharedData.dnaProfile = originalDog.dnaProfile;
+        }
+        if (preferences.shareVaccinations && originalDog.shotRecords) {
+          sharedData.shotRecords = originalDog.shotRecords;
+        }
 
-      // Update the connection request with approval (includes linkedDogId)
-      await approveConnectionRequest(
-        selectedRequest.id,
-        preferences,
-        responseMessage,
-        newDogId
-      );
+        // Update the existing dog with connection metadata only
+        await updateDog(selectedRequest.requesterDogId, {
+          isConnectedDog: true,
+          connectionRequestId: selectedRequest.id,
+          originalDogId: selectedRequest.dogId,
+          originalOwnerId: currentUser.uid,
+          originalOwnerKennel: selectedRequest.ownerKennelName,
+          sharingPreferences: preferences,
+          lastSyncDate: new Date().toISOString(),
+        });
 
-      // Notification and email are handled by Cloud Functions (onConnectionRequestUpdated)
+        // Approve the request with the existing dog ID as linkedDogId
+        await approveConnectionRequest(
+          selectedRequest.id,
+          preferences,
+          responseMessage,
+          selectedRequest.requesterDogId
+        );
 
-      toast({
-        title: 'Request Approved',
-        description: `Connection request approved. Dog data has been shared with ${selectedRequest.requesterKennelName}.`,
-      });
+        // Store shared data snapshot on the request for merge review
+        const requestRef = doc(db, 'connectionRequests', selectedRequest.id);
+        await updateDoc(requestRef, { sharedDogData: sharedData });
+
+        toast({
+          title: 'Request Approved',
+          description: `Connection approved. ${selectedRequest.requesterKennelName} can now review and merge the shared data.`,
+        });
+      } else {
+        // Standard flow: create a new linked dog
+        const newDogId = await addDog(
+          linkedDog as Dog,
+          selectedRequest.requesterId
+        );
+
+        // Update the connection request with approval (includes linkedDogId)
+        await approveConnectionRequest(
+          selectedRequest.id,
+          preferences,
+          responseMessage,
+          newDogId
+        );
+
+        // Notification and email are handled by Cloud Functions (onConnectionRequestUpdated)
+
+        toast({
+          title: 'Request Approved',
+          description: `Connection request approved. Dog data has been shared with ${selectedRequest.requesterKennelName}.`,
+        });
+      }
 
       setApproveDialogOpen(false);
       setSelectedRequest(null);
@@ -332,6 +399,34 @@ export function Connections() {
       toast({
         title: 'Error',
         description: 'Failed to delete connection request',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleMergeComplete = async (mergedFields: Partial<Dog>) => {
+    if (!mergeRequest?.requesterDogId) return;
+
+    try {
+      // Update the dog with merged data
+      await updateDog(mergeRequest.requesterDogId, mergedFields);
+
+      // Clear sharedDogData from the request (merge is done)
+      const requestRef = doc(db, 'connectionRequests', mergeRequest.id);
+      await updateDoc(requestRef, { sharedDogData: null });
+
+      toast({
+        title: 'Merge Complete',
+        description: 'Dog data has been updated with the merged values.',
+      });
+
+      setMergeDialogOpen(false);
+      setMergeRequest(null);
+    } catch (error) {
+      console.error('Error merging data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to merge dog data',
         variant: 'destructive',
       });
     }
@@ -788,6 +883,19 @@ export function Connections() {
                   </div>
 
                   <div className='ml-4 flex gap-2'>
+                    {request.status === 'approved' && request.linkToExisting && request.sharedDogData && (
+                      <Button
+                        size='sm'
+                        variant='default'
+                        onClick={() => {
+                          setMergeRequest(request);
+                          setMergeDialogOpen(true);
+                        }}
+                      >
+                        <ArrowRight className='h-4 w-4 mr-1' />
+                        Review & Merge
+                      </Button>
+                    )}
                     {request.status === 'pending' ? (
                       <Button
                         size='sm'
@@ -864,6 +972,17 @@ export function Connections() {
         onConfirm={confirmDeleteRequest}
         variant='destructive'
       />
+
+      {mergeRequest && mergeRequest.sharedDogData && mergeRequest.requesterDogId && (
+        <DataMergeDialog
+          open={mergeDialogOpen}
+          setOpen={setMergeDialogOpen}
+          existingDog={dogs.find((d) => d.id === mergeRequest.requesterDogId) || {} as Dog}
+          sharedData={mergeRequest.sharedDogData}
+          sharingPreferences={mergeRequest.sharingPreferences || {}}
+          onMergeComplete={handleMergeComplete}
+        />
+      )}
     </div>
   );
 }

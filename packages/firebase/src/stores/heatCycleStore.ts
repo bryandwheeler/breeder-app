@@ -42,7 +42,7 @@ type Store = {
   getBreedingRecordsForDog: (dogId: string) => BreedingRecord[];
 
   // Subscription
-  subscribeToHeatCycles: () => () => void;
+  subscribeToHeatCycles: (targetUid?: string) => () => void;
 };
 
 export const useHeatCycleStore = create<Store>()((set, get) => ({
@@ -156,16 +156,16 @@ export const useHeatCycleStore = create<Store>()((set, get) => ({
       );
   },
 
-  subscribeToHeatCycles: () => {
-    const user = auth.currentUser;
-    if (!user) return () => {};
+  subscribeToHeatCycles: (targetUid) => {
+    const uid = targetUid || auth.currentUser?.uid;
+    if (!uid) return () => {};
 
     set({ loading: true });
 
     // Subscribe to heat cycles
     const heatCyclesQuery = query(
       collection(db, FIRESTORE_COLLECTIONS.HEAT_CYCLES),
-      where('userId', '==', user.uid)
+      where('userId', '==', uid)
     );
 
     const unsubscribeHeatCycles = onSnapshot(
@@ -189,7 +189,7 @@ export const useHeatCycleStore = create<Store>()((set, get) => ({
     // Subscribe to breeding records
     const breedingRecordsQuery = query(
       collection(db, FIRESTORE_COLLECTIONS.BREEDING_RECORDS),
-      where('userId', '==', user.uid)
+      where('userId', '==', uid)
     );
 
     const unsubscribeBreedingRecords = onSnapshot(
