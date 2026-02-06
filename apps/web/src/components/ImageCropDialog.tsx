@@ -20,22 +20,43 @@ const MAX_OUTPUT_SIZE = 1200;
 const OUTPUT_QUALITY = 0.85;
 
 /**
- * Pre-resize a source image to fit within maxDim on its longest side.
- * Returns a new object URL pointing to a resized JPEG blob, or the
- * original src if the image is already small enough.
+ * Convert a remote URL to a same-origin blob URL by fetching it.
+ * This avoids CORS canvas tainting when drawing Firebase Storage
+ * images (or any cross-origin images) onto a canvas.
  */
-function preResizeImage(src: string, maxDim: number): Promise<string> {
+async function fetchAsBlobUrl(src: string): Promise<string> {
+  const response = await fetch(src);
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+}
+
+/**
+ * Pre-process a source image for the crop dialog:
+ * 1. Remote URLs are fetched and converted to same-origin blob URLs
+ *    (avoids CORS canvas tainting with Firebase Storage, etc.)
+ * 2. Images larger than maxDim are resized down
+ * Returns a same-origin blob URL safe for canvas operations.
+ */
+async function preProcessImage(src: string, maxDim: number): Promise<string> {
+  // Step 1: Ensure we have a same-origin URL for canvas safety
+  let localSrc = src;
+  if (src.startsWith('http://') || src.startsWith('https://')) {
+    localSrc = await fetchAsBlobUrl(src);
+  }
+
+  // Step 2: Load and check dimensions
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       const { naturalWidth: w, naturalHeight: h } = img;
 
-      // If already within limits, use as-is
+      // If already within limits, use the local blob URL as-is
       if (w <= maxDim && h <= maxDim) {
-        resolve(src);
+        resolve(localSrc);
         return;
       }
 
+      // Step 3: Resize down
       const scale = Math.min(maxDim / w, maxDim / h);
       const canvas = document.createElement('canvas');
       canvas.width = Math.floor(w * scale);
@@ -53,6 +74,8 @@ function preResizeImage(src: string, maxDim: number): Promise<string> {
 
       canvas.toBlob(
         (blob) => {
+          // Revoke the intermediate blob URL since we have a new one
+          if (localSrc !== src) URL.revokeObjectURL(localSrc);
           if (blob) {
             resolve(URL.createObjectURL(blob));
           } else {
@@ -63,8 +86,11 @@ function preResizeImage(src: string, maxDim: number): Promise<string> {
         0.92
       );
     };
-    img.onerror = () => reject(new Error('Failed to load image for pre-resize'));
-    img.src = src;
+    img.onerror = () => {
+      if (localSrc !== src) URL.revokeObjectURL(localSrc);
+      reject(new Error('Failed to load image for pre-resize'));
+    };
+    img.src = localSrc;
   });
 }
 
@@ -89,7 +115,7 @@ export function ImageCropDialog({ open, setOpen, imageSrc, onCropComplete }: Ima
     setPreProcessing(true);
     setError(null);
 
-    preResizeImage(imageSrc, MAX_SOURCE_SIZE)
+    preProcessImage(imageSrc, MAX_SOURCE_SIZE)
       .then((url) => {
         if (!cancelled) {
           setResizedSrc(url);
@@ -97,9 +123,9 @@ export function ImageCropDialog({ open, setOpen, imageSrc, onCropComplete }: Ima
         }
       })
       .catch((err) => {
-        console.error('Pre-resize error:', err);
+        console.error('Pre-process error:', err);
         if (!cancelled) {
-          // Fallback: try to use original src anyway
+          // Fallback: try original src (will work for data URLs, may fail for remote)
           setResizedSrc(imageSrc);
           setPreProcessing(false);
         }
@@ -257,6 +283,7 @@ export function ImageCropDialog({ open, setOpen, imageSrc, onCropComplete }: Ima
                 ref={imgRef}
                 src={resizedSrc}
                 alt='Crop preview'
+                crossOrigin='anonymous'
                 style={{ maxHeight: '60vh', maxWidth: '100%' }}
                 onLoad={onImageLoad}
               />
