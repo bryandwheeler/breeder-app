@@ -67,7 +67,15 @@ export function LinkExternalDogDialog({ open, setOpen, dog }: LinkExternalDogDia
   };
 
   const handleSubmit = async () => {
-    if (!selectedDog || !currentUser || !profile) return;
+    if (!selectedDog || !currentUser) return;
+    if (!profile) {
+      toast({
+        title: 'Profile Not Loaded',
+        description: 'Your breeder profile is not available. Please try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setSubmitting(true);
 
@@ -150,6 +158,7 @@ export function LinkExternalDogDialog({ open, setOpen, dog }: LinkExternalDogDia
                 }}
               />
               <Button
+                type='button'
                 onClick={handleSearch}
                 disabled={searching || !searchTerm.trim() || !!selectedDog}
                 size='icon'
@@ -207,6 +216,7 @@ export function LinkExternalDogDialog({ open, setOpen, dog }: LinkExternalDogDia
                   </div>
                 </div>
                 <Button
+                  type='button'
                   variant='ghost'
                   size='sm'
                   onClick={() => {
@@ -237,11 +247,11 @@ export function LinkExternalDogDialog({ open, setOpen, dog }: LinkExternalDogDia
         </div>
 
         <DialogFooter className='gap-2 sm:gap-0'>
-          <Button variant='outline' onClick={handleClose} disabled={submitting} className='w-full sm:w-auto'>
+          <Button type='button' variant='outline' onClick={handleClose} disabled={submitting} className='w-full sm:w-auto'>
             Cancel
           </Button>
           {selectedDog && (
-            <Button onClick={handleSubmit} disabled={submitting} className='w-full sm:w-auto'>
+            <Button type='button' onClick={handleSubmit} disabled={submitting} className='w-full sm:w-auto'>
               {submitting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
               Send Link Request
             </Button>
