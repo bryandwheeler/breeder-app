@@ -1382,6 +1382,65 @@ export function PuppyFormDialog({ open, setOpen, puppy, litterBuyers, litterWait
                   />
                   <Label htmlFor='websiteFeatured'>Feature on homepage</Label>
                 </div>
+
+                {/* Photo Selection for Website */}
+                {formData.photos.length > 0 && (
+                  <div>
+                    <Label className='mb-2 block'>Website Photos</Label>
+                    <p className='text-xs text-muted-foreground mb-2'>Select which photos to show on the website and choose a primary photo.</p>
+                    <div className='grid grid-cols-3 gap-2'>
+                      {formData.photos.map((url, index) => {
+                        const isSelected = (formData.websitePhotos || formData.photos).includes(url);
+                        const isPrimary = formData.websitePrimaryPhoto === url;
+                        return (
+                          <div
+                            key={index}
+                            className={`relative rounded-lg overflow-hidden border-2 transition cursor-pointer ${isPrimary ? 'border-blue-500 ring-2 ring-blue-300' : isSelected ? 'border-green-500' : 'border-gray-300 opacity-50'}`}
+                          >
+                            <img
+                              src={url}
+                              alt={`Photo ${index + 1}`}
+                              className='w-full h-20 object-cover'
+                            />
+                            {/* Include checkbox */}
+                            <div className='absolute top-1 left-1'>
+                              <input
+                                type='checkbox'
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  const currentPhotos = formData.websitePhotos || [...formData.photos];
+                                  let updated: string[];
+                                  if (e.target.checked) {
+                                    updated = [...currentPhotos, url];
+                                  } else {
+                                    updated = currentPhotos.filter((p) => p !== url);
+                                    // If removing the primary photo, clear primary
+                                    if (formData.websitePrimaryPhoto === url) {
+                                      setFormData({ ...formData, websitePhotos: updated, websitePrimaryPhoto: updated[0] || undefined });
+                                      return;
+                                    }
+                                  }
+                                  setFormData({ ...formData, websitePhotos: updated });
+                                }}
+                                className='h-4 w-4 rounded border-white shadow'
+                              />
+                            </div>
+                            {/* Primary selection button */}
+                            {isSelected && (
+                              <button
+                                type='button'
+                                onClick={() => setFormData({ ...formData, websitePrimaryPhoto: url })}
+                                className={`absolute bottom-0 inset-x-0 text-center text-[10px] font-medium py-0.5 ${isPrimary ? 'bg-blue-500 text-white' : 'bg-black/50 text-white hover:bg-blue-500/80'}`}
+                              >
+                                {isPrimary ? 'Primary' : 'Set Primary'}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -74,14 +74,22 @@ export function PublicWebsitePuppies({ settings }: PublicWebsitePuppiesProps) {
                     key={puppy.id}
                     className='overflow-hidden hover:shadow-lg transition border-breeder-gray bg-white'
                   >
-                    {/* Image Placeholder */}
+                    {/* Puppy Photo */}
                     <div
                       className='h-64 bg-gradient-to-br flex items-center justify-center text-white relative group'
-                      style={{
+                      style={puppy.photos && puppy.photos.length > 0 ? {} : {
                         backgroundImage: `linear-gradient(135deg, #4DB3E6, #A9DBF4)`,
                       }}
                     >
-                      <span className='text-7xl'>🐾</span>
+                      {puppy.photos && puppy.photos.length > 0 ? (
+                        <img
+                          src={puppy.photos[0]}
+                          alt={puppy.name}
+                          className='w-full h-full object-cover'
+                        />
+                      ) : (
+                        <span className='text-7xl'>🐾</span>
+                      )}
                       <button
                         onClick={() => toggleFavorite(puppy.id)}
                         className='absolute top-3 right-3 p-2 bg-white rounded-full opacity-0 group-hover:opacity-100 transition'

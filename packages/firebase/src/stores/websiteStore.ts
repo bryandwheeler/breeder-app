@@ -508,7 +508,16 @@ export const useWebsiteStore = create<WebsiteState>((set, get) => ({
         dateOfBirth: litter.dateOfBirth,
         description: puppy.websiteDescription || '',
         price: puppy.websitePrice || puppy.salePrice || 0,
-        photos: puppy.photos || [],
+        photos: (() => {
+          const selected = puppy.websitePhotos && puppy.websitePhotos.length > 0
+            ? puppy.websitePhotos
+            : puppy.photos || [];
+          // Put primary photo first if set
+          if (puppy.websitePrimaryPhoto && selected.includes(puppy.websitePrimaryPhoto)) {
+            return [puppy.websitePrimaryPhoto, ...selected.filter((p) => p !== puppy.websitePrimaryPhoto)];
+          }
+          return selected;
+        })(),
         available: puppy.status === 'available' || puppy.status === 'pending',
         reserved: puppy.status === 'reserved',
         featured: puppy.websiteFeatured || false,

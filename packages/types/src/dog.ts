@@ -469,6 +469,8 @@ export interface Puppy {
   websiteDescription?: string;
   websitePrice?: number;
   websiteFeatured?: boolean;
+  websitePrimaryPhoto?: string;  // URL of the primary/hero photo for website
+  websitePhotos?: string[];      // Subset of photos selected for website display
 }
 
 // Uploaded Contract Document

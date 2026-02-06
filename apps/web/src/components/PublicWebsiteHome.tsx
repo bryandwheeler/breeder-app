@@ -72,11 +72,19 @@ export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
                   >
                     <div
                       className='h-48 bg-gradient-to-br flex items-center justify-center text-white'
-                      style={{
+                      style={puppy.photos && puppy.photos.length > 0 ? {} : {
                         backgroundImage: `linear-gradient(135deg, #4DB3E6, #A9DBF4)`,
                       }}
                     >
-                      <span className='text-6xl'>🐾</span>
+                      {puppy.photos && puppy.photos.length > 0 ? (
+                        <img
+                          src={puppy.photos[0]}
+                          alt={puppy.name}
+                          className='w-full h-full object-cover'
+                        />
+                      ) : (
+                        <span className='text-6xl'>🐾</span>
+                      )}
                     </div>
                     <div className='p-4'>
                       <h3 className='font-semibold text-lg mb-1 text-breeder-navy'>
