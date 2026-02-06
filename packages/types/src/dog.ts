@@ -1589,6 +1589,8 @@ export interface DogConnectionRequest {
 
   requesterDogId?: string; // Dog in requester's account referencing this connection (for syncing status back)
   linkedDogId?: string; // Linked dog in requester's system (created after approval)
+  linkToExisting?: boolean; // True when linking to an existing dog instead of creating a new one
+  sharedDogData?: Record<string, any>; // Snapshot of shared data stored on approval for merge review
 
   createdAt?: string;
   updatedAt?: string;

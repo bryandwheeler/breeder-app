@@ -44,6 +44,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { storage, auth } from '@breeder/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ImageCropDialog } from '@/components/ImageCropDialog';
+import { LinkExternalDogDialog } from '@/components/LinkExternalDogDialog';
 import { MultiRegistrationManager } from '@/components/MultiRegistrationManager';
 import { searchDogs, type DogSearchResult } from '@/lib/kennelSearch';
 import { useAuth } from '@/contexts/AuthContext';
@@ -124,6 +125,7 @@ const DogFormContent = forwardRef<DogFormHandle, {
     dog?.guardianHome
   );
   const [guardianDialogOpen, setGuardianDialogOpen] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [registrations, setRegistrations] = useState<Registration[]>(
     dog?.registrations || []
   );
@@ -1350,6 +1352,17 @@ const DogFormContent = forwardRef<DogFormHandle, {
                 </p>
               </div>
 
+              {dog && !dog.isConnectedDog && (
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  onClick={() => setLinkDialogOpen(true)}
+                >
+                  <Link2 className='mr-2 h-4 w-4' /> Link to External Program
+                </Button>
+              )}
+
               {programStatus === 'guardian' && (
                 <div className='space-y-2'>
                   <Button
@@ -1799,6 +1812,14 @@ const DogFormContent = forwardRef<DogFormHandle, {
         dogSex={form.watch('sex')}
         dogDateOfBirth={form.watch('dateOfBirth')}
       />
+
+      {dog && (
+        <LinkExternalDogDialog
+          open={linkDialogOpen}
+          setOpen={setLinkDialogOpen}
+          dog={dog}
+        />
+      )}
     </Form>
   );
 });
