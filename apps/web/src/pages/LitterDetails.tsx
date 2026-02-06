@@ -219,6 +219,23 @@ export function LitterDetails() {
     await updateLitter(litter.id, { puppies: updatedPuppies });
   };
 
+  // Update puppy from detail dialog (photo management, website toggles, etc.)
+  const handleUpdatePuppyFromDetail = async (updatedPuppy: Puppy) => {
+    const updatedPuppies = litter.puppies.map((p) =>
+      p.id === updatedPuppy.id ? updatedPuppy : p
+    );
+    await updateLitter(litter.id, { puppies: updatedPuppies });
+
+    // Sync website if needed
+    if (currentUser?.uid && updatedPuppy.showOnWebsite) {
+      const breed = dam?.breed || '';
+      await syncPuppyToWebsite(currentUser.uid, litter, updatedPuppy, breed);
+    }
+
+    // Update the viewing puppy state so the dialog reflects changes
+    setViewingPuppy(updatedPuppy);
+  };
+
   const handleAddBuyer = () => {
     setEditingBuyer(null);
     setBuyerDialogOpen(true);
@@ -1010,6 +1027,7 @@ export function LitterDetails() {
             setViewingPuppy(null);
             handleEditPuppy(puppy);
           }}
+          onUpdatePuppy={handleUpdatePuppyFromDetail}
         />
       )}
     </div>

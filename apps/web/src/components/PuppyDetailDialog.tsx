@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ImageGalleryDialog } from '@/components/ImageGalleryDialog';
+import { ImageCropDialog } from '@/components/ImageCropDialog';
 import {
   User,
   Users,
@@ -37,11 +38,18 @@ import {
   ExternalLink,
   CheckCircle2,
   Loader2,
+  Trash2,
+  Crop,
+  Globe,
+  Star,
+  Upload,
 } from 'lucide-react';
 import {
   getVolhardInterpretationColor,
   getWorkingPotentialColor,
 } from '@/lib/evaluationCalculations';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, storage } from '@breeder/firebase';
 
 interface PuppyDetailDialogProps {
   open: boolean;
@@ -51,6 +59,7 @@ interface PuppyDetailDialogProps {
   buyer?: Buyer;
   waitlistEntry?: WaitlistEntry;
   onEdit?: (puppy: Puppy) => void;
+  onUpdatePuppy?: (updatedPuppy: Puppy) => void;
 }
 
 export function PuppyDetailDialog({
@@ -61,12 +70,150 @@ export function PuppyDetailDialog({
   buyer,
   waitlistEntry,
   onEdit,
+  onUpdatePuppy,
 }: PuppyDetailDialogProps) {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
   const [loadingEvaluations, setLoadingEvaluations] = useState(false);
+  const [managePhotos, setManagePhotos] = useState(false);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [cropPhotoIndex, setCropPhotoIndex] = useState<number | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(null);
 
   const { evaluations, fetchPuppyEvaluations, getEvaluationsForPuppy } = useEvaluationStore();
+
+  // Reset manage mode when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setManagePhotos(false);
+      setConfirmDeleteIndex(null);
+    }
+  }, [open]);
+
+  const handleDeletePhoto = (index: number) => {
+    if (!onUpdatePuppy) return;
+    const photoUrl = puppy.photos[index];
+    const newPhotos = puppy.photos.filter((_, i) => i !== index);
+    // Also clean up website photo references
+    const updates: Partial<Puppy> = { photos: newPhotos };
+    if (puppy.websitePrimaryPhoto === photoUrl) {
+      updates.websitePrimaryPhoto = undefined;
+    }
+    if (puppy.websitePhotos) {
+      updates.websitePhotos = puppy.websitePhotos.filter((p) => p !== photoUrl);
+    }
+    onUpdatePuppy({ ...puppy, ...updates });
+    setConfirmDeleteIndex(null);
+  };
+
+  const handleRecropPhoto = (index: number) => {
+    setImageToCrop(puppy.photos[index]);
+    setCropPhotoIndex(index);
+    setCropDialogOpen(true);
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    if (cropPhotoIndex === null || !onUpdatePuppy) return;
+    setUploading(true);
+    try {
+      const user = auth.currentUser;
+      if (!user) throw new Error('Must be logged in');
+      const timestamp = Date.now();
+      const storagePath = `users/${user.uid}/puppies/${timestamp}_recropped.jpg`;
+      const storageRef = ref(storage, storagePath);
+      await uploadBytes(storageRef, croppedBlob);
+      const downloadUrl = await getDownloadURL(storageRef);
+
+      const oldUrl = puppy.photos[cropPhotoIndex];
+      const newPhotos = [...puppy.photos];
+      newPhotos[cropPhotoIndex] = downloadUrl;
+
+      const updates: Partial<Puppy> = { photos: newPhotos };
+      if (puppy.websitePrimaryPhoto === oldUrl) {
+        updates.websitePrimaryPhoto = downloadUrl;
+      }
+      if (puppy.websitePhotos) {
+        updates.websitePhotos = puppy.websitePhotos.map((p) => p === oldUrl ? downloadUrl : p);
+      }
+      onUpdatePuppy({ ...puppy, ...updates });
+    } catch (error) {
+      console.error('Error re-cropping photo:', error);
+      alert('Failed to re-crop photo. Please try again.');
+    } finally {
+      setUploading(false);
+      setCropPhotoIndex(null);
+    }
+  };
+
+  const handleToggleWebsitePhoto = (photoUrl: string) => {
+    if (!onUpdatePuppy) return;
+    const currentWebsitePhotos = puppy.websitePhotos || [...puppy.photos];
+    let updated: string[];
+    if (currentWebsitePhotos.includes(photoUrl)) {
+      updated = currentWebsitePhotos.filter((p) => p !== photoUrl);
+      const updates: Partial<Puppy> = { websitePhotos: updated };
+      if (puppy.websitePrimaryPhoto === photoUrl) {
+        updates.websitePrimaryPhoto = updated[0] || undefined;
+      }
+      onUpdatePuppy({ ...puppy, ...updates });
+    } else {
+      updated = [...currentWebsitePhotos, photoUrl];
+      onUpdatePuppy({ ...puppy, websitePhotos: updated });
+    }
+  };
+
+  const handleSetPrimaryPhoto = (photoUrl: string) => {
+    if (!onUpdatePuppy) return;
+    onUpdatePuppy({ ...puppy, websitePrimaryPhoto: photoUrl });
+  };
+
+  const handleNewPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/') && !file.name.toLowerCase().endsWith('.heic') && !file.name.toLowerCase().endsWith('.heif')) {
+      alert('Please select an image file');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image size must be less than 10MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageToCrop(reader.result as string);
+      setCropPhotoIndex(null); // null means new photo, not replacing
+      setCropDialogOpen(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleNewPhotoCropComplete = async (croppedBlob: Blob) => {
+    if (cropPhotoIndex !== null) {
+      // This is a re-crop, use the other handler
+      await handleCropComplete(croppedBlob);
+      return;
+    }
+    if (!onUpdatePuppy) return;
+    setUploading(true);
+    try {
+      const user = auth.currentUser;
+      if (!user) throw new Error('Must be logged in');
+      const timestamp = Date.now();
+      const storagePath = `users/${user.uid}/puppies/${timestamp}_cropped.jpg`;
+      const storageRef = ref(storage, storagePath);
+      await uploadBytes(storageRef, croppedBlob);
+      const downloadUrl = await getDownloadURL(storageRef);
+      onUpdatePuppy({ ...puppy, photos: [...puppy.photos, downloadUrl] });
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      alert('Failed to upload photo. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // Fetch evaluations when dialog opens
   useEffect(() => {
@@ -223,38 +370,157 @@ export function PuppyDetailDialog({
             {/* Details Tab */}
             <TabsContent value="details" className="space-y-4 mt-4">
               {/* Photos */}
-              {puppy.photos && puppy.photos.length > 0 && (
-                <div className="grid grid-cols-3 gap-2">
-                  {puppy.photos.slice(0, 3).map((photo, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        setGalleryInitialIndex(index);
-                        setGalleryOpen(true);
-                      }}
-                      className="relative group"
-                    >
-                      <img
-                        src={photo}
-                        alt={`${puppy.name || 'Puppy'} ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg cursor-pointer"
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">
+                    Photos {puppy.photos && puppy.photos.length > 0 && `(${puppy.photos.length})`}
+                  </span>
+                  {onUpdatePuppy && (
+                    <div className="flex gap-1">
+                      <input
+                        type="file"
+                        accept="image/*,.heic,.heif"
+                        onChange={handleNewPhotoUpload}
+                        disabled={uploading}
+                        className="hidden"
+                        id="detail-photo-upload"
                       />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-lg transition" />
-                    </button>
-                  ))}
-                  {puppy.photos.length > 3 && (
-                    <button
-                      onClick={() => {
-                        setGalleryInitialIndex(3);
-                        setGalleryOpen(true);
-                      }}
-                      className="flex items-center justify-center bg-gray-100 rounded-lg h-24 text-sm text-muted-foreground hover:bg-gray-200 transition"
-                    >
-                      +{puppy.photos.length - 3} more
-                    </button>
+                      <label htmlFor="detail-photo-upload">
+                        <Button type="button" variant="ghost" size="sm" disabled={uploading} asChild>
+                          <span className="cursor-pointer">
+                            <Upload className="h-3 w-3 mr-1" />
+                            {uploading ? 'Uploading...' : 'Add'}
+                          </span>
+                        </Button>
+                      </label>
+                      {puppy.photos && puppy.photos.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { setManagePhotos(!managePhotos); setConfirmDeleteIndex(null); }}
+                          className={managePhotos ? 'text-primary' : ''}
+                        >
+                          {managePhotos ? 'Done' : 'Manage'}
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
+
+                {puppy.photos && puppy.photos.length > 0 ? (
+                  managePhotos ? (
+                    // Manage mode: shows all photos with action buttons
+                    <div className="grid grid-cols-3 gap-2">
+                      {puppy.photos.map((photo, index) => {
+                        const websitePhotos = puppy.websitePhotos || puppy.photos;
+                        const isOnWebsite = puppy.showOnWebsite && websitePhotos.includes(photo);
+                        const isPrimary = puppy.websitePrimaryPhoto === photo;
+                        return (
+                          <div key={index} className={`relative rounded-lg overflow-hidden border-2 ${isPrimary ? 'border-blue-500' : isOnWebsite ? 'border-green-500' : 'border-gray-200'}`}>
+                            <img
+                              src={photo}
+                              alt={`Photo ${index + 1}`}
+                              className="w-full h-24 object-cover"
+                            />
+                            {/* Action overlay */}
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 text-white hover:bg-white/30"
+                                onClick={() => handleRecropPhoto(index)}
+                                title="Re-crop"
+                              >
+                                <Crop className="h-3.5 w-3.5" />
+                              </Button>
+                              {confirmDeleteIndex === index ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0 text-red-400 hover:bg-red-500/30 animate-pulse"
+                                  onClick={() => handleDeletePhoto(index)}
+                                  title="Confirm delete"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0 text-white hover:bg-white/30"
+                                  onClick={() => setConfirmDeleteIndex(index)}
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                            </div>
+                            {/* Website indicators */}
+                            {puppy.showOnWebsite && (
+                              <div className="absolute bottom-0 inset-x-0 flex">
+                                <button
+                                  onClick={() => handleToggleWebsitePhoto(photo)}
+                                  className={`flex-1 text-[9px] font-medium py-0.5 text-center ${isOnWebsite ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300'}`}
+                                  title={isOnWebsite ? 'Remove from website' : 'Show on website'}
+                                >
+                                  <Globe className="h-2.5 w-2.5 inline mr-0.5" />
+                                  {isOnWebsite ? 'On' : 'Off'}
+                                </button>
+                                {isOnWebsite && (
+                                  <button
+                                    onClick={() => handleSetPrimaryPhoto(photo)}
+                                    className={`flex-1 text-[9px] font-medium py-0.5 text-center ${isPrimary ? 'bg-blue-600 text-white' : 'bg-gray-600 text-gray-300 hover:bg-blue-500/80'}`}
+                                    title={isPrimary ? 'Primary photo' : 'Set as primary'}
+                                  >
+                                    <Star className="h-2.5 w-2.5 inline mr-0.5" />
+                                    {isPrimary ? 'Primary' : 'Set'}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    // View mode: compact grid with gallery on click
+                    <div className="grid grid-cols-3 gap-2">
+                      {puppy.photos.slice(0, 3).map((photo, index) => (
+                        <button
+                          key={index}
+                          onClick={() => {
+                            setGalleryInitialIndex(index);
+                            setGalleryOpen(true);
+                          }}
+                          className="relative group"
+                        >
+                          <img
+                            src={photo}
+                            alt={`${puppy.name || 'Puppy'} ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg cursor-pointer"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-lg transition" />
+                        </button>
+                      ))}
+                      {puppy.photos.length > 3 && (
+                        <button
+                          onClick={() => {
+                            setGalleryInitialIndex(3);
+                            setGalleryOpen(true);
+                          }}
+                          className="flex items-center justify-center bg-gray-100 rounded-lg h-24 text-sm text-muted-foreground hover:bg-gray-200 transition"
+                        >
+                          +{puppy.photos.length - 3} more
+                        </button>
+                      )}
+                    </div>
+                  )
+                ) : (
+                  !onUpdatePuppy ? null : (
+                    <p className="text-sm text-muted-foreground">No photos yet. Click "Add" to upload.</p>
+                  )
+                )}
+              </div>
 
               {/* Basic Info */}
               <Card>
@@ -496,8 +762,17 @@ export function PuppyDetailDialog({
           images={puppy.photos}
           initialIndex={galleryInitialIndex}
           title={`${puppy.name || 'Puppy'}'s Photos`}
+          onDelete={onUpdatePuppy ? (index) => handleDeletePhoto(index) : undefined}
         />
       )}
+
+      {/* Crop Dialog for re-cropping or new uploads */}
+      <ImageCropDialog
+        open={cropDialogOpen}
+        setOpen={setCropDialogOpen}
+        imageSrc={imageToCrop}
+        onCropComplete={cropPhotoIndex !== null ? handleCropComplete : handleNewPhotoCropComplete}
+      />
     </>
   );
 }
