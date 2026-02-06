@@ -121,7 +121,7 @@ export function LinkExternalDogDialog({ open, setOpen, dog }: LinkExternalDogDia
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className='sm:max-w-md'>
+      <DialogContent className='sm:max-w-md max-h-[90vh] flex flex-col'>
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
             <Link2 className='h-5 w-5' />
@@ -132,7 +132,7 @@ export function LinkExternalDogDialog({ open, setOpen, dog }: LinkExternalDogDia
           </DialogDescription>
         </DialogHeader>
 
-        <div className='space-y-4'>
+        <div className='space-y-4 overflow-y-auto flex-1 min-h-0'>
           {/* Search Section */}
           <div className='space-y-2'>
             <Label htmlFor='link-search'>Search for Dog</Label>
@@ -236,12 +236,12 @@ export function LinkExternalDogDialog({ open, setOpen, dog }: LinkExternalDogDia
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant='outline' onClick={handleClose} disabled={submitting}>
+        <DialogFooter className='gap-2 sm:gap-0'>
+          <Button variant='outline' onClick={handleClose} disabled={submitting} className='w-full sm:w-auto'>
             Cancel
           </Button>
           {selectedDog && (
-            <Button onClick={handleSubmit} disabled={submitting}>
+            <Button onClick={handleSubmit} disabled={submitting} className='w-full sm:w-auto'>
               {submitting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
               Send Link Request
             </Button>
