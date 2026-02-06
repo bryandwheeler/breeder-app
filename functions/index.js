@@ -1778,6 +1778,263 @@ exports.sendPlatformNotification = functions.https.onCall(async (data, context) 
 });
 
 // ============================================================================
+// Dog Connection Request Functions
+// ============================================================================
+
+// Helper: Sync connection status back to the requester's dog
+async function syncRequesterDogStatus(requestId, requestData, newStatus) {
+  try {
+    let dogDocRef = null;
+
+    // Fast path: use requesterDogId if available
+    if (requestData.requesterDogId) {
+      dogDocRef = db.collection('dogs').doc(requestData.requesterDogId);
+      const dogSnap = await dogDocRef.get();
+      if (!dogSnap.exists) {
+        dogDocRef = null; // fall through to slow path
+      }
+    }
+
+    // Slow path: query requester's dogs for matching connectionRequestId
+    if (!dogDocRef) {
+      const dogsSnap = await db.collection('dogs')
+        .where('userId', '==', requestData.requesterId)
+        .get();
+
+      for (const doc of dogsSnap.docs) {
+        const data = doc.data();
+        if (
+          data.externalSire?.connectionRequestId === requestId ||
+          data.externalDam?.connectionRequestId === requestId
+        ) {
+          dogDocRef = doc.ref;
+          break;
+        }
+      }
+    }
+
+    if (!dogDocRef) {
+      console.log(`No dog found for connection request ${requestId}`);
+      return;
+    }
+
+    const dogSnap = await dogDocRef.get();
+    const dogData = dogSnap.data();
+
+    // Determine if this is a sire or dam connection
+    const isSire = dogData.externalSire?.connectionRequestId === requestId;
+    const isDam = dogData.externalDam?.connectionRequestId === requestId;
+
+    if (!isSire && !isDam) {
+      // Try matching by requesterDogId path
+      if (dogData.externalSire?.ownerId === requestData.ownerId && dogData.externalSire?.dogId === requestData.dogId) {
+        const update = { 'externalSire.connectionStatus': newStatus };
+        if (newStatus === 'approved' && requestData.linkedDogId) {
+          update['externalSire.connectedDogId'] = requestData.linkedDogId;
+        }
+        await dogDocRef.update(update);
+        console.log(`Updated externalSire status to ${newStatus} for dog ${dogDocRef.id}`);
+        return;
+      }
+      if (dogData.externalDam?.ownerId === requestData.ownerId && dogData.externalDam?.dogId === requestData.dogId) {
+        const update = { 'externalDam.connectionStatus': newStatus };
+        if (newStatus === 'approved' && requestData.linkedDogId) {
+          update['externalDam.connectedDogId'] = requestData.linkedDogId;
+        }
+        await dogDocRef.update(update);
+        console.log(`Updated externalDam status to ${newStatus} for dog ${dogDocRef.id}`);
+        return;
+      }
+      console.log(`Could not determine sire/dam for connection request ${requestId}`);
+      return;
+    }
+
+    const prefix = isSire ? 'externalSire' : 'externalDam';
+    const update = { [`${prefix}.connectionStatus`]: newStatus };
+    if (newStatus === 'approved' && requestData.linkedDogId) {
+      update[`${prefix}.connectedDogId`] = requestData.linkedDogId;
+    }
+
+    await dogDocRef.update(update);
+    console.log(`Updated ${prefix} status to ${newStatus} for dog ${dogDocRef.id}`);
+  } catch (error) {
+    console.error('Error syncing requester dog status:', error);
+  }
+}
+
+// 21. Send notification when a connection request is created
+exports.onConnectionRequestCreated = functions.firestore
+  .document('connectionRequests/{requestId}')
+  .onCreate(async (snap, context) => {
+    const request = snap.data();
+    const requestId = context.params.requestId;
+
+    try {
+      // Create in-app notification for the dog owner
+      await db.collection('notifications').add({
+        userId: request.ownerId,
+        type: 'connection_request',
+        title: 'New Connection Request',
+        message: `${request.requesterKennelName || 'A breeder'} wants to connect with your dog "${request.dogName}"`,
+        relatedId: requestId,
+        relatedType: 'dog_connection',
+        actionLabel: 'View Request',
+        actionUrl: '/connections',
+        read: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      console.log(`In-app notification created for connection request ${requestId}`);
+
+      // Check if owner wants email notifications
+      const shouldSend = await shouldSendEmailNotification(request.ownerId, 'connection_request');
+      if (!shouldSend) {
+        console.log(`Owner ${request.ownerId} has disabled connection request emails`);
+        return;
+      }
+
+      // Get owner's email
+      const ownerDoc = await db.collection('users').doc(request.ownerId).get();
+      if (!ownerDoc.exists || !ownerDoc.data().email) {
+        console.log('Owner user document not found or has no email');
+        return;
+      }
+
+      const owner = ownerDoc.data();
+      const baseUrl = process.env.APP_URL || 'https://expert-breeder.web.app';
+
+      const purposeLabels = {
+        sire: 'Sire (Male used for breeding)',
+        dam: 'Dam (Female used for breeding)',
+        offspring: 'Offspring (Puppy from a litter)',
+        relative: 'Relative (Related dog)',
+        reference: 'Reference (For pedigree)',
+      };
+
+      await sendPlatformNotificationEmail(
+        owner.email,
+        'connection_request',
+        {
+          recipient_name: owner.displayName || 'there',
+          requester_name: request.requesterKennelName || 'A breeder',
+          dog_name: request.dogName || 'Unknown',
+          dog_registration: request.dogRegistrationNumber || 'Not provided',
+          purpose: purposeLabels[request.purpose] || request.purpose || 'Not specified',
+          message: request.message || '',
+          app_url: baseUrl,
+          connections_url: `${baseUrl}/connections`,
+        }
+      );
+
+      console.log(`Connection request email sent for ${requestId}`);
+    } catch (error) {
+      console.error('Error handling connection request created:', error);
+    }
+  });
+
+// 22. Handle connection request status changes (approved/declined)
+exports.onConnectionRequestUpdated = functions.firestore
+  .document('connectionRequests/{requestId}')
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    const requestId = context.params.requestId;
+
+    // Only process status changes
+    if (before.status === after.status) {
+      return;
+    }
+
+    const baseUrl = process.env.APP_URL || 'https://expert-breeder.web.app';
+
+    try {
+      if (after.status === 'approved') {
+        // Sync status back to requester's dog
+        await syncRequesterDogStatus(requestId, after, 'approved');
+
+        // Create in-app notification for requester
+        await db.collection('notifications').add({
+          userId: after.requesterId,
+          type: 'connection_approved',
+          title: 'Connection Request Approved',
+          message: `${after.ownerKennelName || 'A breeder'} has approved your request to connect with "${after.dogName}"`,
+          relatedId: requestId,
+          relatedType: 'dog_connection',
+          actionLabel: 'View Connections',
+          actionUrl: '/connections',
+          read: false,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // Send email notification to requester
+        const shouldSend = await shouldSendEmailNotification(after.requesterId, 'connection_approved');
+        if (shouldSend) {
+          const requesterDoc = await db.collection('users').doc(after.requesterId).get();
+          if (requesterDoc.exists && requesterDoc.data().email) {
+            const requester = requesterDoc.data();
+            await sendPlatformNotificationEmail(
+              requester.email,
+              'connection_approved',
+              {
+                recipient_name: requester.displayName || 'there',
+                owner_name: after.ownerKennelName || 'A breeder',
+                dog_name: after.dogName || 'Unknown',
+                response_message: after.responseMessage || '',
+                app_url: baseUrl,
+                connections_url: `${baseUrl}/connections`,
+              }
+            );
+          }
+        }
+
+        console.log(`Connection approved notification sent for ${requestId}`);
+      } else if (after.status === 'declined') {
+        // Sync status back to requester's dog
+        await syncRequesterDogStatus(requestId, after, 'declined');
+
+        // Create in-app notification for requester
+        await db.collection('notifications').add({
+          userId: after.requesterId,
+          type: 'connection_declined',
+          title: 'Connection Request Declined',
+          message: `${after.ownerKennelName || 'A breeder'} has declined your request to connect with "${after.dogName}"`,
+          relatedId: requestId,
+          relatedType: 'dog_connection',
+          actionLabel: 'View Connections',
+          actionUrl: '/connections',
+          read: false,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // Send email notification to requester
+        const shouldSend = await shouldSendEmailNotification(after.requesterId, 'connection_declined');
+        if (shouldSend) {
+          const requesterDoc = await db.collection('users').doc(after.requesterId).get();
+          if (requesterDoc.exists && requesterDoc.data().email) {
+            const requester = requesterDoc.data();
+            await sendPlatformNotificationEmail(
+              requester.email,
+              'connection_declined',
+              {
+                recipient_name: requester.displayName || 'there',
+                owner_name: after.ownerKennelName || 'A breeder',
+                dog_name: after.dogName || 'Unknown',
+                response_message: after.responseMessage || '',
+                app_url: baseUrl,
+                connections_url: `${baseUrl}/connections`,
+              }
+            );
+          }
+        }
+
+        console.log(`Connection declined notification sent for ${requestId}`);
+      }
+    } catch (error) {
+      console.error('Error handling connection request update:', error);
+    }
+  });
+
+// ============================================================================
 // SignNow E-Signature Contract Functions
 // ============================================================================
 

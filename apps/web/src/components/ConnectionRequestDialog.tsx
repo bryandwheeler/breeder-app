@@ -10,10 +10,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBreederStore } from '@breeder/firebase';
 import { Loader2, Search } from 'lucide-react';
 import { searchDogs, type DogSearchResult } from '@/lib/kennelSearch';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@breeder/firebase';
-import emailjs from '@emailjs/browser';
-import { EMAILJS_CONFIG } from '@/lib/emailjs';
 
 interface ConnectionRequestDialogProps {
   open: boolean;
@@ -24,7 +20,6 @@ export function ConnectionRequestDialog({ open, setOpen }: ConnectionRequestDial
   const { currentUser } = useAuth();
   const profile = useBreederStore((state) => state.profile);
   const createConnectionRequest = useConnectionStore((state) => state.createConnectionRequest);
-  const addNotification = useConnectionStore((state) => state.addNotification);
 
   const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -92,66 +87,9 @@ export function ConnectionRequestDialog({ open, setOpen }: ConnectionRequestDial
         requestData.message = message.trim();
       }
 
-      const requestId = await createConnectionRequest(requestData);
+      await createConnectionRequest(requestData);
 
-      // Create notification for the owner
-      await addNotification({
-        userId: selectedDog.ownerId,
-        type: 'connection_request',
-        title: 'New Dog Connection Request',
-        message: `${profile.kennelName || profile.breederName} wants to connect with your dog "${selectedDog.dogName}"`,
-        read: false,
-        relatedId: requestId,
-        relatedType: 'dog_connection',
-        actionLabel: 'View Request',
-        actionUrl: `/connections`,
-      });
-
-      // Send email notification to owner if enabled
-      try {
-        const ownerProfileDoc = await getDoc(doc(db, 'breederProfiles', selectedDog.ownerId));
-        if (ownerProfileDoc.exists()) {
-          const ownerProfile = ownerProfileDoc.data();
-
-          if (ownerProfile.enableConnectionRequestNotifications !== false) {
-            const publicKey = ownerProfile.emailjsPublicKey || EMAILJS_CONFIG.PUBLIC_KEY;
-            const serviceId = ownerProfile.emailjsServiceId || EMAILJS_CONFIG.SERVICE_ID;
-            const templateId = ownerProfile.emailjsConnectionRequestTemplateId;
-
-            if (publicKey && serviceId && templateId) {
-              const notificationEmail = ownerProfile.notificationEmail || ownerProfile.email;
-              const connectionsUrl = `${window.location.origin}/connections`;
-
-              const purposeLabels: Record<string, string> = {
-                sire: 'Sire (Male used for breeding)',
-                dam: 'Dam (Female used for breeding)',
-                offspring: 'Offspring (Puppy from a litter)',
-                relative: 'Relative (Related dog)',
-                reference: 'Reference (For pedigree)',
-              };
-
-              await emailjs.send(
-                serviceId,
-                templateId,
-                {
-                  to_email: notificationEmail,
-                  to_name: ownerProfile.kennelName || ownerProfile.breederName || 'Breeder',
-                  requester_name: profile.kennelName || profile.breederName || 'Unknown',
-                  dog_name: selectedDog.dogName,
-                  dog_registration: selectedDog.registrationNumber || 'Not provided',
-                  purpose: purposeLabels[purpose] || purpose,
-                  purpose_details: purposeDetails || 'N/A',
-                  message: message || 'No additional message',
-                  connections_url: connectionsUrl,
-                },
-                publicKey
-              );
-            }
-          }
-        }
-      } catch (emailError) {
-        console.error('Failed to send email notification:', emailError);
-      }
+      // Notification and email are handled by Cloud Functions (onConnectionRequestCreated)
 
       alert('Connection request sent successfully!');
       handleClose();

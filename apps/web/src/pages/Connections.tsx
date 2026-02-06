@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useConnectionStore } from '@breeder/firebase';
 import { useDogStore } from '@breeder/firebase';
 import { useAdminStore } from '@breeder/firebase';
-import { useBreederStore } from '@breeder/firebase';
 import { useBreederSocialStore } from '@breeder/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,8 +31,6 @@ import { DogConnectionRequest, DogSharingPreferences, Dog } from '@breeder/types
 import { useToast } from '@/hooks/use-toast';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@breeder/firebase';
-import emailjs from '@emailjs/browser';
-import { EMAILJS_CONFIG } from '@/lib/emailjs';
 
 export function Connections() {
   const { currentUser } = useAuth();
@@ -45,12 +42,10 @@ export function Connections() {
     declineConnectionRequest,
     cancelConnectionRequest,
     deleteConnectionRequest,
-    addNotification,
   } = useConnectionStore();
   const { addDog, dogs, deleteDog, updateDog, subscribeToUserData } =
     useDogStore();
   const impersonatedUserId = useAdminStore((s) => s.impersonatedUserId);
-  const profile = useBreederStore((state) => state.profile);
   const {
     pendingRequests: friendRequests,
     totalUnreadMessages,
@@ -123,70 +118,6 @@ export function Connections() {
 
   // Get friends count
   const friends = getFriendsList();
-
-  const sendEmailNotification = async (
-    recipientUserId: string,
-    templateType: 'approved' | 'declined',
-    dogName: string,
-    responseMessage?: string
-  ) => {
-    try {
-      const recipientProfileDoc = await getDoc(
-        doc(db, 'breederProfiles', recipientUserId)
-      );
-      if (!recipientProfileDoc.exists()) return;
-
-      const recipientProfile = recipientProfileDoc.data();
-      if (recipientProfile.enableConnectionRequestNotifications === false)
-        return;
-
-      const publicKey =
-        recipientProfile.emailjsPublicKey || EMAILJS_CONFIG.PUBLIC_KEY;
-      const serviceId =
-        recipientProfile.emailjsServiceId || EMAILJS_CONFIG.SERVICE_ID;
-      const templateId = recipientProfile.emailjsConnectionRequestTemplateId;
-
-      if (!publicKey || !serviceId || !templateId) return;
-
-      const notificationEmail =
-        recipientProfile.notificationEmail || recipientProfile.email;
-      const connectionsUrl = `${window.location.origin}/connections`;
-      const ownerKennelName =
-        profile?.kennelName || profile?.breederName || 'A breeder';
-
-      const subject =
-        templateType === 'approved'
-          ? `Connection Request Approved - ${dogName}`
-          : `Connection Request Declined - ${dogName}`;
-
-      const mainMessage =
-        templateType === 'approved'
-          ? `${ownerKennelName} has approved your connection request for "${dogName}".`
-          : `${ownerKennelName} has declined your connection request for "${dogName}".`;
-
-      await emailjs.send(
-        serviceId,
-        templateId,
-        {
-          to_email: notificationEmail,
-          to_name:
-            recipientProfile.kennelName ||
-            recipientProfile.breederName ||
-            'Breeder',
-          subject,
-          message: mainMessage,
-          dog_name: dogName,
-          owner_name: ownerKennelName,
-          response_message: responseMessage || 'No additional message',
-          connections_url: connectionsUrl,
-          status: templateType,
-        },
-        publicKey
-      );
-    } catch (error) {
-      console.error('Failed to send email notification:', error);
-    }
-  };
 
   const handleApproveClick = (request: DogConnectionRequest) => {
     setSelectedRequest(request);
@@ -310,30 +241,15 @@ export function Connections() {
         selectedRequest.requesterId
       );
 
-      // Update the connection request with approval
+      // Update the connection request with approval (includes linkedDogId)
       await approveConnectionRequest(
         selectedRequest.id,
         preferences,
-        responseMessage
+        responseMessage,
+        newDogId
       );
 
-      // Send notification to the requester
-      await addNotification({
-        userId: selectedRequest.requesterId,
-        type: 'connection_approved',
-        title: 'Connection Request Approved',
-        message: `${selectedRequest.ownerKennelName} has approved your request to connect with "${selectedRequest.dogName}"`,
-        relatedId: selectedRequest.id,
-        relatedType: 'dog_connection',
-      });
-
-      // Send email notification
-      await sendEmailNotification(
-        selectedRequest.requesterId,
-        'approved',
-        selectedRequest.dogName,
-        responseMessage
-      );
+      // Notification and email are handled by Cloud Functions (onConnectionRequestUpdated)
 
       toast({
         title: 'Request Approved',
@@ -358,23 +274,7 @@ export function Connections() {
     try {
       await declineConnectionRequest(selectedRequest.id, responseMessage);
 
-      // Send notification to the requester
-      await addNotification({
-        userId: selectedRequest.requesterId,
-        type: 'connection_declined',
-        title: 'Connection Request Declined',
-        message: `${selectedRequest.ownerKennelName} has declined your request to connect with "${selectedRequest.dogName}"`,
-        relatedId: selectedRequest.id,
-        relatedType: 'dog_connection',
-      });
-
-      // Send email notification
-      await sendEmailNotification(
-        selectedRequest.requesterId,
-        'declined',
-        selectedRequest.dogName,
-        responseMessage
-      );
+      // Notification and email are handled by Cloud Functions (onConnectionRequestUpdated)
 
       toast({
         title: 'Request Declined',

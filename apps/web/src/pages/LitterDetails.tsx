@@ -15,6 +15,7 @@ import { ExpenseDialog } from '@/components/ExpenseDialog';
 import { useState, useEffect } from 'react';
 import { Puppy, Buyer, Expense, WaitlistEntry, ContractDocument } from '@breeder/types';
 import { format } from 'date-fns';
+import { calculateAgeWeeksAndDays } from '@/lib/utils';
 import { generateLitterRecord } from '@/lib/pdfGenerator';
 import { ContractSigningDialog } from '@/components/ContractSigningDialog';
 import { LitterMilestones } from '@/components/LitterMilestones';
@@ -444,6 +445,9 @@ export function LitterDetails() {
               <div>
                 <strong>Date of Birth:</strong>{' '}
                 {format(new Date(litter.dateOfBirth), 'PPP')}
+                <span className='text-muted-foreground ml-1'>
+                  ({calculateAgeWeeksAndDays(litter.dateOfBirth)})
+                </span>
               </div>
             ) : litter.expectedDateOfBirth ? (
               <div>
@@ -664,6 +668,7 @@ export function LitterDetails() {
                 <PuppyCard
                   key={puppy.id}
                   puppy={puppy}
+                  dateOfBirth={litter.dateOfBirth}
                   buyer={buyer}
                   waitlistEntry={assignedWaitlistEntry}
                   evaluationCount={getEvaluationCountForPuppy(puppy.id)}

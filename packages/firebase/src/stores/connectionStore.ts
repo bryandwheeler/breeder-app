@@ -33,7 +33,8 @@ interface ConnectionStore {
   approveConnectionRequest: (
     id: string,
     sharingPreferences: any,
-    responseMessage?: string
+    responseMessage?: string,
+    linkedDogId?: string
   ) => Promise<void>;
   declineConnectionRequest: (
     id: string,
@@ -78,7 +79,7 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
     });
   },
 
-  approveConnectionRequest: async (id, sharingPreferences, responseMessage) => {
+  approveConnectionRequest: async (id, sharingPreferences, responseMessage, linkedDogId) => {
     const docRef = doc(db, 'connectionRequests', id);
     const updateData: any = {
       status: 'approved',
@@ -90,6 +91,10 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
     // Only add responseMessage if it has a value
     if (responseMessage?.trim()) {
       updateData.responseMessage = responseMessage.trim();
+    }
+
+    if (linkedDogId) {
+      updateData.linkedDogId = linkedDogId;
     }
 
     await updateDoc(docRef, updateData);

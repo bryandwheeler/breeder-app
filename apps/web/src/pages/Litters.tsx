@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Calendar, Users, Eye, Edit, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { calculateAgeWeeksAndDays } from '@/lib/utils';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { LitterFormDialog } from '@/components/LitterFormDialog';
@@ -165,6 +166,9 @@ export function Litters() {
                       <p className='text-sm'>
                         <strong>Date of Birth:</strong>{' '}
                         {format(new Date(litter.dateOfBirth), 'PPP')}
+                        <span className='text-muted-foreground ml-1'>
+                          ({calculateAgeWeeksAndDays(litter.dateOfBirth)})
+                        </span>
                       </p>
                     ) : litter.expectedDateOfBirth ? (
                       <p className='text-sm'>

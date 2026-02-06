@@ -50,9 +50,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useConnectionStore } from '@breeder/firebase';
 import { useBreederStore } from '@breeder/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@breeder/firebase';
-import emailjs from '@emailjs/browser';
 import { Badge } from '@/components/ui/badge';
 import { Link2 } from 'lucide-react';
 import { useAdminStore } from '@breeder/firebase';
@@ -99,13 +97,13 @@ const DogFormContent = forwardRef<DogFormHandle, {
 }>(function DogFormContent({
   dog,
   setOpen,
-}, ref) {
+}, forwardedRef) {
   const { currentUser } = useAuth();
   const { dogs, addDog, updateDog } = useDogStore();
   const males = dogs.filter((d) => d.sex === 'male');
   const females = dogs.filter((d) => d.sex === 'female');
   const profile = useBreederStore((state) => state.profile);
-  const { createConnectionRequest, addNotification } = useConnectionStore();
+  const { createConnectionRequest } = useConnectionStore();
   const impersonatedUserId = useAdminStore((s) => s.impersonatedUserId);
 
   const [photos, setPhotos] = useState<string[]>(dog?.photos || []);
@@ -246,7 +244,7 @@ const DogFormContent = forwardRef<DogFormHandle, {
   });
 
   // Expose submit method to parent via ref
-  useImperativeHandle(ref, () => ({
+  useImperativeHandle(forwardedRef, () => ({
     submit: () => form.handleSubmit(onSubmit)(),
   }));
 
@@ -387,31 +385,25 @@ const DogFormContent = forwardRef<DogFormHandle, {
         throw new Error('Must be logged in to upload photos');
       }
 
-      // Create a unique filename with user prefix for storage rules
       const timestamp = Date.now();
       const suffix = cropPhotoIndex !== null ? 'recropped' : 'cropped';
       const filename = `dogs/${timestamp}_${suffix}.jpg`;
       const storagePath = `users/${user.uid}/${filename}`;
       const storageRef = ref(storage, storagePath);
 
-      // Upload the cropped file
       await uploadBytes(storageRef, croppedBlob);
 
-      // Get the download URL
       const downloadUrl = await getDownloadURL(storageRef);
 
       let newPhotos: string[];
       if (cropPhotoIndex !== null) {
-        // Re-crop: replace the photo at the same index
         newPhotos = [...photos];
         newPhotos[cropPhotoIndex] = downloadUrl;
       } else {
-        // New photo: append
         newPhotos = [...photos, downloadUrl];
       }
       setPhotos(newPhotos);
 
-      // Auto-save photo for existing dogs
       if (dog) {
         await updateDog(dog.id, { photos: newPhotos });
         toast({
@@ -446,6 +438,7 @@ const DogFormContent = forwardRef<DogFormHandle, {
         purpose: 'sire' as const,
         requestDate: new Date().toISOString(),
         status: 'pending',
+        requesterDogId: dog?.id,
       };
 
       if (externalSire.registrationNumber) {
@@ -483,55 +476,7 @@ const DogFormContent = forwardRef<DogFormHandle, {
         });
       }
 
-      // Create notification for owner
-      await addNotification({
-        userId: externalSire.ownerId,
-        type: 'connection_request',
-        title: 'New Connection Request',
-        message: `${
-          profile.kennelName || profile.breederName
-        } wants to connect with ${externalSire.dogName}`,
-        relatedId: requestId,
-        read: false,
-      });
-
-      // Send email notification if configured
-      const ownerProfileDoc = await getDoc(
-        doc(db, 'breederProfiles', externalSire.ownerId)
-      );
-      const ownerProfile = ownerProfileDoc.data();
-
-      if (
-        ownerProfile?.emailjsPublicKey &&
-        ownerProfile?.emailjsServiceId &&
-        ownerProfile?.emailjsConnectionRequestTemplateId &&
-        ownerProfile?.enableConnectionRequestNotifications !== false
-      ) {
-        try {
-          const notificationEmail =
-            ownerProfile.notificationEmail || ownerProfile.email;
-
-          await emailjs.send(
-            ownerProfile.emailjsServiceId,
-            ownerProfile.emailjsConnectionRequestTemplateId,
-            {
-              to_email: notificationEmail,
-              to_name: ownerProfile.kennelName || ownerProfile.breederName,
-              requester_name: profile.kennelName || profile.breederName,
-              dog_name: externalSire.dogName,
-              dog_registration: externalSire.registrationNumber || 'N/A',
-              purpose: 'Sire (Father)',
-              message: dog?.name
-                ? `Requesting connection to use as sire for ${dog.name}`
-                : '',
-              connections_url: `${window.location.origin}/connections`,
-            },
-            ownerProfile.emailjsPublicKey
-          );
-        } catch (emailError) {
-          console.error('Failed to send email notification:', emailError);
-        }
-      }
+      // Notification and email are handled by Cloud Functions (onConnectionRequestCreated)
 
       toast({
         title: 'Connection Request Sent',
@@ -597,6 +542,7 @@ const DogFormContent = forwardRef<DogFormHandle, {
         purpose: 'dam' as const,
         requestDate: new Date().toISOString(),
         status: 'pending',
+        requesterDogId: dog?.id,
       };
 
       if (externalDam.registrationNumber) {
@@ -634,55 +580,7 @@ const DogFormContent = forwardRef<DogFormHandle, {
         });
       }
 
-      // Create notification for owner
-      await addNotification({
-        userId: externalDam.ownerId,
-        type: 'connection_request',
-        title: 'New Connection Request',
-        message: `${
-          profile.kennelName || profile.breederName
-        } wants to connect with ${externalDam.dogName}`,
-        relatedId: requestId,
-        read: false,
-      });
-
-      // Send email notification if configured
-      const ownerProfileDoc = await getDoc(
-        doc(db, 'breederProfiles', externalDam.ownerId)
-      );
-      const ownerProfile = ownerProfileDoc.data();
-
-      if (
-        ownerProfile?.emailjsPublicKey &&
-        ownerProfile?.emailjsServiceId &&
-        ownerProfile?.emailjsConnectionRequestTemplateId &&
-        ownerProfile?.enableConnectionRequestNotifications !== false
-      ) {
-        try {
-          const notificationEmail =
-            ownerProfile.notificationEmail || ownerProfile.email;
-
-          await emailjs.send(
-            ownerProfile.emailjsServiceId,
-            ownerProfile.emailjsConnectionRequestTemplateId,
-            {
-              to_email: notificationEmail,
-              to_name: ownerProfile.kennelName || ownerProfile.breederName,
-              requester_name: profile.kennelName || profile.breederName,
-              dog_name: externalDam.dogName,
-              dog_registration: externalDam.registrationNumber || 'N/A',
-              purpose: 'Dam (Mother)',
-              message: dog?.name
-                ? `Requesting connection to use as dam for ${dog.name}`
-                : '',
-              connections_url: `${window.location.origin}/connections`,
-            },
-            ownerProfile.emailjsPublicKey
-          );
-        } catch (emailError) {
-          console.error('Failed to send email notification:', emailError);
-        }
-      }
+      // Notification and email are handled by Cloud Functions (onConnectionRequestCreated)
 
       toast({
         title: 'Connection Request Sent',

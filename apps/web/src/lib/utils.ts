@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { differenceInMonths, differenceInYears } from 'date-fns'
+import { differenceInDays, differenceInMonths, differenceInYears } from 'date-fns'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -29,4 +29,20 @@ export function calculateAge(dateOfBirth: string): string {
     const monthText = months === 1 ? '1 month' : `${months} months`;
     return `${yearText}, ${monthText}`;
   }
+}
+
+export function calculateAgeWeeksAndDays(dateOfBirth: string): string {
+  const dob = new Date(dateOfBirth);
+  const now = new Date();
+  const totalDays = differenceInDays(now, dob);
+
+  if (totalDays < 0) return '';
+
+  const weeks = Math.floor(totalDays / 7);
+  const days = totalDays % 7;
+
+  const weekText = weeks === 1 ? '1 week' : `${weeks} weeks`;
+  const dayText = days === 1 ? '1 day' : `${days} days`;
+
+  return `${weekText}, ${dayText} old`;
 }

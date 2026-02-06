@@ -1587,8 +1587,8 @@ export interface DogConnectionRequest {
   // Data sharing preferences (set by owner when approving)
   sharingPreferences?: DogSharingPreferences;
 
-  // Linked dog in requester's system (created after approval)
-  linkedDogId?: string; // The connected/linked dog ID in requester's system
+  requesterDogId?: string; // Dog in requester's account referencing this connection (for syncing status back)
+  linkedDogId?: string; // Linked dog in requester's system (created after approval)
 
   createdAt?: string;
   updatedAt?: string;
