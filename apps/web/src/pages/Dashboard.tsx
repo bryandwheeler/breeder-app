@@ -58,11 +58,10 @@ import { useTaskStore } from '@breeder/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 
 type PreviewType =
-  | 'dogs'
   | 'dams'
   | 'sires'
-  | 'retired'
   | 'puppies'
+  | 'reserved'
   | 'forSale'
   | 'income';
 
@@ -99,15 +98,12 @@ export function Dashboard() {
       (d) =>
         d.sex === 'male' && !d.isDeceased && d.breedingStatus !== 'retired',
     );
-    const retiredDogs = dogs.filter(
-      (d) => d.isDeceased || d.breedingStatus === 'retired',
-    );
-
     const allPuppies = litters.flatMap((litter) =>
       (litter.puppies || []).map((p) => ({ ...p, litter })),
     );
 
     const forSalePuppies = allPuppies.filter((p) => p.status === 'available');
+    const reservedPuppies = allPuppies.filter((p) => p.status === 'reserved');
 
     const thisYearLitters = litters.filter((litter) => {
       const litterDate = new Date(
@@ -128,11 +124,10 @@ export function Dashboard() {
     }, 0);
 
     return {
-      totalDogs: dogs.filter((d) => !d.isDeceased).length,
       activeDams,
       activeSires,
-      retiredDogs,
       allPuppies,
+      reservedPuppies,
       forSalePuppies,
       yearlyIncome,
       thisYearLitters,
@@ -361,33 +356,6 @@ export function Dashboard() {
 
   const renderPreviewContent = () => {
     switch (previewType) {
-      case 'dogs':
-        const activeDogs = dogs.filter((d) => !d.isDeceased);
-        return (
-          <div className='space-y-3 max-h-96 overflow-y-auto'>
-            {activeDogs.map((dog) => (
-              <Link
-                key={dog.id}
-                to={`/dogs/${dog.id}`}
-                className='block p-3 border rounded-lg hover:bg-muted/50 transition'
-                onClick={() => setPreviewOpen(false)}
-              >
-                <div className='flex justify-between items-center'>
-                  <div>
-                    <p className='font-medium'>{dog.name}</p>
-                    <p className='text-sm text-muted-foreground'>
-                      {dog.sex === 'female' ? '♀' : '♂'} {dog.breed}
-                    </p>
-                  </div>
-                  <Badge variant='secondary'>
-                    {dog.sex === 'female' ? 'Dam' : 'Sire'}
-                  </Badge>
-                </div>
-              </Link>
-            ))}
-          </div>
-        );
-
       case 'dams':
         return (
           <div className='space-y-3 max-h-96 overflow-y-auto'>
@@ -432,32 +400,49 @@ export function Dashboard() {
           </div>
         );
 
-      case 'retired':
+      case 'reserved':
         return (
           <div className='space-y-3 max-h-96 overflow-y-auto'>
-            {stats.retiredDogs.map((dog) => (
-              <Link
-                key={dog.id}
-                to={`/dogs/${dog.id}`}
-                className='block p-3 border rounded-lg hover:bg-muted/50 transition'
-                onClick={() => setPreviewOpen(false)}
-              >
-                <div className='flex justify-between items-center'>
-                  <div>
-                    <p className='font-medium'>{dog.name}</p>
-                    <p className='text-sm text-muted-foreground'>
-                      {dog.sex === 'female' ? '♀' : '♂'} {dog.breed}
-                    </p>
-                    {dog.dateOfDeath && (
-                      <p className='text-xs text-muted-foreground'>
-                        {format(new Date(dog.dateOfDeath), 'MMM d, yyyy')}
+            {stats.reservedPuppies.map((puppy) => {
+              const dam = dogs.find((d) => d.id === puppy.litter.damId);
+              const sire = dogs.find((d) => d.id === puppy.litter.sireId);
+              const litterName =
+                puppy.litter.litterName ||
+                `${dam?.name || 'Unknown'} × ${sire?.name || 'Unknown'}`;
+              const buyer = (puppy.litter.buyers || []).find(
+                (b) => b.id === puppy.buyerId,
+              );
+
+              return (
+                <Link
+                  key={puppy.id}
+                  to={`/litters/${puppy.litter.id}`}
+                  className='block p-3 border rounded-lg hover:bg-muted/50 transition'
+                  onClick={() => setPreviewOpen(false)}
+                >
+                  <div className='flex justify-between items-start gap-3'>
+                    <div>
+                      <p className='font-medium'>
+                        {puppy.name || puppy.tempName || 'Unnamed'}
                       </p>
-                    )}
+                      <p className='text-xs text-muted-foreground'>
+                        Litter: {litterName}
+                      </p>
+                      <p className='text-xs text-muted-foreground mt-1'>
+                        {puppy.sex === 'female' ? '♀ Female' : '♂ Male'} ·{' '}
+                        {puppy.color}
+                      </p>
+                      {buyer && (
+                        <p className='text-xs text-muted-foreground mt-1'>
+                          Reserved for: {buyer.name}
+                        </p>
+                      )}
+                    </div>
+                    <Badge variant='secondary'>Reserved</Badge>
                   </div>
-                  <Badge variant='outline'>Retired</Badge>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         );
 
@@ -672,18 +657,16 @@ export function Dashboard() {
 
   const getPreviewTitle = () => {
     switch (previewType) {
-      case 'dogs':
-        return 'All Active Dogs';
       case 'dams':
         return 'Active Dams';
       case 'sires':
         return 'Active Sires';
-      case 'retired':
-        return 'Retired Dogs';
       case 'puppies':
         return 'All Puppies';
+      case 'reserved':
+        return 'Reserved Puppies';
       case 'forSale':
-        return 'Puppies For Sale';
+        return 'Available Puppies';
       case 'income':
         return 'Yearly Income Details';
       default:
@@ -693,12 +676,11 @@ export function Dashboard() {
 
   const getPreviewRoute = () => {
     switch (previewType) {
-      case 'dogs':
       case 'dams':
       case 'sires':
-      case 'retired':
         return '/dogs';
       case 'puppies':
+      case 'reserved':
       case 'forSale':
       case 'income':
         return '/litters';
@@ -1026,22 +1008,6 @@ export function Dashboard() {
 
       {/* Statistics Cards */}
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
-        {/* Total Dogs */}
-        <Card
-          className='bg-gradient-to-br from-blue-500 to-blue-600 text-white cursor-pointer hover:scale-105 transition-transform'
-          onClick={() => handleCardClick('dogs')}
-        >
-          <CardContent className='p-6'>
-            <div className='flex items-center justify-between'>
-              <div>
-                <p className='text-sm opacity-90 mb-1'>Total Dogs</p>
-                <p className='text-4xl font-bold'>{stats.totalDogs}</p>
-              </div>
-              <Dog className='h-12 w-12 opacity-80' />
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Active Dams */}
         <Card
           className='bg-gradient-to-br from-pink-400 to-pink-500 text-white cursor-pointer hover:scale-105 transition-transform'
@@ -1074,22 +1040,6 @@ export function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Retired Dogs */}
-        <Card
-          className='bg-gradient-to-br from-teal-400 to-teal-500 text-white cursor-pointer hover:scale-105 transition-transform'
-          onClick={() => handleCardClick('retired')}
-        >
-          <CardContent className='p-6'>
-            <div className='flex items-center justify-between'>
-              <div>
-                <p className='text-sm opacity-90 mb-1'>Retired Dogs</p>
-                <p className='text-4xl font-bold'>{stats.retiredDogs.length}</p>
-              </div>
-              <Dog className='h-12 w-12 opacity-80' />
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Total Puppies */}
         <Card
           className='bg-gradient-to-br from-cyan-400 to-cyan-500 text-white cursor-pointer hover:scale-105 transition-transform'
@@ -1106,20 +1056,25 @@ export function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* eKennel Visitors */}
-        <Card className='bg-gradient-to-br from-teal-300 to-teal-400 text-white'>
+        {/* Reserved */}
+        <Card
+          className='bg-gradient-to-br from-amber-400 to-amber-500 text-white cursor-pointer hover:scale-105 transition-transform'
+          onClick={() => handleCardClick('reserved')}
+        >
           <CardContent className='p-6'>
             <div className='flex items-center justify-between'>
               <div>
-                <p className='text-sm opacity-90 mb-1'>eKennel Visitors</p>
-                <p className='text-4xl font-bold'>{stats.eKennelVisitors}</p>
+                <p className='text-sm opacity-90 mb-1'>Reserved</p>
+                <p className='text-4xl font-bold'>
+                  {stats.reservedPuppies.length}
+                </p>
               </div>
               <Users className='h-12 w-12 opacity-80' />
             </div>
           </CardContent>
         </Card>
 
-        {/* For Sale */}
+        {/* Available */}
         <Card
           className='bg-gradient-to-br from-green-500 to-green-600 text-white cursor-pointer hover:scale-105 transition-transform'
           onClick={() => handleCardClick('forSale')}
@@ -1127,7 +1082,7 @@ export function Dashboard() {
           <CardContent className='p-6'>
             <div className='flex items-center justify-between'>
               <div>
-                <p className='text-sm opacity-90 mb-1'>For Sale</p>
+                <p className='text-sm opacity-90 mb-1'>Available</p>
                 <p className='text-4xl font-bold'>
                   {stats.forSalePuppies.length}
                 </p>
