@@ -30,15 +30,15 @@ export async function searchKennels(searchTerm: string, maxResults: number = 10)
 
   const results: KennelSearchResult[] = [];
 
-  snapshot.docs.forEach((doc) => {
-    const data = doc.data();
+  snapshot.docs.forEach((profileDoc) => {
+    const data = profileDoc.data();
     const kennelName = data.kennelName?.toLowerCase() || '';
     const breederName = data.breederName?.toLowerCase() || '';
 
     // Match if search term is in kennel name or breeder name
     if (kennelName.includes(searchTermLower) || breederName.includes(searchTermLower)) {
       results.push({
-        userId: data.userId,
+        userId: data.userId || profileDoc.id,
         kennelName: data.kennelName || '',
         breederName: data.breederName || '',
         city: data.city,
@@ -98,9 +98,11 @@ export async function searchDogs(
 
   // Create a map of userId to profile data
   const profileMap = new Map();
-  profilesSnapshot.docs.forEach((doc) => {
-    const data = doc.data();
-    profileMap.set(data.userId, {
+  profilesSnapshot.docs.forEach((profileDoc) => {
+    const data = profileDoc.data();
+    // breederProfiles uses the userId as the document ID
+    const userId = data.userId || profileDoc.id;
+    profileMap.set(userId, {
       kennelName: data.kennelName || '',
       breederName: data.breederName || '',
     });
