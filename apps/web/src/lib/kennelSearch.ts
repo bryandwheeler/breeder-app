@@ -121,8 +121,8 @@ export async function searchDogs(
     const dogName = (dogData.name || dogData.registeredName || '').toLowerCase();
     const regNumber = (dogData.registrationNumber || dogData.registration?.number || '').toUpperCase();
     const profile = profileMap.get(dogData.userId) || { kennelName: '', breederName: '' };
-    const kennelName = profile.kennelName.toLowerCase();
-    const breederName = profile.breederName.toLowerCase();
+    const kennelName = (profile.kennelName || dogData.kennelName || '').toLowerCase();
+    const breederName = (profile.breederName || dogData.breederName || '').toLowerCase();
 
     // Match if search term is in dog name, registration number, kennel name, or breeder name
     const matchesDogName = dogName.includes(searchTermLower);
@@ -138,7 +138,7 @@ export async function searchDogs(
         breed: dogData.breed,
         sex: dogData.sex,
         ownerId: dogData.userId,
-        ownerKennel: profile.kennelName || 'Unknown Kennel',
+        ownerKennel: profile.kennelName || dogData.kennelName || profile.breederName || 'Unknown Kennel',
         ownerBreederName: profile.breederName,
       });
     }
