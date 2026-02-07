@@ -30,7 +30,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionTier } from '@breeder/types';
 import { format } from 'date-fns';
-import { ExternalLink, Mail, DollarSign, Calendar, Loader2, Crown, Zap, User } from 'lucide-react';
+import { ExternalLink, Mail, DollarSign, Calendar, Loader2, Crown, Zap, User, LogIn } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAdminStore } from '@breeder/firebase';
 
 interface CustomerSubscription {
   uid: string;
@@ -57,6 +59,13 @@ export function AdminCustomers() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [updatingTier, setUpdatingTier] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { setImpersonatedUser } = useAdminStore();
+
+  const handleImpersonate = (uid: string) => {
+    setImpersonatedUser(uid);
+    navigate('/');
+  };
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -168,9 +177,9 @@ export function AdminCustomers() {
   return (
     <div className='space-y-6'>
       <div>
-        <h1 className='text-3xl font-bold mb-2'>Customer Management</h1>
+        <h1 className='text-3xl font-bold mb-2'>User Management</h1>
         <p className='text-muted-foreground'>
-          View and manage customer subscriptions and billing
+          View and manage users, subscriptions, and billing
         </p>
       </div>
 
@@ -303,6 +312,14 @@ export function AdminCustomers() {
                   </TableCell>
                   <TableCell>
                     <div className='flex gap-2'>
+                      <Button
+                        onClick={() => handleImpersonate(customer.uid)}
+                        size='sm'
+                        variant='outline'
+                      >
+                        <LogIn className='mr-1 h-3 w-3' />
+                        Impersonate
+                      </Button>
                       <Button
                         onClick={() => handleViewDetails(customer)}
                         size='sm'

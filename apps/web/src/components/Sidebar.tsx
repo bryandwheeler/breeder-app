@@ -112,7 +112,7 @@ const adminNavigation: NavGroup[] = [
     title: 'Administration',
     items: [
       { name: 'Admin Dashboard', path: '/admin', icon: LayoutDashboard },
-      { name: 'Contacts', path: '/admin/customers', icon: Users },
+      { name: 'Users', path: '/admin/customers', icon: Users },
       { name: 'Tickets', path: '/admin/tickets', icon: Ticket },
       { name: 'Newsletter', path: '/admin/newsletter', icon: Mail },
       { name: 'Admin Settings', path: '/admin/settings', icon: Settings },
