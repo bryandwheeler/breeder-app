@@ -3520,7 +3520,343 @@ exports.onBookingCreated = functions.firestore
       });
 
       console.log(`Booking notification sent for ${bookingId}`);
+
+      // Sync to Google Calendar if enabled
+      try {
+        await syncBookingToGoogleCalendar(booking, bookingId);
+      } catch (calError) {
+        console.error('Google Calendar sync failed (non-blocking):', calError);
+      }
     } catch (error) {
       console.error('Error sending booking notification:', error);
     }
   });
+
+// ============================================================================
+// Google Calendar Integration
+// ============================================================================
+
+// Helper: Get a valid Google access token (refresh if expired)
+async function getValidGoogleAccessToken(breederId) {
+  const tokenDoc = await db.collection('googleCalendarTokens').doc(breederId).get();
+  if (!tokenDoc.exists) return null;
+
+  const tokenData = tokenDoc.data();
+  const now = Date.now();
+
+  // If token is still valid (with 5 min buffer), return it
+  if (tokenData.expiresAt && tokenData.expiresAt > now + 5 * 60 * 1000) {
+    return tokenData.accessToken;
+  }
+
+  // Refresh the token
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret || !tokenData.refreshToken) {
+    console.log('Missing Google OAuth credentials or refresh token');
+    return null;
+  }
+
+  try {
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: tokenData.refreshToken,
+        grant_type: 'refresh_token',
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('Token refresh failed:', error);
+      // If refresh token is revoked/invalid, mark as disconnected
+      if (error.error === 'invalid_grant') {
+        await db.collection('googleCalendarTokens').doc(breederId).delete();
+        await db.collection('schedulingSettings').doc(breederId).update({
+          googleCalendarEnabled: false,
+          googleCalendarId: '',
+        });
+      }
+      return null;
+    }
+
+    const tokens = await response.json();
+    await db.collection('googleCalendarTokens').doc(breederId).update({
+      accessToken: tokens.access_token,
+      expiresAt: now + tokens.expires_in * 1000,
+      ...(tokens.refresh_token ? { refreshToken: tokens.refresh_token } : {}),
+    });
+
+    return tokens.access_token;
+  } catch (error) {
+    console.error('Error refreshing Google token:', error);
+    return null;
+  }
+}
+
+// Helper: Sync a booking to Google Calendar
+async function syncBookingToGoogleCalendar(booking, bookingId) {
+  // Check if breeder has Google Calendar enabled
+  const settingsDoc = await db.collection('schedulingSettings').doc(booking.breederId).get();
+  if (!settingsDoc.exists) return;
+
+  const settings = settingsDoc.data();
+  if (!settings.googleCalendarEnabled) return;
+
+  const accessToken = await getValidGoogleAccessToken(booking.breederId);
+  if (!accessToken) return;
+
+  const calendarId = settings.googleCalendarId || 'primary';
+
+  const event = {
+    summary: `${booking.appointmentTypeName} - ${booking.customerName}`,
+    description: [
+      `Customer: ${booking.customerName}`,
+      `Email: ${booking.customerEmail || 'N/A'}`,
+      `Phone: ${booking.customerPhone || 'N/A'}`,
+      booking.notes ? `Notes: ${booking.notes}` : '',
+      `\nBooking ID: ${bookingId}`,
+      `Status: ${booking.status}`,
+    ].filter(Boolean).join('\n'),
+    start: {
+      dateTime: booking.startTime,
+      timeZone: settings.timezone || 'America/New_York',
+    },
+    end: {
+      dateTime: booking.endTime,
+      timeZone: settings.timezone || 'America/New_York',
+    },
+    reminders: {
+      useDefault: false,
+      overrides: [
+        { method: 'popup', minutes: 30 },
+      ],
+    },
+  };
+
+  const response = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(event),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    console.error('Failed to create Google Calendar event:', error);
+    return;
+  }
+
+  const createdEvent = await response.json();
+
+  // Save the Google event ID on the booking for future updates
+  await db.collection('bookings').doc(bookingId).update({
+    googleEventId: createdEvent.id,
+  });
+
+  console.log(`Google Calendar event created: ${createdEvent.id} for booking ${bookingId}`);
+}
+
+// Sync booking updates (cancel/confirm) to Google Calendar
+exports.onBookingUpdated = functions.firestore
+  .document('bookings/{bookingId}')
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    const bookingId = context.params.bookingId;
+
+    // Only act on status changes
+    if (before.status === after.status) return;
+
+    // Only sync if there's a Google event ID
+    if (!after.googleEventId) return;
+
+    try {
+      const settingsDoc = await db.collection('schedulingSettings').doc(after.breederId).get();
+      if (!settingsDoc.exists) return;
+
+      const settings = settingsDoc.data();
+      if (!settings.googleCalendarEnabled) return;
+
+      const accessToken = await getValidGoogleAccessToken(after.breederId);
+      if (!accessToken) return;
+
+      const calendarId = settings.googleCalendarId || 'primary';
+
+      if (after.status === 'cancelled') {
+        // Cancel the Google Calendar event
+        const response = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${after.googleEventId}`,
+          {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${accessToken}` },
+          }
+        );
+        if (response.ok || response.status === 404) {
+          console.log(`Google Calendar event deleted for cancelled booking ${bookingId}`);
+        }
+      } else {
+        // Update the event description with new status
+        const event = {
+          summary: `${after.appointmentTypeName} - ${after.customerName}`,
+          description: [
+            `Customer: ${after.customerName}`,
+            `Email: ${after.customerEmail || 'N/A'}`,
+            `Phone: ${after.customerPhone || 'N/A'}`,
+            after.notes ? `Notes: ${after.notes}` : '',
+            `\nBooking ID: ${bookingId}`,
+            `Status: ${after.status}`,
+          ].filter(Boolean).join('\n'),
+        };
+
+        await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${after.googleEventId}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(event),
+          }
+        );
+        console.log(`Google Calendar event updated for booking ${bookingId} (status: ${after.status})`);
+      }
+    } catch (error) {
+      console.error('Error syncing booking update to Google Calendar:', error);
+    }
+  });
+
+// Exchange Google OAuth authorization code for tokens
+exports.exchangeGoogleCalendarCode = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  }
+
+  const { code, redirectUri } = data;
+  if (!code || !redirectUri) {
+    throw new functions.https.HttpsError('invalid-argument', 'Missing code or redirectUri');
+  }
+
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new functions.https.HttpsError('failed-precondition', 'Google Calendar integration is not configured');
+  }
+
+  try {
+    // Exchange the authorization code for tokens
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('Google token exchange failed:', error);
+      throw new functions.https.HttpsError('internal', 'Failed to exchange authorization code');
+    }
+
+    const tokens = await response.json();
+    const now = Date.now();
+
+    // Get the user's Google email from the ID token or userinfo
+    let googleEmail = '';
+    try {
+      const userinfoRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: { 'Authorization': `Bearer ${tokens.access_token}` },
+      });
+      if (userinfoRes.ok) {
+        const userinfo = await userinfoRes.json();
+        googleEmail = userinfo.email || '';
+      }
+    } catch (e) {
+      console.log('Could not fetch Google userinfo:', e);
+    }
+
+    // Save tokens securely in Firestore
+    await db.collection('googleCalendarTokens').doc(context.auth.uid).set({
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresAt: now + tokens.expires_in * 1000,
+      scope: tokens.scope,
+      googleEmail,
+      connectedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Update scheduling settings
+    await db.collection('schedulingSettings').doc(context.auth.uid).update({
+      googleCalendarEnabled: true,
+      googleCalendarId: 'primary',
+    });
+
+    return {
+      success: true,
+      googleEmail,
+    };
+  } catch (error) {
+    console.error('Error exchanging Google Calendar code:', error);
+    if (error instanceof functions.https.HttpsError) throw error;
+    throw new functions.https.HttpsError('internal', 'Failed to connect Google Calendar');
+  }
+});
+
+// Disconnect Google Calendar
+exports.disconnectGoogleCalendar = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  }
+
+  try {
+    // Get existing tokens to revoke
+    const tokenDoc = await db.collection('googleCalendarTokens').doc(context.auth.uid).get();
+    if (tokenDoc.exists) {
+      const tokenData = tokenDoc.data();
+      // Revoke the token with Google
+      if (tokenData.accessToken) {
+        try {
+          await fetch(`https://oauth2.googleapis.com/revoke?token=${tokenData.accessToken}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          });
+        } catch (e) {
+          console.log('Token revocation failed (may already be revoked):', e);
+        }
+      }
+      // Delete token document
+      await db.collection('googleCalendarTokens').doc(context.auth.uid).delete();
+    }
+
+    // Update scheduling settings
+    const settingsDoc = await db.collection('schedulingSettings').doc(context.auth.uid).get();
+    if (settingsDoc.exists) {
+      await db.collection('schedulingSettings').doc(context.auth.uid).update({
+        googleCalendarEnabled: false,
+        googleCalendarId: '',
+      });
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error disconnecting Google Calendar:', error);
+    if (error instanceof functions.https.HttpsError) throw error;
+    throw new functions.https.HttpsError('internal', 'Failed to disconnect Google Calendar');
+  }
+});

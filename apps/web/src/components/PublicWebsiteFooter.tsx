@@ -163,7 +163,13 @@ export function PublicWebsiteFooter({ settings }: PublicWebsiteFooterProps) {
             © {new Date().getFullYear()} {settings.kennelName || 'Breeder'}. All
             rights reserved.
           </p>
-          <p className='mt-2 text-xs'>Powered by Expert Breeder Management</p>
+          <p className='mt-2 text-xs'>
+            Powered by Expert Breeder Management
+            {' · '}
+            <a href='/privacy' className='hover:underline'>Privacy Policy</a>
+            {' · '}
+            <a href='/terms' className='hover:underline'>Terms of Service</a>
+          </p>
         </div>
       </div>
     </footer>

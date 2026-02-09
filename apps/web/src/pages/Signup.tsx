@@ -12,6 +12,7 @@ export function Signup() {
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const { signup, loginWithGoogle, loginWithFacebook, currentUser, redirectError } = useAuth();
   const navigate = useNavigate();
 
@@ -234,7 +235,27 @@ export function Signup() {
             />
           </div>
 
-          <Button type='submit' className='w-full' disabled={loading}>
+          <div className='flex items-start gap-2'>
+            <input
+              id='agreeToTerms'
+              type='checkbox'
+              checked={agreeToTerms}
+              onChange={(e) => setAgreeToTerms(e.target.checked)}
+              className='mt-1 h-4 w-4 rounded border-gray-300'
+            />
+            <Label htmlFor='agreeToTerms' className='text-sm font-normal text-muted-foreground leading-snug'>
+              I agree to the{' '}
+              <Link to='/terms' target='_blank' className='text-primary hover:underline'>
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link to='/privacy' target='_blank' className='text-primary hover:underline'>
+                Privacy Policy
+              </Link>
+            </Label>
+          </div>
+
+          <Button type='submit' className='w-full' disabled={loading || !agreeToTerms}>
             {loading ? 'Creating account...' : 'Sign Up'}
           </Button>
         </form>
@@ -246,6 +267,12 @@ export function Signup() {
           <Link to='/login' className='text-primary hover:underline'>
             Sign in
           </Link>
+        </div>
+
+        <div className='text-center text-xs text-muted-foreground'>
+          <Link to='/privacy' className='hover:underline'>Privacy Policy</Link>
+          {' · '}
+          <Link to='/terms' className='hover:underline'>Terms of Service</Link>
         </div>
       </div>
     </div>

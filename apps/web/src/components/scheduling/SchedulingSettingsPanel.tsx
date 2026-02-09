@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Save, Copy, Check, ExternalLink, Code, Calendar } from 'lucide-react';
+import { Save, Copy, Check, ExternalLink, Code } from 'lucide-react';
 import {
   SchedulingSettings,
   AppointmentType,
@@ -25,6 +25,7 @@ import {
 import { AppointmentTypeEditor } from './AppointmentTypeEditor';
 import { AvailabilityEditor } from './AvailabilityEditor';
 import { BookingEmbedDialog } from './BookingEmbedDialog';
+import { GoogleCalendarSetup } from './GoogleCalendarSetup';
 
 export function SchedulingSettingsPanel() {
   const { currentUser } = useAuth();
@@ -293,24 +294,9 @@ export function SchedulingSettingsPanel() {
         </div>
       </Card>
 
-      {/* Google Calendar - Phase 2 placeholder */}
-      <Card className="p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <Label className="text-base font-semibold flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Google Calendar Sync
-            </Label>
-            <p className="text-sm text-muted-foreground">
-              Sync bookings with your Google Calendar
-            </p>
-          </div>
-          <span className="text-xs bg-muted px-2 py-1 rounded">Coming Soon</span>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Google Calendar integration will allow two-way sync between your bookings
-          and Google Calendar. Stay tuned for this feature.
-        </p>
+      {/* Google Calendar */}
+      <Card className="p-6">
+        <GoogleCalendarSetup />
       </Card>
 
       {/* Save Button */}

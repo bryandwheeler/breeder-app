@@ -1085,6 +1085,14 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && isOwner(userId);
     }
 
+    // Google Calendar tokens - owner-only read/write (contains sensitive OAuth tokens)
+    match /googleCalendarTokens/{userId} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && isOwner(userId);
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+
     // Bookings - public create (anonymous booking), breeder/admin/staff read+update+delete
     match /bookings/{bookingId} {
       allow read: if isAuthenticated() && (

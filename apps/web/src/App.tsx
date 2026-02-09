@@ -47,6 +47,8 @@ import { Tasks } from '@/pages/Tasks';
 import { Login } from '@/pages/Login';
 import { Signup } from '@/pages/Signup';
 import { ResetPassword } from '@/pages/ResetPassword';
+import { PrivacyPolicy } from '@/pages/PrivacyPolicy';
+import { TermsOfService } from '@/pages/TermsOfService';
 import { SupportTickets } from '@/pages/SupportTickets';
 import { NewTicket } from '@/pages/NewTicket';
 import { TicketDetail } from '@/pages/TicketDetail';
@@ -66,6 +68,7 @@ import { AdminNewsletterSettings } from '@/pages/admin/NewsletterSettings';
 import { NewsletterTemplates } from '@/pages/admin/NewsletterTemplates';
 import { GmailCallback } from '@/pages/auth/GmailCallback';
 import { OutlookCallback } from '@/pages/auth/OutlookCallback';
+import { GoogleCalendarCallback } from '@/pages/auth/GoogleCalendarCallback';
 import { MessagingInbox } from '@/pages/MessagingInbox';
 import { InstagramCallback } from '@/pages/InstagramCallback';
 import { DogFormDialog } from '@/components/DogFormDialog';
@@ -266,6 +269,8 @@ function AppContent() {
               <Route path='/login' element={<Login />} />
               <Route path='/signup' element={<Signup />} />
               <Route path='/reset-password' element={<ResetPassword />} />
+              <Route path='/privacy' element={<PrivacyPolicy />} />
+              <Route path='/terms' element={<TermsOfService />} />
 
               {/* OAuth Callback routes */}
               <Route path='/auth/gmail/callback' element={<GmailCallback />} />
@@ -276,6 +281,10 @@ function AppContent() {
               <Route
                 path='/auth/instagram/callback'
                 element={<InstagramCallback />}
+              />
+              <Route
+                path='/oauth/google-calendar/callback'
+                element={<GoogleCalendarCallback />}
               />
 
               {/* Public routes */}

@@ -240,6 +240,12 @@ export function Login() {
             Forgot password?
           </Link>
         </div>
+
+        <div className='text-center text-xs text-muted-foreground'>
+          <Link to='/privacy' className='hover:underline'>Privacy Policy</Link>
+          {' · '}
+          <Link to='/terms' className='hover:underline'>Terms of Service</Link>
+        </div>
       </div>
     </div>
   );
