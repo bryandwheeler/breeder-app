@@ -1,5 +1,5 @@
 // src/App.tsx – With Firebase Authentication
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Dashboard } from '@/pages/Dashboard';
 import { DogList } from '@/pages/DogList';
 import { DogProfile } from '@/pages/DogProfile';
@@ -49,6 +49,7 @@ import { Signup } from '@/pages/Signup';
 import { ResetPassword } from '@/pages/ResetPassword';
 import { PrivacyPolicy } from '@/pages/PrivacyPolicy';
 import { TermsOfService } from '@/pages/TermsOfService';
+import { LandingPage } from '@/pages/LandingPage';
 import { SupportTickets } from '@/pages/SupportTickets';
 import { NewTicket } from '@/pages/NewTicket';
 import { TicketDetail } from '@/pages/TicketDetail';
@@ -109,6 +110,8 @@ function AppContent() {
     return saved !== null ? JSON.parse(saved) : false;
   });
   const { currentUser } = useAuth();
+  const location = useLocation();
+  const isLandingPage = !currentUser && location.pathname === '/';
   const subscribeToUserData = useDogStore((state) => state.subscribeToUserData);
   const subscribeToBreederData = useBreederStore(
     (state) => state.subscribeToBreederData
@@ -264,6 +267,9 @@ function AppContent() {
               currentUser && sidebarPinned && !sidebarOpen && 'lg:ml-20'
             )}
           >
+            {isLandingPage ? (
+              <LandingPage />
+            ) : (
             <div className='container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 max-w-7xl'>
               <Routes>
               <Route path='/login' element={<Login />} />
@@ -796,6 +802,7 @@ function AppContent() {
               <Route path='*' element={<Navigate to='/' replace />} />
             </Routes>
           </div>
+            )}
         </main>
 
         {currentUser && (

@@ -166,9 +166,9 @@ export function PublicWebsiteFooter({ settings }: PublicWebsiteFooterProps) {
           <p className='mt-2 text-xs'>
             Powered by Expert Breeder Management
             {' · '}
-            <a href='/privacy' className='hover:underline'>Privacy Policy</a>
+            <a href='https://app.expertbreeder.com/privacy' className='hover:underline' target='_blank' rel='noopener noreferrer'>Privacy Policy</a>
             {' · '}
-            <a href='/terms' className='hover:underline'>Terms of Service</a>
+            <a href='https://app.expertbreeder.com/terms' className='hover:underline' target='_blank' rel='noopener noreferrer'>Terms of Service</a>
           </p>
         </div>
       </div>
