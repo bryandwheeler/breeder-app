@@ -42,6 +42,7 @@ import { ContractDetail } from '@/pages/ContractDetail';
 import { BreedingPlanner } from '@/pages/BreedingPlanner';
 import { CustomerAnalytics } from '@/pages/CustomerAnalytics';
 import { Help } from '@/pages/Help';
+import { BookAppointment } from '@/pages/BookAppointment';
 import { Tasks } from '@/pages/Tasks';
 import { Login } from '@/pages/Login';
 import { Signup } from '@/pages/Signup';
@@ -87,6 +88,7 @@ import { useConnectionStore } from '@breeder/firebase';
 import { useAdminStore } from '@breeder/firebase';
 import { useStudJobStore } from '@/store/studJobStore';
 import { useHeatCycleStore } from '@breeder/firebase';
+import { useSchedulingStore } from '@breeder/firebase';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { TawkToWidget } from '@/components/chat/TawkToWidget';
 import { cn } from '@/lib/utils';
@@ -122,6 +124,12 @@ function AppContent() {
   );
   const subscribeToHeatCycles = useHeatCycleStore(
     (state) => state.subscribeToHeatCycles
+  );
+  const subscribeToSchedulingSettings = useSchedulingStore(
+    (state) => state.subscribeToSettings
+  );
+  const subscribeToBookings = useSchedulingStore(
+    (state) => state.subscribeToBookings
   );
   const impersonatedUserId = useAdminStore((s) => s.impersonatedUserId);
   const dogs = useDogStore((state) => state.dogs);
@@ -189,6 +197,19 @@ function AppContent() {
       return unsubscribe;
     }
   }, [currentUser, subscribeToHeatCycles, impersonatedUserId]);
+
+  // Subscribe to scheduling settings and bookings when user logs in
+  useEffect(() => {
+    if (currentUser) {
+      const targetUid = impersonatedUserId || currentUser.uid;
+      const unsubSettings = subscribeToSchedulingSettings(targetUid);
+      const unsubBookings = subscribeToBookings(targetUid);
+      return () => {
+        unsubSettings();
+        unsubBookings();
+      };
+    }
+  }, [currentUser, subscribeToSchedulingSettings, subscribeToBookings, impersonatedUserId]);
 
   // Persist sidebar state to localStorage
   useEffect(() => {
@@ -264,6 +285,10 @@ function AppContent() {
               <Route
                 path='/waitlist-apply/:userId'
                 element={<WaitlistApplication />}
+              />
+              <Route
+                path='/book/:userId'
+                element={<BookAppointment />}
               />
               <Route
                 path='/public/:userId/:litterId'

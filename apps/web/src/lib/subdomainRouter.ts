@@ -1,6 +1,7 @@
 /**
- * Subdomain routing utility
- * Detects if the user is accessing via a subdomain and resolves to a breeder ID
+ * Subdomain and custom domain routing utility
+ * Detects if the user is accessing via a subdomain or custom domain
+ * and resolves to a breeder ID
  */
 
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
@@ -56,6 +57,58 @@ export function getSubdomainFromHost(): string | null {
 }
 
 /**
+ * Check if current hostname is a custom domain (not an expertbreeder.com subdomain)
+ * Returns true for external domains like "azdoodlebliss.com"
+ */
+export function isCustomDomain(): boolean {
+  const hostname = window.location.hostname;
+
+  // Not a custom domain if it's a main app domain
+  if (MAIN_APP_DOMAINS.some(domain =>
+    hostname === domain ||
+    hostname.includes('localhost') ||
+    hostname.includes('127.0.0.1')
+  )) {
+    return false;
+  }
+
+  // Not a custom domain if it's an expertbreeder.com subdomain
+  if (hostname.endsWith('.expertbreeder.com') || hostname === 'expertbreeder.com') {
+    return false;
+  }
+
+  // Any other domain is a custom domain
+  return true;
+}
+
+/**
+ * Look up breeder ID by custom domain
+ * Queries websiteSettings collection for a matching customDomain
+ */
+export async function resolveCustomDomainToBreeder(hostname: string): Promise<string | null> {
+  try {
+    const normalizedDomain = hostname.toLowerCase();
+    const settingsRef = collection(db, 'websiteSettings');
+    const q = query(
+      settingsRef,
+      where('domain.customDomain', '==', normalizedDomain),
+      limit(1)
+    );
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    // The document ID is the user/breeder ID
+    return snapshot.docs[0].id;
+  } catch (error) {
+    console.error('Error resolving custom domain:', error);
+    return null;
+  }
+}
+
+/**
  * Look up breeder ID by subdomain
  */
 export async function resolveSubdomainToBreeder(subdomain: string): Promise<string | null> {
@@ -81,20 +134,31 @@ export async function resolveSubdomainToBreeder(subdomain: string): Promise<stri
 }
 
 /**
- * Check if current request is a subdomain and resolve breeder
+ * Check if current request is a subdomain/custom domain and resolve breeder
  */
 export async function detectSubdomain(): Promise<SubdomainInfo> {
-  const subdomain = getSubdomainFromHost();
+  const hostname = window.location.hostname;
 
-  if (!subdomain) {
-    return { isSubdomain: false, subdomain: null, breederId: null };
+  // First check for expertbreeder.com subdomains
+  const subdomain = getSubdomainFromHost();
+  if (subdomain) {
+    const breederId = await resolveSubdomainToBreeder(subdomain);
+    return {
+      isSubdomain: true,
+      subdomain,
+      breederId,
+    };
   }
 
-  const breederId = await resolveSubdomainToBreeder(subdomain);
+  // Then check for custom domains (e.g., azdoodlebliss.com)
+  if (isCustomDomain()) {
+    const breederId = await resolveCustomDomainToBreeder(hostname);
+    return {
+      isSubdomain: true,
+      subdomain: hostname,
+      breederId,
+    };
+  }
 
-  return {
-    isSubdomain: true,
-    subdomain,
-    breederId,
-  };
+  return { isSubdomain: false, subdomain: null, breederId: null };
 }

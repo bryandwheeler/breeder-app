@@ -1069,6 +1069,44 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // Scheduling & Booking Collections
+    // ============================================================================
+
+    // Scheduling settings - public read (for booking page), owner/admin/staff write
+    match /schedulingSettings/{userId} {
+      // Public read for rendering the booking page
+      allow read: if true;
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && (
+        isOwner(userId) ||
+        isAdmin() ||
+        hasStaffPermission(userId, 'canAccessSettings')
+      );
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+
+    // Bookings - public create (anonymous booking), breeder/admin/staff read+update+delete
+    match /bookings/{bookingId} {
+      allow read: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        isAdmin() ||
+        hasStaffPermission(resource.data.breederId, 'canViewInquiries')
+      );
+      // Public can submit bookings (no auth required)
+      allow create: if true;
+      allow update: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        isAdmin() ||
+        hasStaffPermission(resource.data.breederId, 'canManageInquiries')
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.breederId == request.auth.uid ||
+        isAdmin() ||
+        hasStaffPermission(resource.data.breederId, 'canManageInquiries')
+      );
+    }
+
+    // ============================================================================
     // Collection Group Rules (for cross-collection queries)
     // ============================================================================
 

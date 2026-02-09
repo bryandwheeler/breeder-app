@@ -17,3 +17,4 @@ export * from './ticketing';
 export * from './liveChat';
 export * from './signnow';
 export * from './staff';
+export * from './scheduling';

@@ -3393,7 +3393,7 @@ exports.removeCustomDomainFromHosting = functions.https.onCall(async (data, cont
     const accessToken = await getHostingAccessToken();
     const fetch = (await import('node-fetch')).default;
 
-    const hostingApiUrl = `https://firebasehosting.googleapis.com/v1beta1/projects/${FIREBASE_PROJECT_ID}/sites/${FIREBASE_SITE_ID}/domains/${domain}`;
+    const hostingApiUrl = `https://firebasehosting.googleapis.com/v1beta1/projects/${FIREBASE_PROJECT_ID}/sites/${FIREBASE_SITE_ID}/customDomains/${encodeURIComponent(domain)}`;
 
     const response = await fetch(hostingApiUrl, {
       method: 'DELETE',
@@ -3434,3 +3434,93 @@ exports.removeCustomDomainFromHosting = functions.https.onCall(async (data, cont
     throw new functions.https.HttpsError('internal', 'Failed to remove domain: ' + error.message);
   }
 });
+
+// ============================================================================
+// Appointment Booking Notifications
+// ============================================================================
+
+// Send notification when a new booking is created
+exports.onBookingCreated = functions.firestore
+  .document('bookings/{bookingId}')
+  .onCreate(async (snap, context) => {
+    const booking = snap.data();
+    const bookingId = context.params.bookingId;
+
+    try {
+      // Get breeder user doc
+      const breederDoc = await db.collection('users').doc(booking.breederId).get();
+      if (!breederDoc.exists) {
+        console.log('Breeder user not found for booking notification');
+        return;
+      }
+
+      const breeder = breederDoc.data();
+      if (!breeder.email) {
+        console.log('Breeder has no email');
+        return;
+      }
+
+      // Get breeder profile for kennel name
+      const profileQuery = await db.collection('breederProfiles')
+        .where('userId', '==', booking.breederId)
+        .limit(1)
+        .get();
+      const breederProfile = profileQuery.docs[0]?.data();
+      const breederName = breederProfile?.kennelName || breederProfile?.breederName || breeder.displayName || 'Breeder';
+
+      // Format date/time for display
+      const startTime = new Date(booking.startTime);
+      const dateStr = startTime.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      const timeStr = startTime.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
+
+      const baseUrl = process.env.APP_URL || 'https://expert-breeder.web.app';
+
+      // Send notification email to breeder
+      await sendPlatformNotificationEmail(
+        breeder.email,
+        'new_booking',
+        {
+          breeder_name: breederName,
+          customer_name: booking.customerName || 'A customer',
+          customer_email: booking.customerEmail || '',
+          customer_phone: booking.customerPhone || '',
+          appointment_type: booking.appointmentTypeName || 'Appointment',
+          appointment_date: dateStr,
+          appointment_time: timeStr,
+          duration: `${booking.duration || 30} minutes`,
+          notes: booking.notes || 'None',
+          app_url: baseUrl,
+        }
+      );
+
+      // Create in-app notification for breeder
+      await db.collection('notifications').add({
+        userId: booking.breederId,
+        type: 'new_booking',
+        title: 'New Appointment Booking',
+        message: `${booking.customerName} booked a ${booking.appointmentTypeName} on ${dateStr} at ${timeStr}`,
+        read: false,
+        data: {
+          bookingId: bookingId,
+          customerName: booking.customerName,
+          customerEmail: booking.customerEmail,
+          appointmentType: booking.appointmentTypeName,
+          startTime: booking.startTime,
+        },
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      console.log(`Booking notification sent for ${bookingId}`);
+    } catch (error) {
+      console.error('Error sending booking notification:', error);
+    }
+  });
