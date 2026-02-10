@@ -693,13 +693,15 @@ export function Dashboard() {
   };
 
   return (
-    <div className='space-y-4 sm:space-y-6'>
-      <h1 className='text-2xl sm:text-3xl font-bold'>Dashboard</h1>
+    <div className='space-y-6 sm:space-y-8'>
+      <div>
+        <h1 className='text-2xl sm:text-3xl font-bold tracking-tight'>Dashboard</h1>
+        <p className='text-sm text-muted-foreground mt-1'>
+          Your breeding program at a glance.
+        </p>
+      </div>
 
       <div className='flex items-center justify-between gap-2'>
-        <p className='text-sm text-muted-foreground'>
-          Quick view of what&apos;s due today and this week.
-        </p>
         <div className='flex items-center gap-2'>
           <span className='text-xs text-muted-foreground'>Show completed</span>
           <Switch
@@ -713,13 +715,13 @@ export function Dashboard() {
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
         {/* Daily Tasks - Today's Checklist */}
         <Card className='flex flex-col'>
-          <CardHeader className='bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3'>
+          <CardHeader className='border-b py-3'>
             <CardTitle className='flex items-center justify-between gap-2 text-base'>
               <span className='flex items-center gap-2'>
-                <Sun className='h-4 w-4' />
+                <Sun className='h-4 w-4 text-amber-500' />
                 Daily Routines
               </span>
-              <span className='text-xs font-normal opacity-90'>
+              <span className='text-xs font-normal text-muted-foreground'>
                 {overdueDailyCount > 0 && `${overdueDailyCount} overdue · `}
                 {todayDailyCount} today
               </span>
@@ -854,7 +856,7 @@ export function Dashboard() {
                           <Sunrise className='h-3.5 w-3.5 text-amber-500' />
                         )}
                         {group.timeOfDay === 'midday' && (
-                          <Sun className='h-3.5 w-3.5 text-orange-500' />
+                          <Sun className='h-3.5 w-3.5 text-rose-500' />
                         )}
                         {group.timeOfDay === 'evening' && (
                           <Moon className='h-3.5 w-3.5 text-indigo-500' />
@@ -918,13 +920,13 @@ export function Dashboard() {
 
         {/* Weekly Milestones */}
         <Card className='flex flex-col'>
-          <CardHeader className='bg-gradient-to-r from-indigo-600 to-indigo-700 text-white py-3'>
+          <CardHeader className='border-b py-3'>
             <CardTitle className='flex items-center justify-between gap-2 text-base'>
               <span className='flex items-center gap-2'>
-                <Calendar className='h-4 w-4' />
+                <Calendar className='h-4 w-4 text-indigo-500' />
                 Weekly Milestones
               </span>
-              <span className='text-xs font-normal opacity-90'>
+              <span className='text-xs font-normal text-muted-foreground'>
                 {weeklyCount} this week
               </span>
             </CardTitle>
@@ -1010,105 +1012,117 @@ export function Dashboard() {
       </div>
 
       {/* Statistics Cards */}
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+      <div className='grid grid-cols-2 md:grid-cols-3 gap-4'>
         {/* Active Dams */}
         <Card
-          className='bg-gradient-to-br from-pink-400 to-pink-500 text-white cursor-pointer hover:scale-105 transition-transform'
+          className='cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-rose-400'
           onClick={() => handleCardClick('dams')}
         >
-          <CardContent className='p-6'>
+          <CardContent className='p-5'>
             <div className='flex items-center justify-between'>
               <div>
-                <p className='text-sm opacity-90 mb-1'>Active Dams</p>
-                <p className='text-4xl font-bold'>{stats.activeDams.length}</p>
+                <p className='text-sm text-muted-foreground mb-1'>Active Dams</p>
+                <p className='text-3xl font-bold'>{stats.activeDams.length}</p>
               </div>
-              <Heart className='h-12 w-12 opacity-80' />
+              <div className='h-11 w-11 rounded-full bg-rose-50 dark:bg-rose-950/30 flex items-center justify-center'>
+                <Heart className='h-5 w-5 text-rose-500' />
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Active Sires */}
         <Card
-          className='bg-gradient-to-br from-sky-400 to-sky-500 text-white cursor-pointer hover:scale-105 transition-transform'
+          className='cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-sky-400'
           onClick={() => handleCardClick('sires')}
         >
-          <CardContent className='p-6'>
+          <CardContent className='p-5'>
             <div className='flex items-center justify-between'>
               <div>
-                <p className='text-sm opacity-90 mb-1'>Active Sires</p>
-                <p className='text-4xl font-bold'>{stats.activeSires.length}</p>
+                <p className='text-sm text-muted-foreground mb-1'>Active Sires</p>
+                <p className='text-3xl font-bold'>{stats.activeSires.length}</p>
               </div>
-              <Dog className='h-12 w-12 opacity-80' />
+              <div className='h-11 w-11 rounded-full bg-sky-50 dark:bg-sky-950/30 flex items-center justify-center'>
+                <Dog className='h-5 w-5 text-sky-500' />
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Total Puppies */}
         <Card
-          className='bg-gradient-to-br from-cyan-400 to-cyan-500 text-white cursor-pointer hover:scale-105 transition-transform'
+          className='cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-violet-400'
           onClick={() => handleCardClick('puppies')}
         >
-          <CardContent className='p-6'>
+          <CardContent className='p-5'>
             <div className='flex items-center justify-between'>
               <div>
-                <p className='text-sm opacity-90 mb-1'>Total Puppies</p>
-                <p className='text-4xl font-bold'>{stats.allPuppies.length}</p>
+                <p className='text-sm text-muted-foreground mb-1'>Total Puppies</p>
+                <p className='text-3xl font-bold'>{stats.allPuppies.length}</p>
               </div>
-              <Dog className='h-12 w-12 opacity-80' />
+              <div className='h-11 w-11 rounded-full bg-violet-50 dark:bg-violet-950/30 flex items-center justify-center'>
+                <Dog className='h-5 w-5 text-violet-500' />
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Reserved */}
         <Card
-          className='bg-gradient-to-br from-amber-400 to-amber-500 text-white cursor-pointer hover:scale-105 transition-transform'
+          className='cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-amber-400'
           onClick={() => handleCardClick('reserved')}
         >
-          <CardContent className='p-6'>
+          <CardContent className='p-5'>
             <div className='flex items-center justify-between'>
               <div>
-                <p className='text-sm opacity-90 mb-1'>Reserved</p>
-                <p className='text-4xl font-bold'>
+                <p className='text-sm text-muted-foreground mb-1'>Reserved</p>
+                <p className='text-3xl font-bold'>
                   {stats.reservedPuppies.length}
                 </p>
               </div>
-              <Users className='h-12 w-12 opacity-80' />
+              <div className='h-11 w-11 rounded-full bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center'>
+                <Users className='h-5 w-5 text-amber-500' />
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Available */}
         <Card
-          className='bg-gradient-to-br from-green-500 to-green-600 text-white cursor-pointer hover:scale-105 transition-transform'
+          className='cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-emerald-400'
           onClick={() => handleCardClick('forSale')}
         >
-          <CardContent className='p-6'>
+          <CardContent className='p-5'>
             <div className='flex items-center justify-between'>
               <div>
-                <p className='text-sm opacity-90 mb-1'>Available</p>
-                <p className='text-4xl font-bold'>
+                <p className='text-sm text-muted-foreground mb-1'>Available</p>
+                <p className='text-3xl font-bold'>
                   {stats.forSalePuppies.length}
                 </p>
               </div>
-              <ShoppingCart className='h-12 w-12 opacity-80' />
+              <div className='h-11 w-11 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center'>
+                <ShoppingCart className='h-5 w-5 text-emerald-500' />
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Yearly Income */}
         <Card
-          className='bg-gradient-to-br from-emerald-400 to-emerald-500 text-white cursor-pointer hover:scale-105 transition-transform'
+          className='cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-teal-400'
           onClick={() => handleCardClick('income')}
         >
-          <CardContent className='p-6'>
+          <CardContent className='p-5'>
             <div className='flex items-center justify-between'>
               <div>
-                <p className='text-sm opacity-90 mb-1'>Yearly Income</p>
-                <p className='text-4xl font-bold'>
+                <p className='text-sm text-muted-foreground mb-1'>Yearly Income</p>
+                <p className='text-3xl font-bold'>
                   ${stats.yearlyIncome.toLocaleString()}
                 </p>
               </div>
-              <DollarSign className='h-12 w-12 opacity-80' />
+              <div className='h-11 w-11 rounded-full bg-teal-50 dark:bg-teal-950/30 flex items-center justify-center'>
+                <DollarSign className='h-5 w-5 text-teal-500' />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1118,9 +1132,9 @@ export function Dashboard() {
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
         {/* Upcoming Heats */}
         <Card>
-          <CardHeader className='bg-gradient-to-r from-orange-500 to-orange-600 text-white'>
-            <CardTitle className='flex items-center gap-2'>
-              <Flame className='h-5 w-5' />
+          <CardHeader className='border-b'>
+            <CardTitle className='flex items-center gap-2 text-base'>
+              <Flame className='h-4 w-4 text-rose-500' />
               Upcoming Heats
             </CardTitle>
           </CardHeader>
@@ -1181,9 +1195,9 @@ export function Dashboard() {
 
         {/* Upcoming Litters */}
         <Card>
-          <CardHeader className='bg-gradient-to-r from-green-600 to-green-700 text-white'>
-            <CardTitle className='flex items-center gap-2'>
-              <Dog className='h-5 w-5' />
+          <CardHeader className='border-b'>
+            <CardTitle className='flex items-center gap-2 text-base'>
+              <Dog className='h-4 w-4 text-emerald-500' />
               Upcoming Litters
             </CardTitle>
           </CardHeader>
@@ -1236,9 +1250,9 @@ export function Dashboard() {
 
       {/* Litters Scheduler */}
       <Card>
-        <CardHeader className='bg-gradient-to-r from-teal-600 to-teal-700 text-white'>
-          <CardTitle className='flex items-center gap-2'>
-            <Calendar className='h-5 w-5' />
+        <CardHeader className='border-b'>
+          <CardTitle className='flex items-center gap-2 text-base'>
+            <Calendar className='h-4 w-4 text-teal-500' />
             Litters Scheduler
           </CardTitle>
         </CardHeader>
