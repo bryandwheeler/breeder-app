@@ -9,10 +9,10 @@ import {
   Calendar,
   MessageSquare,
   GitBranch,
-  ChevronRight,
+  ArrowRight,
   CheckCircle2,
-  Shield,
-  Zap,
+  PawPrint,
+  Sparkles,
 } from 'lucide-react';
 
 const features = [
@@ -21,42 +21,42 @@ const features = [
     title: 'Dog & Puppy Management',
     description:
       'Track your dogs, puppies, litters, and pedigrees all in one place. Manage profiles, photos, and lineage records effortlessly.',
-    color: 'bg-orange-100 text-orange-600',
+    color: 'bg-rose-50 text-rose-400',
   },
   {
     icon: Heart,
     title: 'Health Records',
     description:
       'Maintain comprehensive health records, vaccinations, vet visits, and genetic testing results for every animal.',
-    color: 'bg-red-100 text-red-600',
+    color: 'bg-pink-50 text-pink-400',
   },
   {
     icon: Globe,
     title: 'Website Builder',
     description:
       'Create a professional public website for your kennel in minutes. Showcase available puppies and your breeding program.',
-    color: 'bg-blue-100 text-blue-600',
+    color: 'bg-violet-50 text-violet-400',
   },
   {
     icon: Users,
     title: 'Customer & Waitlist CRM',
     description:
       'Manage inquiries, waitlists, and customer relationships. Keep track of every interaction from first contact to placement.',
-    color: 'bg-green-100 text-green-600',
+    color: 'bg-amber-50 text-amber-500',
   },
   {
     icon: FileText,
     title: 'Contracts & E-Signatures',
     description:
       'Generate puppy contracts and collect legally binding electronic signatures — no printing or scanning required.',
-    color: 'bg-purple-100 text-purple-600',
+    color: 'bg-emerald-50 text-emerald-400',
   },
   {
     icon: Mail,
     title: 'Email & Marketing',
     description:
       'Send newsletters, manage subscriber lists, and build automated email sequences to stay connected with your community.',
-    color: 'bg-sky-100 text-sky-600',
+    color: 'bg-sky-50 text-sky-400',
   },
 ];
 
@@ -89,27 +89,28 @@ const highlights = [
 
 export function LandingPage() {
   return (
-    <div className='min-h-screen flex flex-col bg-white'>
+    <div className='min-h-screen flex flex-col' style={{ backgroundColor: '#faf8f5' }}>
       {/* Navigation */}
-      <nav className='sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm'>
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16'>
+      <nav className='sticky top-0 z-50 backdrop-blur-md border-b border-stone-200/60' style={{ backgroundColor: 'rgba(250, 248, 245, 0.95)' }}>
+        <div className='max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 flex items-center justify-between h-16'>
           <img
             src='/expert-breeder-logo.webp'
             alt='Expert Breeder'
-            className='h-10 w-auto'
+            className='h-9 w-auto'
           />
-          <div className='flex items-center gap-3'>
+          <div className='flex items-center gap-4'>
             <Link
               to='/login'
-              className='inline-flex items-center px-4 py-2 text-sm font-medium text-slate-800 hover:text-orange-500 transition-colors'
+              className='inline-flex items-center px-4 py-2 text-sm font-medium text-stone-600 hover:text-rose-500 transition-colors'
             >
               Log In
             </Link>
             <Link
               to='/signup'
-              className='inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors shadow-sm'
+              className='inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-full text-white transition-all shadow-sm hover:shadow-md'
+              style={{ backgroundColor: '#c45a6e' }}
             >
-              Sign Up Free
+              Get Started
             </Link>
           </div>
         </div>
@@ -117,49 +118,48 @@ export function LandingPage() {
 
       <main className='flex-1'>
         {/* Hero Section */}
-        <section className='relative overflow-hidden'>
-          {/* Gradient background */}
-          <div className='absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800' />
-          {/* Decorative circles */}
-          <div className='absolute top-0 right-0 w-[600px] h-[600px] bg-sky-400/10 rounded-full -translate-y-1/2 translate-x-1/3' />
-          <div className='absolute bottom-0 left-0 w-[400px] h-[400px] bg-orange-500/10 rounded-full translate-y-1/2 -translate-x-1/3' />
+        <section className='relative overflow-hidden py-20 sm:py-28 lg:py-36 px-5'>
+          {/* Soft decorative shapes */}
+          <div className='absolute top-10 right-0 w-[500px] h-[500px] rounded-full opacity-30' style={{ backgroundColor: '#f9e4e8' }} />
+          <div className='absolute -bottom-20 -left-20 w-[400px] h-[400px] rounded-full opacity-20' style={{ backgroundColor: '#e8d5c4' }} />
+          <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full opacity-10' style={{ backgroundColor: '#d4bfb0' }} />
 
-          <div className='relative max-w-5xl mx-auto px-4 sm:px-6 py-20 sm:py-28 lg:py-32 text-center'>
-            <div className='inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5 mb-8 border border-white/20'>
-              <Zap className='h-4 w-4 text-orange-500' />
-              <span className='text-white/90 text-sm font-medium'>The #1 platform for professional breeders</span>
+          <div className='relative max-w-3xl mx-auto text-center'>
+            <div className='inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-8 border border-stone-200 bg-white/70 backdrop-blur-sm'>
+              <PawPrint className='h-3.5 w-3.5 text-rose-400' />
+              <span className='text-stone-500 text-xs font-medium tracking-wide uppercase'>Built for breeders who care</span>
             </div>
 
-            <h1 className='text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight'>
-              Manage Your Entire Breeding{' '}
-              <span className='text-orange-500'>Program</span>{' '}
-              From One Dashboard
+            <h1 className='text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-stone-800 mb-6 leading-[1.15] tracking-tight'>
+              The thoughtful way to manage your{' '}
+              <span className='italic' style={{ color: '#c45a6e' }}>breeding program</span>
             </h1>
 
-            <p className='text-lg sm:text-xl text-white/80 mb-10 max-w-2xl mx-auto leading-relaxed'>
-              Dogs, health records, customers, contracts, websites, email marketing — everything you need to run a professional, organized kennel.
+            <p className='text-lg sm:text-xl text-stone-500 mb-12 max-w-xl mx-auto leading-relaxed'>
+              Health records, pedigrees, customer relationships, contracts, and your own kennel website — all from one beautifully simple dashboard.
             </p>
 
-            <div className='flex flex-col sm:flex-row gap-4 justify-center mb-8'>
+            <div className='flex flex-col sm:flex-row gap-4 justify-center mb-10'>
               <Link
                 to='/signup'
-                className='inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-xl bg-orange-500 text-white hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 hover:-translate-y-0.5'
+                className='inline-flex items-center justify-center px-8 py-3.5 text-base font-medium rounded-full text-white transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5'
+                style={{ backgroundColor: '#c45a6e' }}
               >
-                Get Started Free
-                <ChevronRight className='ml-2 h-5 w-5' />
+                Start Free Today
+                <ArrowRight className='ml-2 h-4 w-4' />
               </Link>
               <a
                 href='#features'
-                className='inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-xl border-2 border-white/30 text-white hover:bg-white/10 transition-all'
+                className='inline-flex items-center justify-center px-8 py-3.5 text-base font-medium rounded-full border border-stone-300 text-stone-600 bg-white hover:bg-stone-50 transition-all'
               >
-                Learn More
+                See Features
               </a>
             </div>
 
             <div className='flex flex-wrap gap-6 justify-center'>
               {highlights.map((text) => (
-                <div key={text} className='flex items-center gap-2 text-white/70 text-sm'>
-                  <CheckCircle2 className='h-4 w-4 text-green-400' />
+                <div key={text} className='flex items-center gap-1.5 text-stone-400 text-sm'>
+                  <CheckCircle2 className='h-3.5 w-3.5 text-emerald-400' />
                   <span>{text}</span>
                 </div>
               ))}
@@ -167,59 +167,59 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Social proof bar */}
-        <section className='bg-gray-50 border-b border-gray-100 py-6 px-4'>
-          <div className='max-w-4xl mx-auto flex flex-wrap items-center justify-center gap-8 sm:gap-12 text-center'>
+        {/* Trust bar */}
+        <section className='border-y border-stone-200/60 py-8 px-5' style={{ backgroundColor: '#f5f0eb' }}>
+          <div className='max-w-4xl mx-auto flex flex-wrap items-center justify-center gap-10 sm:gap-16 text-center'>
             <div>
-              <div className='text-2xl font-bold text-slate-900'>All-in-One</div>
-              <div className='text-sm text-gray-500'>Breeding Platform</div>
+              <div className='text-xl font-semibold text-stone-700'>All-in-One</div>
+              <div className='text-xs text-stone-400 mt-0.5'>Breeding Platform</div>
             </div>
-            <div className='hidden sm:block w-px h-10 bg-gray-200' />
+            <div className='hidden sm:block w-px h-8 bg-stone-300/50' />
             <div>
-              <div className='text-2xl font-bold text-slate-900'>Unlimited</div>
-              <div className='text-sm text-gray-500'>Dogs & Records</div>
+              <div className='text-xl font-semibold text-stone-700'>Unlimited</div>
+              <div className='text-xs text-stone-400 mt-0.5'>Dogs & Records</div>
             </div>
-            <div className='hidden sm:block w-px h-10 bg-gray-200' />
+            <div className='hidden sm:block w-px h-8 bg-stone-300/50' />
             <div>
-              <div className='text-2xl font-bold text-slate-900'>Free</div>
-              <div className='text-sm text-gray-500'>To Get Started</div>
+              <div className='text-xl font-semibold text-stone-700'>Free</div>
+              <div className='text-xs text-stone-400 mt-0.5'>To Get Started</div>
             </div>
-            <div className='hidden sm:block w-px h-10 bg-gray-200' />
+            <div className='hidden sm:block w-px h-8 bg-stone-300/50' />
             <div>
-              <div className='flex items-center justify-center gap-1'>
-                <Shield className='h-5 w-5 text-green-500' />
-                <span className='text-2xl font-bold text-slate-900'>Secure</span>
-              </div>
-              <div className='text-sm text-gray-500'>Cloud Storage</div>
+              <div className='text-xl font-semibold text-stone-700'>Secure</div>
+              <div className='text-xs text-stone-400 mt-0.5'>Cloud Storage</div>
             </div>
           </div>
         </section>
 
         {/* Primary Features */}
-        <section id='features' className='py-16 sm:py-24 px-4'>
-          <div className='max-w-6xl mx-auto'>
+        <section id='features' className='py-20 sm:py-28 px-5'>
+          <div className='max-w-5xl mx-auto'>
             <div className='text-center mb-16'>
-              <span className='inline-block text-orange-500 font-semibold text-sm uppercase tracking-wider mb-3'>Features</span>
-              <h2 className='text-3xl sm:text-4xl font-bold text-slate-900 mb-4'>
-                Everything You Need to Run Your Breeding Program
+              <div className='flex items-center justify-center gap-2 mb-4'>
+                <Sparkles className='h-4 w-4 text-rose-400' />
+                <span className='text-xs font-medium tracking-widest uppercase' style={{ color: '#c45a6e' }}>Features</span>
+              </div>
+              <h2 className='text-3xl sm:text-4xl font-bold text-stone-800 mb-4 tracking-tight'>
+                Everything you need, nothing you don't
               </h2>
-              <p className='text-gray-600 max-w-2xl mx-auto text-lg'>
-                From record keeping to customer management, Expert Breeder gives you the tools to run a professional operation.
+              <p className='text-stone-500 max-w-lg mx-auto'>
+                Purpose-built tools for breeders who want to stay organized, professional, and connected with their families.
               </p>
             </div>
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5'>
               {features.map((feature) => (
                 <div
                   key={feature.title}
-                  className='group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-lg hover:border-sky-400/30 transition-all duration-300 hover:-translate-y-1'
+                  className='group bg-white rounded-2xl p-6 border border-stone-100 hover:border-stone-200 shadow-sm hover:shadow-md transition-all duration-300'
                 >
-                  <div className={`inline-flex items-center justify-center h-12 w-12 rounded-xl ${feature.color} mb-4`}>
-                    <feature.icon className='h-6 w-6' />
+                  <div className={`inline-flex items-center justify-center h-11 w-11 rounded-xl ${feature.color} mb-4`}>
+                    <feature.icon className='h-5 w-5' />
                   </div>
-                  <h3 className='text-lg font-semibold text-slate-900 mb-2'>
+                  <h3 className='text-base font-semibold text-stone-800 mb-2'>
                     {feature.title}
                   </h3>
-                  <p className='text-gray-600 text-sm leading-relaxed'>
+                  <p className='text-stone-500 text-sm leading-relaxed'>
                     {feature.description}
                   </p>
                 </div>
@@ -229,24 +229,24 @@ export function LandingPage() {
         </section>
 
         {/* Secondary Features */}
-        <section className='bg-gradient-to-b from-sky-50 to-sky-100 py-16 sm:py-24 px-4'>
-          <div className='max-w-6xl mx-auto'>
+        <section className='py-20 sm:py-28 px-5' style={{ backgroundColor: '#f5f0eb' }}>
+          <div className='max-w-5xl mx-auto'>
             <div className='text-center mb-16'>
-              <span className='inline-block text-sky-500 font-semibold text-sm uppercase tracking-wider mb-3'>And More</span>
-              <h2 className='text-3xl sm:text-4xl font-bold text-slate-900 mb-4'>
-                Built for the Way Breeders Work
+              <span className='text-xs font-medium tracking-widest uppercase text-stone-400'>And more</span>
+              <h2 className='text-3xl sm:text-4xl font-bold text-stone-800 mt-3 tracking-tight'>
+                Built around the way you work
               </h2>
             </div>
-            <div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
               {secondaryFeatures.map((feature) => (
-                <div key={feature.title} className='bg-white/80 backdrop-blur-sm rounded-2xl p-8 text-center border border-white shadow-sm'>
-                  <div className='inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-slate-900/5 mb-5'>
-                    <feature.icon className='h-8 w-8 text-slate-900' />
+                <div key={feature.title} className='bg-white rounded-2xl p-8 text-center border border-stone-100 shadow-sm'>
+                  <div className='inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-rose-50 mb-5'>
+                    <feature.icon className='h-6 w-6 text-rose-400' />
                   </div>
-                  <h3 className='text-lg font-semibold text-slate-900 mb-3'>
+                  <h3 className='text-base font-semibold text-stone-800 mb-2'>
                     {feature.title}
                   </h3>
-                  <p className='text-gray-600 text-sm leading-relaxed'>
+                  <p className='text-stone-500 text-sm leading-relaxed'>
                     {feature.description}
                   </p>
                 </div>
@@ -256,43 +256,47 @@ export function LandingPage() {
         </section>
 
         {/* Closing CTA */}
-        <section className='relative overflow-hidden'>
-          <div className='absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800' />
-          <div className='absolute top-0 left-1/2 w-[800px] h-[800px] bg-orange-500/5 rounded-full -translate-x-1/2 -translate-y-1/2' />
-
-          <div className='relative max-w-3xl mx-auto px-4 py-16 sm:py-24 text-center'>
-            <h2 className='text-3xl sm:text-4xl font-bold text-white mb-4'>
-              Ready to Streamline Your Breeding Program?
+        <section className='py-20 sm:py-28 px-5'>
+          <div className='max-w-2xl mx-auto text-center'>
+            <PawPrint className='h-8 w-8 mx-auto mb-6 text-rose-300' />
+            <h2 className='text-3xl sm:text-4xl font-bold text-stone-800 mb-4 tracking-tight'>
+              Ready to simplify your breeding program?
             </h2>
-            <p className='text-lg text-white/80 mb-10'>
-              Join Expert Breeder today — it's free to get started. No credit card required.
+            <p className='text-lg text-stone-500 mb-10 max-w-md mx-auto'>
+              Join breeders who trust Expert Breeder to keep their programs running smoothly. Free to get started.
             </p>
             <Link
               to='/signup'
-              className='inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-xl bg-orange-500 text-white hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 hover:-translate-y-0.5'
+              className='inline-flex items-center justify-center px-8 py-3.5 text-base font-medium rounded-full text-white transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5'
+              style={{ backgroundColor: '#c45a6e' }}
             >
               Create Your Free Account
-              <ChevronRight className='ml-2 h-5 w-5' />
+              <ArrowRight className='ml-2 h-4 w-4' />
             </Link>
           </div>
         </section>
       </main>
 
       {/* Footer */}
-      <footer className='bg-slate-900 border-t border-white/10 py-8 px-4'>
-        <div className='max-w-6xl mx-auto text-center text-sm'>
-          <p className='text-white/60'>
+      <footer className='border-t border-stone-200/60 py-10 px-5' style={{ backgroundColor: '#f5f0eb' }}>
+        <div className='max-w-5xl mx-auto text-center'>
+          <img
+            src='/expert-breeder-logo.webp'
+            alt='Expert Breeder'
+            className='h-8 w-auto mx-auto mb-4 opacity-60'
+          />
+          <p className='text-stone-400 text-sm'>
             &copy; {new Date().getFullYear()} Expert Breeder. All rights reserved.
           </p>
-          <p className='mt-2 text-xs text-white/40'>
-            <Link to='/privacy' className='hover:text-white/70 transition-colors'>
+          <div className='mt-3 flex items-center justify-center gap-4 text-xs text-stone-400'>
+            <Link to='/privacy' className='hover:text-stone-600 transition-colors'>
               Privacy Policy
             </Link>
-            {' · '}
-            <Link to='/terms' className='hover:text-white/70 transition-colors'>
+            <span className='text-stone-300'>|</span>
+            <Link to='/terms' className='hover:text-stone-600 transition-colors'>
               Terms of Service
             </Link>
-          </p>
+          </div>
         </div>
       </footer>
     </div>
