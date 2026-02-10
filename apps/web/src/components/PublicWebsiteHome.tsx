@@ -150,54 +150,34 @@ export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
               className='text-3xl font-bold text-center mb-12'
               style={{ color: primary, fontFamily: getFontFamily(settings.theme.fontFamily) }}
             >
-              Why Choose Us
+              {settings.whyChooseUsTitle || 'Why Choose Us'}
             </h2>
 
             <div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
-              <div className='text-center bg-white rounded-2xl p-8 shadow-sm'>
-                <div
-                  className='w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4'
-                  style={{ backgroundColor: accent + '20' }}
-                >
-                  <Award className='h-7 w-7' style={{ color: accent }} />
-                </div>
-                <h3 className='font-semibold text-lg mb-2' style={{ color: primary }}>
-                  Quality Breeding
-                </h3>
-                <p className='text-stone-500'>
-                  Committed to breeding healthy, well-socialized puppies
-                </p>
-              </div>
-
-              <div className='text-center bg-white rounded-2xl p-8 shadow-sm'>
-                <div
-                  className='w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4'
-                  style={{ backgroundColor: accent + '20' }}
-                >
-                  <Shield className='h-7 w-7' style={{ color: accent }} />
-                </div>
-                <h3 className='font-semibold text-lg mb-2' style={{ color: primary }}>
-                  Health Guaranteed
-                </h3>
-                <p className='text-stone-500'>
-                  All puppies come with health guarantees and certifications
-                </p>
-              </div>
-
-              <div className='text-center bg-white rounded-2xl p-8 shadow-sm'>
-                <div
-                  className='w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4'
-                  style={{ backgroundColor: accent + '20' }}
-                >
-                  <Heart className='h-7 w-7' style={{ color: accent }} />
-                </div>
-                <h3 className='font-semibold text-lg mb-2' style={{ color: primary }}>
-                  Lifetime Support
-                </h3>
-                <p className='text-stone-500'>
-                  We provide ongoing support and guidance to all our families
-                </p>
-              </div>
+              {(settings.whyChooseUs?.length ? settings.whyChooseUs : [
+                { title: 'Quality Breeding', description: 'Committed to breeding healthy, well-socialized puppies' },
+                { title: 'Health Guaranteed', description: 'All puppies come with health guarantees and certifications' },
+                { title: 'Lifetime Support', description: 'We provide ongoing support and guidance to all our families' },
+              ]).map((card, index) => {
+                const icons = [Award, Shield, Heart];
+                const Icon = icons[index % icons.length];
+                return (
+                  <div key={index} className='text-center bg-white rounded-2xl p-8 shadow-sm'>
+                    <div
+                      className='w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4'
+                      style={{ backgroundColor: accent + '20' }}
+                    >
+                      <Icon className='h-7 w-7' style={{ color: accent }} />
+                    </div>
+                    <h3 className='font-semibold text-lg mb-2' style={{ color: primary }}>
+                      {card.title}
+                    </h3>
+                    <p className='text-stone-500'>
+                      {card.description}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>

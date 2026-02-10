@@ -14,6 +14,8 @@ import { Badge } from '@/components/ui/badge';
 import { CollapsibleFormSection, FormSectionGroup } from '@/components/ui/collapsible-form-section';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Eye,
   Globe,
@@ -24,9 +26,14 @@ import {
   ShoppingBag,
   FileText,
   Heart,
+  Save,
+  Mail,
+  Phone,
+  MapPin,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import type { ValueProposition } from '@breeder/types';
 
 export function WebsiteDesign() {
   const { currentUser } = useAuth();
@@ -35,6 +42,84 @@ export function WebsiteDesign() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [saving, setSaving] = useState<string | null>(null);
+
+  // Why Choose Us state
+  const defaultCards: ValueProposition[] = [
+    { title: 'Quality Breeding', description: 'Committed to breeding healthy, well-socialized puppies' },
+    { title: 'Health Guaranteed', description: 'All puppies come with health guarantees and certifications' },
+    { title: 'Lifetime Support', description: 'We provide ongoing support and guidance to all our families' },
+  ];
+  const [whyChooseUsTitle, setWhyChooseUsTitle] = useState('');
+  const [whyChooseUsCards, setWhyChooseUsCards] = useState<ValueProposition[]>(defaultCards);
+
+  // Contact Info state
+  const [contactInfo, setContactInfo] = useState({
+    email: '',
+    phone: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: '',
+  });
+
+  // Sync from store
+  useEffect(() => {
+    if (websiteSettings) {
+      setWhyChooseUsTitle(websiteSettings.whyChooseUsTitle || '');
+      if (websiteSettings.whyChooseUs?.length) {
+        setWhyChooseUsCards(websiteSettings.whyChooseUs);
+      }
+      setContactInfo({
+        email: websiteSettings.email || '',
+        phone: websiteSettings.phone || '',
+        city: websiteSettings.city || '',
+        state: websiteSettings.state || '',
+        zipCode: websiteSettings.zipCode || '',
+        country: websiteSettings.country || '',
+      });
+    }
+  }, [websiteSettings]);
+
+  const handleSaveWhyChooseUs = async () => {
+    if (!currentUser) return;
+    setSaving('whyChooseUs');
+    try {
+      await updateWebsiteSettings(currentUser.uid, {
+        whyChooseUsTitle: whyChooseUsTitle || undefined,
+        whyChooseUs: whyChooseUsCards,
+      });
+      toast({ title: 'Saved', description: '"Why Choose Us" section updated' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save', variant: 'destructive' });
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handleSaveContactInfo = async () => {
+    if (!currentUser) return;
+    setSaving('contact');
+    try {
+      await updateWebsiteSettings(currentUser.uid, {
+        email: contactInfo.email || undefined,
+        phone: contactInfo.phone || undefined,
+        city: contactInfo.city || undefined,
+        state: contactInfo.state || undefined,
+        zipCode: contactInfo.zipCode || undefined,
+        country: contactInfo.country || undefined,
+      });
+      toast({ title: 'Saved', description: 'Contact information updated' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save', variant: 'destructive' });
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const updateCard = (index: number, field: keyof ValueProposition, value: string) => {
+    setWhyChooseUsCards(prev => prev.map((card, i) => i === index ? { ...card, [field]: value } : card));
+  };
 
   // Determine the website URL based on domain settings
   const getWebsiteUrl = () => {
@@ -325,6 +410,145 @@ export function WebsiteDesign() {
             </Link>
           </div>
         </CollapsibleFormSection>
+
+        {/* Why Choose Us */}
+        <CollapsibleFormSection
+          title="Why Choose Us"
+          description="Edit the value propositions shown on your homepage"
+          defaultOpen={false}
+          collapsedIndicator={whyChooseUsTitle || 'Why Choose Us'}
+        >
+          <div className='space-y-5'>
+            <div className='space-y-2'>
+              <Label htmlFor='why-choose-us-title'>Section Heading</Label>
+              <Input
+                id='why-choose-us-title'
+                value={whyChooseUsTitle}
+                onChange={(e) => setWhyChooseUsTitle(e.target.value)}
+                placeholder='Why Choose Us'
+              />
+              <p className='text-xs text-muted-foreground'>Leave blank to use the default "Why Choose Us"</p>
+            </div>
+
+            {whyChooseUsCards.map((card, index) => (
+              <div key={index} className='border rounded-lg p-4 space-y-3'>
+                <p className='text-xs font-semibold text-muted-foreground uppercase tracking-wider'>Card {index + 1}</p>
+                <div className='space-y-2'>
+                  <Label htmlFor={`card-title-${index}`}>Title</Label>
+                  <Input
+                    id={`card-title-${index}`}
+                    value={card.title}
+                    onChange={(e) => updateCard(index, 'title', e.target.value)}
+                    placeholder={defaultCards[index]?.title || 'Card title'}
+                  />
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor={`card-desc-${index}`}>Description</Label>
+                  <Textarea
+                    id={`card-desc-${index}`}
+                    value={card.description}
+                    onChange={(e) => updateCard(index, 'description', e.target.value)}
+                    placeholder={defaultCards[index]?.description || 'Card description'}
+                    rows={2}
+                  />
+                </div>
+              </div>
+            ))}
+
+            <div className='flex justify-end'>
+              <Button onClick={handleSaveWhyChooseUs} disabled={saving === 'whyChooseUs'} size='sm'>
+                {saving === 'whyChooseUs' ? <Loader2 className='h-4 w-4 mr-2 animate-spin' /> : <Save className='h-4 w-4 mr-2' />}
+                Save
+              </Button>
+            </div>
+          </div>
+        </CollapsibleFormSection>
+
+        {/* Contact Information */}
+        <CollapsibleFormSection
+          title="Contact Information"
+          description="Your contact details shown on the public website"
+          defaultOpen={false}
+          collapsedIndicator={contactInfo.email || 'Not set'}
+        >
+          <div className='space-y-4'>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='contact-email' className='flex items-center gap-1.5'>
+                  <Mail className='h-3.5 w-3.5' /> Email
+                </Label>
+                <Input
+                  id='contact-email'
+                  type='email'
+                  value={contactInfo.email}
+                  onChange={(e) => setContactInfo({ ...contactInfo, email: e.target.value })}
+                  placeholder='hello@yourkennel.com'
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='contact-phone' className='flex items-center gap-1.5'>
+                  <Phone className='h-3.5 w-3.5' /> Phone
+                </Label>
+                <Input
+                  id='contact-phone'
+                  type='tel'
+                  value={contactInfo.phone}
+                  onChange={(e) => setContactInfo({ ...contactInfo, phone: e.target.value })}
+                  placeholder='(555) 123-4567'
+                />
+              </div>
+            </div>
+
+            <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+              <div className='space-y-2 col-span-2 md:col-span-1'>
+                <Label htmlFor='contact-city' className='flex items-center gap-1.5'>
+                  <MapPin className='h-3.5 w-3.5' /> City
+                </Label>
+                <Input
+                  id='contact-city'
+                  value={contactInfo.city}
+                  onChange={(e) => setContactInfo({ ...contactInfo, city: e.target.value })}
+                  placeholder='City'
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='contact-state'>State</Label>
+                <Input
+                  id='contact-state'
+                  value={contactInfo.state}
+                  onChange={(e) => setContactInfo({ ...contactInfo, state: e.target.value })}
+                  placeholder='State'
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='contact-zip'>Zip Code</Label>
+                <Input
+                  id='contact-zip'
+                  value={contactInfo.zipCode}
+                  onChange={(e) => setContactInfo({ ...contactInfo, zipCode: e.target.value })}
+                  placeholder='12345'
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='contact-country'>Country</Label>
+                <Input
+                  id='contact-country'
+                  value={contactInfo.country}
+                  onChange={(e) => setContactInfo({ ...contactInfo, country: e.target.value })}
+                  placeholder='US'
+                />
+              </div>
+            </div>
+
+            <div className='flex justify-end'>
+              <Button onClick={handleSaveContactInfo} disabled={saving === 'contact'} size='sm'>
+                {saving === 'contact' ? <Loader2 className='h-4 w-4 mr-2 animate-spin' /> : <Save className='h-4 w-4 mr-2' />}
+                Save Contact Info
+              </Button>
+            </div>
+          </div>
+        </CollapsibleFormSection>
+
         {/* Blog */}
         <CollapsibleFormSection
           title="Blog"

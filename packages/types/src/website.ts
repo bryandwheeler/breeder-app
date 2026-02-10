@@ -120,6 +120,11 @@ export interface AvailablePuppyListing {
   updatedAt: string;
 }
 
+export interface ValueProposition {
+  title: string;
+  description: string;
+}
+
 export interface WebsiteSettings {
   userId: string;
   theme: WebsiteTheme;
@@ -186,6 +191,10 @@ export interface WebsiteSettings {
   instagram?: string;
   twitter?: string;
   youtube?: string;
+
+  // Why Choose Us section
+  whyChooseUsTitle?: string;
+  whyChooseUs?: ValueProposition[];
 }
 
 export interface WebsitePageContent {

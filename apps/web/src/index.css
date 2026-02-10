@@ -14,8 +14,8 @@
   --popover: #ffffff;
   --popover-foreground: #3a3632;
 
-  /* Primary — Warm Terracotta for inviting CTAs */
-  --primary: #946055;
+  /* Primary — Deep Walnut for clear, readable CTAs */
+  --primary: #5C4033;
   --primary-foreground: #ffffff;
 
   /* Secondary — Warm Cream */
@@ -38,8 +38,8 @@
   --border: #d9d2c7;
   --input: #d9d2c7;
 
-  /* Ring matches primary terracotta */
-  --ring: #946055;
+  /* Ring matches primary walnut */
+  --ring: #5C4033;
   --radius: 0.5rem;
 }
 
@@ -52,8 +52,8 @@
   --popover: #2a2723;
   --popover-foreground: #f0ece6;
 
-  /* Primary — Lighter Terracotta for dark backgrounds */
-  --primary: #b8897a;
+  /* Primary — Lighter Walnut for dark backgrounds */
+  --primary: #B8937D;
   --primary-foreground: #ffffff;
 
   /* Secondary — Dark Warm Brown */
@@ -71,7 +71,7 @@
   --destructive-foreground: #ffffff;
   --border: #3e3a35; /* Dark Olive */
   --input: #3e3a35;
-  --ring: #b8897a;
+  --ring: #B8937D;
 }
 
 /* Apply colors to elements directly */
@@ -88,20 +88,80 @@ body {
   color: var(--primary) !important;
 }
 
+.text-primary-foreground {
+  color: var(--primary-foreground) !important;
+}
+
 .bg-secondary {
   background-color: var(--secondary) !important;
+}
+
+.text-secondary-foreground {
+  color: var(--secondary-foreground) !important;
 }
 
 .bg-card {
   background-color: var(--card) !important;
 }
 
+.text-card-foreground {
+  color: var(--card-foreground) !important;
+}
+
 .bg-muted {
   background-color: var(--muted) !important;
 }
 
+.text-muted-foreground {
+  color: var(--muted-foreground) !important;
+}
+
+.bg-accent {
+  background-color: var(--accent) !important;
+}
+
+.text-accent-foreground {
+  color: var(--accent-foreground) !important;
+}
+
+.bg-destructive {
+  background-color: var(--destructive) !important;
+}
+
+.text-destructive-foreground {
+  color: var(--destructive-foreground) !important;
+}
+
+.text-destructive {
+  color: var(--destructive) !important;
+}
+
+.bg-popover {
+  background-color: var(--popover) !important;
+}
+
+.text-popover-foreground {
+  color: var(--popover-foreground) !important;
+}
+
+.bg-background {
+  background-color: var(--background) !important;
+}
+
+.text-foreground {
+  color: var(--foreground) !important;
+}
+
 .border {
   border-color: var(--border) !important;
+}
+
+.border-input {
+  border-color: var(--input) !important;
+}
+
+.ring-ring {
+  --tw-ring-color: var(--ring) !important;
 }
 
 /* Fix shadcn Dialog – pure CSS, no @apply = no errors */
