@@ -15,7 +15,7 @@
   --popover-foreground: #1c1917;
 
   /* Primary — Warm Rose for CTAs and highlights */
-  --primary: #c45a6e;
+  --primary: #ba9a91;
   --primary-foreground: #ffffff;
 
   /* Secondary — Warm Taupe for subtle accents */
@@ -120,7 +120,8 @@ body {
   transform: translate(-50%, -50%);
   background-color: var(--background);
   border-radius: 0.75rem;
-  box-shadow: 0 10px 38px -10px rgba(22, 23, 24, 0.35),
+  box-shadow:
+    0 10px 38px -10px rgba(22, 23, 24, 0.35),
     0 10px 20px -15px rgba(22, 23, 24, 0.2);
   padding: 1.5rem;
   max-width: 32rem;
@@ -136,7 +137,8 @@ body {
   background-color: var(--popover) !important;
   border: 1px solid var(--border);
   border-radius: 0.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
     0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
@@ -170,34 +172,35 @@ body {
 }
 
 /* Fix DropdownMenu transparency */
-[data-radix-popper-content-wrapper] [role="menu"],
+[data-radix-popper-content-wrapper] [role='menu'],
 [data-radix-menu-content] {
   background-color: var(--popover) !important;
   border: 1px solid var(--border);
   border-radius: 0.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
     0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-[data-radix-menu-content] [role="menuitem"] {
+[data-radix-menu-content] [role='menuitem'] {
   background-color: var(--popover);
   color: var(--popover-foreground);
 }
 
-[data-radix-menu-content] [role="menuitem"]:hover,
-[data-radix-menu-content] [role="menuitem"][data-highlighted] {
+[data-radix-menu-content] [role='menuitem']:hover,
+[data-radix-menu-content] [role='menuitem'][data-highlighted] {
   background-color: var(--accent) !important;
   color: var(--accent-foreground) !important;
   outline: none;
 }
 
 /* Dark mode for dropdown menu */
-.dark [data-radix-popper-content-wrapper] [role="menu"],
+.dark [data-radix-popper-content-wrapper] [role='menu'],
 .dark [data-radix-menu-content] {
   background-color: var(--popover) !important;
 }
 
-.dark [data-radix-menu-content] [role="menuitem"] {
+.dark [data-radix-menu-content] [role='menuitem'] {
   background-color: var(--popover);
   color: var(--popover-foreground);
 }
@@ -213,8 +216,8 @@ body {
   border-radius: 9999px;
   border-width: 2px;
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  transition-property: color, background-color, border-color,
-    text-decoration-color, fill, stroke;
+  transition-property:
+    color, background-color, border-color, text-decoration-color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
@@ -222,7 +225,9 @@ body {
 .switch-root:focus-visible {
   outline: 2px solid transparent;
   outline-offset: 2px;
-  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--ring);
 }
 
 .switch-root:disabled {
@@ -246,7 +251,9 @@ body {
   height: 1rem;
   width: 1rem;
   border-radius: 9999px;
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
   transition-property: transform;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;

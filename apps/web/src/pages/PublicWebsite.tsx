@@ -8,6 +8,8 @@ import { PublicWebsiteHome } from '@/components/PublicWebsiteHome';
 import { PublicWebsiteAbout } from '@/components/PublicWebsiteAbout';
 import { PublicWebsiteContact } from '@/components/PublicWebsiteContact';
 import { PublicWebsitePuppies } from '@/components/PublicWebsitePuppies';
+import { PublicWebsiteBlog } from '@/components/PublicWebsiteBlog';
+import { PublicWebsiteBlogPost } from '@/components/PublicWebsiteBlogPost';
 import { PublicWebsiteSeo } from '@/components/website/PublicWebsiteSeo';
 
 export function PublicWebsite() {
@@ -21,6 +23,7 @@ export function PublicWebsite() {
   const { getPublicProfile } = useBreederStore();
 
   const page = searchParams.get('page') || 'home';
+  const postSlug = searchParams.get('post') || '';
 
   useEffect(() => {
     if (!userId) return;
@@ -71,6 +74,8 @@ export function PublicWebsite() {
         return 'Contact';
       case 'puppies':
         return 'Available Puppies';
+      case 'blog':
+        return 'Blog';
       default:
         return undefined; // Use default/homepage title
     }
@@ -85,6 +90,11 @@ export function PublicWebsite() {
         return <PublicWebsiteContact settings={websiteSettings} />;
       case 'puppies':
         return <PublicWebsitePuppies settings={websiteSettings} />;
+      case 'blog':
+        if (postSlug) {
+          return <PublicWebsiteBlogPost settings={websiteSettings} slug={postSlug} />;
+        }
+        return <PublicWebsiteBlog settings={websiteSettings} />;
       default:
         return <PublicWebsiteHome settings={websiteSettings} />;
     }

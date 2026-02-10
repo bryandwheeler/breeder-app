@@ -9,6 +9,7 @@ export * from './migrations/migrateToContacts';
 
 // Re-export all stores
 export * from './stores/adminStore';
+export * from './stores/blogStore';
 export * from './stores/breederStore';
 export * from './stores/careTemplateStore';
 export * from './stores/connectionStore';

@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CollapsibleFormSection, FormSectionGroup } from '@/components/ui/collapsible-form-section';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Eye,
   Globe,
@@ -20,13 +22,14 @@ import {
   Check,
   Loader2,
   ShoppingBag,
+  FileText,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 export function WebsiteDesign() {
   const { currentUser } = useAuth();
-  const { websiteSettings, publishWebsite, unpublishWebsite } = useWebsiteStore();
+  const { websiteSettings, publishWebsite, unpublishWebsite, updateWebsiteSettings } = useWebsiteStore();
   const { canAccessWebsite, canUseCustomDomain, canAccessAdvancedSeo, subscriptionTier, loading } = useWebsiteFeatures();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -319,6 +322,39 @@ export function WebsiteDesign() {
                 Manage from Litters
               </Button>
             </Link>
+          </div>
+        </CollapsibleFormSection>
+        {/* Blog */}
+        <CollapsibleFormSection
+          title="Blog"
+          description="Share news, tips, and updates on your website"
+          defaultOpen={false}
+          collapsedIndicator={websiteSettings?.enableBlog ? 'Enabled' : 'Disabled'}
+        >
+          <div className='space-y-4'>
+            <div className='flex items-center justify-between'>
+              <div>
+                <Label htmlFor='enable-blog'>Enable Blog</Label>
+                <p className='text-xs text-muted-foreground'>Show the blog page and nav link on your public website</p>
+              </div>
+              <Switch
+                id='enable-blog'
+                checked={websiteSettings?.enableBlog ?? false}
+                onCheckedChange={async (checked) => {
+                  if (!currentUser) return;
+                  await updateWebsiteSettings(currentUser.uid, { enableBlog: checked });
+                  toast({ title: checked ? 'Blog enabled' : 'Blog disabled' });
+                }}
+              />
+            </div>
+            <div className='pt-2 border-t'>
+              <Link to='/blog'>
+                <Button variant='outline' size='sm'>
+                  <FileText className='mr-2 h-4 w-4' />
+                  Manage Blog Posts
+                </Button>
+              </Link>
+            </div>
           </div>
         </CollapsibleFormSection>
       </FormSectionGroup>

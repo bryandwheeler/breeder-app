@@ -94,7 +94,10 @@ const breederNavigation: NavGroup[] = [
   },
   {
     title: 'Website',
-    items: [{ name: 'Website Design', path: '/website-design', icon: Globe }],
+    items: [
+      { name: 'Website Design', path: '/website-design', icon: Globe },
+      { name: 'Blog', path: '/blog', icon: FileText },
+    ],
   },
   {
     title: 'Account',

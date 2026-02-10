@@ -18,12 +18,17 @@ export function PublicWebsiteHeader({ settings }: PublicWebsiteHeaderProps) {
   const isDarkBackground = ['full', 'banner', 'overlay'].includes(headerStyle);
   const logoUrl = getLogoUrl(settings, isDarkBackground);
 
-  const menuItems = settings.menuItems || [
+  const baseMenuItems = settings.menuItems || [
     { label: 'Home', page: 'home' },
     { label: 'About Us', page: 'about' },
     { label: 'Available Puppies', page: 'puppies' },
     { label: 'Contact', page: 'contact' },
   ];
+
+  // Dynamically add Blog link when enabled
+  const menuItems = settings.enableBlog
+    ? [...baseMenuItems, { label: 'Blog', page: 'blog' }]
+    : baseMenuItems;
 
   if (headerStyle === 'minimal') {
     return (

@@ -29,7 +29,7 @@ export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
           style={{
             backgroundColor: primary,
             backgroundImage: settings.mainImageUrl
-              ? `linear-gradient(${primary}dd, ${primary}dd), url('${settings.mainImageUrl}')`
+              ? `linear-gradient(${primary}${Math.round((settings.heroOverlayOpacity ?? 85) * 2.55).toString(16).padStart(2, '0')}, ${primary}${Math.round((settings.heroOverlayOpacity ?? 85) * 2.55).toString(16).padStart(2, '0')}), url('${settings.mainImageUrl}')`
               : undefined,
             backgroundSize: 'cover',
             backgroundPosition: 'center',

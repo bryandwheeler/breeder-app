@@ -13,7 +13,8 @@ export async function uploadImageToFirebase(
 
     // Create reference in Firebase Storage
     const timestamp = Date.now();
-    const filename = `website-${imageType}-${timestamp}.jpg`;
+    const ext = imageType === 'logo' ? 'png' : 'jpg';
+    const filename = `website-${imageType}-${timestamp}.${ext}`;
     const storageRef = ref(storage, `users/${userId}/website/${filename}`);
 
     // Upload to Firebase Storage

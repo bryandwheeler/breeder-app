@@ -54,6 +54,7 @@ export function WebsiteCustomizer() {
     logoUrl: '',
     logoUrlDark: '',
     mainImageUrl: '',
+    heroOverlayOpacity: 85,
   });
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -73,6 +74,7 @@ export function WebsiteCustomizer() {
         logoUrl: websiteSettings.logoUrl || '',
         logoUrlDark: websiteSettings.logoUrlDark || '',
         mainImageUrl: websiteSettings.mainImageUrl || '',
+        heroOverlayOpacity: websiteSettings.heroOverlayOpacity ?? 85,
       });
     }
   }, [websiteSettings]);
@@ -90,6 +92,7 @@ export function WebsiteCustomizer() {
         logoUrl: branding.logoUrl,
         logoUrlDark: branding.logoUrlDark,
         mainImageUrl: branding.mainImageUrl,
+        heroOverlayOpacity: branding.heroOverlayOpacity,
       });
       toast({ title: 'Saved', description: 'Branding updated successfully' });
     } catch (error) {
@@ -221,8 +224,42 @@ export function WebsiteCustomizer() {
               }}
             />
             {branding.mainImageUrl && (
-              <div className='mt-3'>
-                <img src={branding.mainImageUrl} alt='Hero' className='w-full h-28 object-cover border rounded' />
+              <div className='mt-3 space-y-3'>
+                {/* Live hero preview with overlay */}
+                <div className='relative rounded overflow-hidden border' style={{ height: '140px' }}>
+                  <img src={branding.mainImageUrl} alt='Hero' className='w-full h-full object-cover' />
+                  <div
+                    className='absolute inset-0'
+                    style={{
+                      backgroundColor: theme?.primaryColor || '#000',
+                      opacity: (branding.heroOverlayOpacity ?? 85) / 100,
+                    }}
+                  />
+                  <div className='absolute inset-0 flex flex-col items-center justify-center text-white'>
+                    <span className='text-sm font-bold drop-shadow-sm' style={{ fontFamily: theme?.fontFamily ? undefined : undefined }}>
+                      {branding.businessName || 'Your Kennel Name'}
+                    </span>
+                    <span className='text-[10px] opacity-80 mt-0.5'>Your tagline here</span>
+                  </div>
+                </div>
+                <div>
+                  <label className='text-xs font-medium text-muted-foreground mb-1 block'>
+                    Overlay Opacity: {branding.heroOverlayOpacity}%
+                  </label>
+                  <input
+                    type='range'
+                    min='0'
+                    max='100'
+                    step='5'
+                    value={branding.heroOverlayOpacity}
+                    onChange={(e) => setBranding({ ...branding, heroOverlayOpacity: parseInt(e.target.value) })}
+                    className='w-full'
+                  />
+                  <div className='flex justify-between text-[10px] text-muted-foreground'>
+                    <span>Image visible</span>
+                    <span>More color overlay</span>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -396,73 +433,91 @@ export function WebsiteCustomizer() {
           <div className='space-y-2'>
             <p className='text-xs font-medium text-muted-foreground'>Preview</p>
 
-            {theme.headerStyle === 'minimal' && (
-              <div className='border rounded-lg overflow-hidden bg-white'>
-                <div className='p-3 flex items-center justify-between border-b' style={{ borderColor: theme.primaryColor }}>
-                  <span className='text-sm font-bold' style={{ color: theme.primaryColor }}>{branding.businessName || 'Your Business'}</span>
-                  <div className='flex gap-3 text-xs' style={{ color: theme.primaryColor }}>
-                    <span>Home</span><span>About</span><span>Contact</span>
-                  </div>
-                </div>
-              </div>
-            )}
+            {(() => {
+              const blogEnabled = websiteSettings?.enableBlog;
+              const navItems = blogEnabled
+                ? ['Home', 'About', 'Puppies', 'Blog', 'Contact']
+                : ['Home', 'About', 'Puppies', 'Contact'];
+              const bizName = branding.businessName || 'Your Business';
 
-            {theme.headerStyle === 'full' && (
-              <div className='border rounded-lg overflow-hidden'>
-                <div className='p-3' style={{ backgroundColor: theme.primaryColor }}>
-                  <div className='flex items-center justify-between text-white'>
-                    <span className='text-sm font-bold'>{branding.businessName || 'Your Business'}</span>
-                    <div className='flex gap-3 text-xs'><span>Home</span><span>About</span><span>Contact</span></div>
-                  </div>
-                </div>
-              </div>
-            )}
+              return (
+                <>
+                  {theme.headerStyle === 'minimal' && (
+                    <div className='border rounded-lg overflow-hidden bg-white'>
+                      <div className='p-3 flex items-center justify-between border-b' style={{ borderColor: theme.primaryColor }}>
+                        <span className='text-sm font-bold' style={{ color: theme.primaryColor }}>{bizName}</span>
+                        <div className='flex gap-3 text-xs' style={{ color: theme.primaryColor }}>
+                          {navItems.map((item) => <span key={item}>{item}</span>)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
-            {theme.headerStyle === 'banner' && (
-              <div className='border rounded-lg overflow-hidden'>
-                <div className='p-5 text-center text-white' style={{ backgroundColor: theme.primaryColor }}>
-                  <h3 className='text-lg font-bold mb-1'>{branding.businessName || 'Your Business'}</h3>
-                  <p className='text-xs opacity-90'>Your tagline here</p>
-                  <div className='flex justify-center gap-3 text-xs mt-3 pt-3 border-t border-white/20'>
-                    <span>Home</span><span>About</span><span>Contact</span>
-                  </div>
-                </div>
-              </div>
-            )}
+                  {theme.headerStyle === 'full' && (
+                    <div className='border rounded-lg overflow-hidden'>
+                      <div className='p-3' style={{ backgroundColor: theme.primaryColor }}>
+                        <div className='flex items-center justify-between text-white'>
+                          <span className='text-sm font-bold'>{bizName}</span>
+                          <div className='flex gap-3 text-xs'>
+                            {navItems.map((item) => <span key={item}>{item}</span>)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
-            {theme.headerStyle === 'centered' && (
-              <div className='border rounded-lg overflow-hidden bg-white'>
-                <div className='p-4 text-center'>
-                  <div className='text-sm font-bold mb-3' style={{ color: theme.primaryColor }}>{branding.businessName || 'Your Business'}</div>
-                  <div className='flex justify-center gap-4 text-xs' style={{ color: theme.primaryColor }}>
-                    <span>Home</span><span>About</span><span>Puppies</span><span>Contact</span>
-                  </div>
-                </div>
-              </div>
-            )}
+                  {theme.headerStyle === 'banner' && (
+                    <div className='border rounded-lg overflow-hidden'>
+                      <div className='p-5 text-center text-white' style={{ backgroundColor: theme.primaryColor }}>
+                        <h3 className='text-lg font-bold mb-1'>{bizName}</h3>
+                        <p className='text-xs opacity-90'>Your tagline here</p>
+                        <div className='flex justify-center gap-3 text-xs mt-3 pt-3 border-t border-white/20'>
+                          {navItems.map((item) => <span key={item}>{item}</span>)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
-            {theme.headerStyle === 'split' && (
-              <div className='border rounded-lg overflow-hidden bg-white'>
-                <div className='p-3 flex items-center justify-between'>
-                  <span className='text-sm font-bold' style={{ color: theme.primaryColor }}>{branding.businessName || 'Your Business'}</span>
-                  <div className='flex gap-3 text-xs items-center' style={{ color: theme.primaryColor }}>
-                    <span>Home</span><span>About</span><span className='text-gray-300'>|</span><span>Puppies</span><span>Contact</span>
-                  </div>
-                </div>
-              </div>
-            )}
+                  {theme.headerStyle === 'centered' && (
+                    <div className='border rounded-lg overflow-hidden bg-white'>
+                      <div className='p-4 text-center'>
+                        <div className='text-sm font-bold mb-3' style={{ color: theme.primaryColor }}>{bizName}</div>
+                        <div className='flex justify-center gap-4 text-xs' style={{ color: theme.primaryColor }}>
+                          {navItems.map((item) => <span key={item}>{item}</span>)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
-            {theme.headerStyle === 'overlay' && (
-              <div className='border rounded-lg overflow-hidden relative'>
-                <div className='h-20 bg-gradient-to-r from-blue-400 to-purple-400'></div>
-                <div className='absolute top-0 left-0 right-0 p-3 bg-gradient-to-b from-black/50 to-transparent'>
-                  <div className='flex items-center justify-between text-white'>
-                    <span className='text-sm font-bold drop-shadow'>{branding.businessName || 'Your Business'}</span>
-                    <div className='flex gap-3 text-xs drop-shadow'><span>Home</span><span>About</span><span>Contact</span></div>
-                  </div>
-                </div>
-              </div>
-            )}
+                  {theme.headerStyle === 'split' && (
+                    <div className='border rounded-lg overflow-hidden bg-white'>
+                      <div className='p-3 flex items-center justify-between'>
+                        <span className='text-sm font-bold' style={{ color: theme.primaryColor }}>{bizName}</span>
+                        <div className='flex gap-3 text-xs items-center' style={{ color: theme.primaryColor }}>
+                          {navItems.slice(0, Math.ceil(navItems.length / 2)).map((item) => <span key={item}>{item}</span>)}
+                          <span className='text-gray-300'>|</span>
+                          {navItems.slice(Math.ceil(navItems.length / 2)).map((item) => <span key={item}>{item}</span>)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {theme.headerStyle === 'overlay' && (
+                    <div className='border rounded-lg overflow-hidden relative'>
+                      <div className='h-20 bg-gradient-to-r from-blue-400 to-purple-400'></div>
+                      <div className='absolute top-0 left-0 right-0 p-3 bg-gradient-to-b from-black/50 to-transparent'>
+                        <div className='flex items-center justify-between text-white'>
+                          <span className='text-sm font-bold drop-shadow'>{bizName}</span>
+                          <div className='flex gap-3 text-xs drop-shadow'>
+                            {navItems.map((item) => <span key={item}>{item}</span>)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           <div className='flex justify-end'>

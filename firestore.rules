@@ -551,6 +551,21 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && isOwner(userId);
     }
 
+    // Blog posts - public read for website visitors, owner/admin write
+    match /blogPosts/{postId} {
+      allow read: if true;
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
     // Domains - for subdomain and custom domain management
     // Allow public list queries for subdomain resolution (needed for public websites)
     // Only allow full document read/write for the owner

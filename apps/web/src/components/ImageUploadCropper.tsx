@@ -90,9 +90,13 @@ export function ImageUploadCropper({
       const canvasWidth = canvas.width;
       const canvasHeight = canvas.height;
 
-      // Clear canvas
-      ctx.fillStyle = '#f5f5f5';
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      // Clear canvas — preserve transparency for logos
+      if (imageType === 'logo') {
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      } else {
+        ctx.fillStyle = '#f5f5f5';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      }
 
       const imgWidth = img.naturalWidth;
       const imgHeight = img.naturalHeight;
@@ -152,9 +156,13 @@ export function ImageUploadCropper({
       const canvasWidth = canvas.width;
       const canvasHeight = canvas.height;
 
-      // Clear canvas
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      // Clear canvas — preserve transparency for logos
+      if (imageType === 'logo') {
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      } else {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      }
 
       const imgWidth = img.naturalWidth;
       const imgHeight = img.naturalHeight;
@@ -182,8 +190,10 @@ export function ImageUploadCropper({
       // Draw the image
       ctx.drawImage(img, xOffset, yOffset, drawWidth, drawHeight);
 
-      // Convert canvas to data URL
-      const imageData = canvas.toDataURL('image/jpeg', 0.95);
+      // Convert canvas to data URL — PNG for logos to preserve transparency
+      const imageData = imageType === 'logo'
+        ? canvas.toDataURL('image/png')
+        : canvas.toDataURL('image/jpeg', 0.95);
 
       // Upload to Firebase Storage
       const downloadUrl = await uploadImageToFirebase(
@@ -247,8 +257,16 @@ export function ImageUploadCropper({
             {/* Canvas for cropping */}
             <div className='bg-muted rounded-lg overflow-hidden border'>
               <div
-                className='flex justify-center items-center bg-gray-100 relative'
-                style={{ height: '400px' }}
+                className='flex justify-center items-center relative'
+                style={{
+                  height: '400px',
+                  backgroundColor: imageType === 'logo' ? undefined : '#f3f4f6',
+                  ...(imageType === 'logo' ? {
+                    backgroundImage: 'linear-gradient(45deg, #e5e7eb 25%, transparent 25%), linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e5e7eb 75%), linear-gradient(-45deg, transparent 75%, #e5e7eb 75%)',
+                    backgroundSize: '20px 20px',
+                    backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
+                  } : {}),
+                }}
               >
                 <canvas
                   ref={canvasRef}

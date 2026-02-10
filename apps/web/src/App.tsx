@@ -14,6 +14,8 @@ import { PublicWebsite } from '@/pages/PublicWebsite';
 import { ContactForm } from '@/pages/ContactForm';
 import { BreederSettings } from '@/pages/BreederSettings';
 import { WebsiteDesign } from '@/pages/WebsiteDesign';
+import { BlogPosts } from '@/pages/BlogPosts';
+import { BlogPostEditor } from '@/pages/BlogPostEditor';
 import { AccountManagement } from '@/pages/AccountManagement';
 import { Inquiries } from '@/pages/Inquiries';
 import { Waitlist } from '@/pages/Waitlist';
@@ -361,6 +363,30 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <WebsiteDesign />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/blog'
+                element={
+                  <ProtectedRoute>
+                    <BlogPosts />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/blog/new'
+                element={
+                  <ProtectedRoute>
+                    <BlogPostEditor />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/blog/:postId/edit'
+                element={
+                  <ProtectedRoute>
+                    <BlogPostEditor />
                   </ProtectedRoute>
                 }
               />

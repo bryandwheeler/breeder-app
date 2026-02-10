@@ -152,6 +152,7 @@ export interface WebsiteSettings {
   logoUrlDark?: string; // URL to dark mode logo image
   businessName?: string; // Business/kennel name for header
   mainImageUrl?: string; // Hero/main image URL
+  heroOverlayOpacity?: number; // 0-100, overlay opacity on hero image
 
   // Domain settings (subdomain/custom domain)
   domain?: DomainSettings;
