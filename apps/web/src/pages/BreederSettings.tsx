@@ -75,11 +75,13 @@ export function BreederSettings() {
       if (profile) {
         await updateProfile(formData);
       } else {
+        const targetUid = impersonatedUserId || currentUser?.uid;
         await createProfile(
           formData as Omit<
             BreederProfile,
             'id' | 'userId' | 'createdAt' | 'updatedAt'
-          >
+          >,
+          targetUid
         );
       }
       alert('Profile saved successfully!');

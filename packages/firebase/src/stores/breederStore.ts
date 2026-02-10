@@ -25,7 +25,8 @@ type Store = {
 
   // Profile methods
   createProfile: (
-    profile: Omit<BreederProfile, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+    profile: Omit<BreederProfile, 'id' | 'userId' | 'createdAt' | 'updatedAt'>,
+    targetUid?: string
   ) => Promise<void>;
   updateProfile: (updates: Partial<BreederProfile>) => Promise<void>;
   getPublicProfile: (userId: string) => Promise<BreederProfile | null>;
@@ -58,14 +59,14 @@ export const useBreederStore = create<Store>()((set, get) => ({
   inquiries: [],
   loading: false,
 
-  createProfile: async (profile) => {
+  createProfile: async (profile, targetUid) => {
     const user = auth.currentUser;
     if (!user) throw new Error('Must be logged in to create profile');
 
     const profilesRef = collection(db, FIRESTORE_COLLECTIONS.BREEDER_PROFILES);
     const newProfile = {
       ...profile,
-      userId: user.uid,
+      userId: targetUid || user.uid,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
