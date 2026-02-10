@@ -108,6 +108,11 @@ export async function searchDogs(
     });
   });
 
+  console.log('[searchDogs] Profiles loaded:', profilesSnapshot.docs.length, 'profileMap entries:', profileMap.size);
+  profileMap.forEach((val, key) => {
+    console.log(`  profile userId=${key} kennelName="${val.kennelName}" breederName="${val.breederName}"`);
+  });
+
   const results: DogSearchResult[] = [];
 
   dogsSnapshot.docs.forEach((doc) => {
@@ -131,6 +136,8 @@ export async function searchDogs(
     const matchesBreeder = breederName.includes(searchTermLower);
 
     if (matchesDogName || matchesRegNumber || matchesKennel || matchesBreeder) {
+      const ownerKennel = profile.kennelName || dogData.kennelName || profile.breederName || 'Unknown Kennel';
+      console.log(`[searchDogs] Match: dog="${dogData.name}" userId="${dogData.userId}" profileFound=${profileMap.has(dogData.userId)} kennelName="${profile.kennelName}" breederName="${profile.breederName}" → ownerKennel="${ownerKennel}"`);
       results.push({
         dogId: doc.id,
         dogName: dogData.name || dogData.registeredName || 'Unknown',
@@ -138,7 +145,7 @@ export async function searchDogs(
         breed: dogData.breed,
         sex: dogData.sex,
         ownerId: dogData.userId,
-        ownerKennel: profile.kennelName || dogData.kennelName || profile.breederName || 'Unknown Kennel',
+        ownerKennel,
         ownerBreederName: profile.breederName,
       });
     }
