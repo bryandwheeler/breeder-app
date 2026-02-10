@@ -1,4 +1,5 @@
 // Website builder and customization types
+import type { BusinessHoursSchedule } from './liveChat';
 
 // Domain settings for subdomain and custom domain support
 export type DomainStatus = 'pending' | 'pending_verification' | 'verifying' | 'verified' | 'active' | 'failed' | 'suspended';
@@ -195,6 +196,14 @@ export interface WebsiteSettings {
   // Why Choose Us section
   whyChooseUsTitle?: string;
   whyChooseUs?: ValueProposition[];
+
+  // Business listings
+  googleBusinessUrl?: string;
+  yelpUrl?: string;
+
+  // Hours of operation
+  hoursEnabled?: boolean;
+  hours?: BusinessHoursSchedule;
 }
 
 export interface WebsitePageContent {

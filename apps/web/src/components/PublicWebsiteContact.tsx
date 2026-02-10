@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, Mail, Phone, MapPin } from 'lucide-react';
+import { ChevronLeft, Mail, Phone, MapPin, Clock, ExternalLink } from 'lucide-react';
 import { PublicWebsiteHeader } from '@/components/PublicWebsiteHeader';
 import { PublicWebsiteFooter } from '@/components/PublicWebsiteFooter';
 import { PublicWebsiteSEO } from '@/components/PublicWebsiteSEO';
@@ -236,6 +236,69 @@ export function PublicWebsiteContact({ settings }: PublicWebsiteContactProps) {
                               .join(', ')}
                           </p>
                         </div>
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* Hours of Operation */}
+                  {settings.hoursEnabled && settings.hours && (
+                    <Card className='p-4 border-stone-200 rounded-2xl'>
+                      <div className='flex items-start gap-4'>
+                        <div
+                          className='w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0'
+                          style={{ backgroundColor: accent + '20' }}
+                        >
+                          <Clock className='h-5 w-5' style={{ color: accent }} />
+                        </div>
+                        <div className='flex-1'>
+                          <p className='font-semibold mb-2' style={{ color: primary }}>Hours</p>
+                          <div className='space-y-1'>
+                            {(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const).map((day) => {
+                              const d = settings.hours![day];
+                              return (
+                                <div key={day} className='flex justify-between text-sm'>
+                                  <span className='text-stone-500 capitalize'>{day}</span>
+                                  <span className='text-stone-600'>
+                                    {d.enabled ? `${d.open} – ${d.close}` : 'Closed'}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* Business Listings */}
+                  {(settings.googleBusinessUrl || settings.yelpUrl) && (
+                    <Card className='p-4 border-stone-200 rounded-2xl'>
+                      <p className='font-semibold mb-3' style={{ color: primary }}>Find Us On</p>
+                      <div className='space-y-2'>
+                        {settings.googleBusinessUrl && (
+                          <a
+                            href={settings.googleBusinessUrl}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='flex items-center gap-2 text-sm hover:underline'
+                            style={{ color: accent }}
+                          >
+                            <ExternalLink className='h-4 w-4' />
+                            Google Business
+                          </a>
+                        )}
+                        {settings.yelpUrl && (
+                          <a
+                            href={settings.yelpUrl}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='flex items-center gap-2 text-sm hover:underline'
+                            style={{ color: accent }}
+                          >
+                            <ExternalLink className='h-4 w-4' />
+                            Yelp
+                          </a>
+                        )}
                       </div>
                     </Card>
                   )}

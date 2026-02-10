@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { useWebsiteStore } from '@breeder/firebase';
+import { useWebsiteStore, useBreederStore } from '@breeder/firebase';
 import { WebsiteCustomizer } from '@/components/WebsiteCustomizer';
 import { Link } from 'react-router-dom';
 import { SubdomainSetup } from '@/components/website/SubdomainSetup';
@@ -30,14 +30,22 @@ import {
   Mail,
   Phone,
   MapPin,
+  Clock,
+  Download,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import type { ValueProposition } from '@breeder/types';
+import type { BusinessHoursSchedule } from '@breeder/types';
+import { DEFAULT_BUSINESS_HOURS } from '@breeder/types';
+
+const DAYS: (keyof BusinessHoursSchedule)[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+const DAY_LABELS: Record<string, string> = { monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu', friday: 'Fri', saturday: 'Sat', sunday: 'Sun' };
 
 export function WebsiteDesign() {
   const { currentUser } = useAuth();
   const { websiteSettings, publishWebsite, unpublishWebsite, updateWebsiteSettings } = useWebsiteStore();
+  const { profile } = useBreederStore();
   const { canAccessWebsite, canUseCustomDomain, canAccessAdvancedSeo, subscriptionTier, loading } = useWebsiteFeatures();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -61,7 +69,11 @@ export function WebsiteDesign() {
     state: '',
     zipCode: '',
     country: '',
+    googleBusinessUrl: '',
+    yelpUrl: '',
   });
+  const [hoursEnabled, setHoursEnabled] = useState(false);
+  const [hours, setHours] = useState<BusinessHoursSchedule>(DEFAULT_BUSINESS_HOURS);
 
   // Sync from store
   useEffect(() => {
@@ -77,7 +89,13 @@ export function WebsiteDesign() {
         state: websiteSettings.state || '',
         zipCode: websiteSettings.zipCode || '',
         country: websiteSettings.country || '',
+        googleBusinessUrl: websiteSettings.googleBusinessUrl || '',
+        yelpUrl: websiteSettings.yelpUrl || '',
       });
+      setHoursEnabled(websiteSettings.hoursEnabled ?? false);
+      if (websiteSettings.hours) {
+        setHours(websiteSettings.hours);
+      }
     }
   }, [websiteSettings]);
 
@@ -108,6 +126,10 @@ export function WebsiteDesign() {
         state: contactInfo.state || undefined,
         zipCode: contactInfo.zipCode || undefined,
         country: contactInfo.country || undefined,
+        googleBusinessUrl: contactInfo.googleBusinessUrl || undefined,
+        yelpUrl: contactInfo.yelpUrl || undefined,
+        hoursEnabled,
+        hours: hoursEnabled ? hours : undefined,
       });
       toast({ title: 'Saved', description: 'Contact information updated' });
     } catch {
@@ -115,6 +137,28 @@ export function WebsiteDesign() {
     } finally {
       setSaving(null);
     }
+  };
+
+  const handlePullFromProfile = () => {
+    if (!profile) {
+      toast({ title: 'No profile found', description: 'Set up your breeder profile first in Settings', variant: 'destructive' });
+      return;
+    }
+    setContactInfo({
+      email: profile.email || contactInfo.email,
+      phone: profile.phone || contactInfo.phone,
+      city: profile.city || contactInfo.city,
+      state: profile.state || contactInfo.state,
+      zipCode: profile.zipCode || contactInfo.zipCode,
+      country: profile.country || contactInfo.country,
+      googleBusinessUrl: contactInfo.googleBusinessUrl,
+      yelpUrl: contactInfo.yelpUrl,
+    });
+    toast({ title: 'Profile imported', description: 'Contact info pulled from your breeder profile. Review and save.' });
+  };
+
+  const updateHoursDay = (day: keyof BusinessHoursSchedule, field: string, value: string | boolean) => {
+    setHours(prev => ({ ...prev, [day]: { ...prev[day], [field]: value } }));
   };
 
   const updateCard = (index: number, field: keyof ValueProposition, value: string) => {
@@ -467,11 +511,24 @@ export function WebsiteDesign() {
         {/* Contact Information */}
         <CollapsibleFormSection
           title="Contact Information"
-          description="Your contact details shown on the public website"
+          description="Your contact details, business listings, and hours shown on the public website"
           defaultOpen={false}
           collapsedIndicator={contactInfo.email || 'Not set'}
         >
-          <div className='space-y-4'>
+          <div className='space-y-5'>
+            {/* Pull from Profile */}
+            <div className='flex items-center justify-between p-3 border rounded-lg bg-muted/30'>
+              <div>
+                <p className='text-sm font-medium'>Import from Breeder Profile</p>
+                <p className='text-xs text-muted-foreground'>Pull your email, phone, and location from your profile settings</p>
+              </div>
+              <Button variant='outline' size='sm' onClick={handlePullFromProfile}>
+                <Download className='h-4 w-4 mr-2' />
+                Pull from Profile
+              </Button>
+            </div>
+
+            {/* Contact Details */}
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <div className='space-y-2'>
                 <Label htmlFor='contact-email' className='flex items-center gap-1.5'>
@@ -538,6 +595,82 @@ export function WebsiteDesign() {
                   placeholder='US'
                 />
               </div>
+            </div>
+
+            {/* Business Listings */}
+            <div className='border-t pt-4 space-y-4'>
+              <p className='text-sm font-medium'>Business Listings</p>
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='space-y-2'>
+                  <Label htmlFor='google-business'>Google Business Profile URL</Label>
+                  <Input
+                    id='google-business'
+                    type='url'
+                    value={contactInfo.googleBusinessUrl}
+                    onChange={(e) => setContactInfo({ ...contactInfo, googleBusinessUrl: e.target.value })}
+                    placeholder='https://g.page/your-kennel'
+                  />
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='yelp-url'>Yelp Business URL</Label>
+                  <Input
+                    id='yelp-url'
+                    type='url'
+                    value={contactInfo.yelpUrl}
+                    onChange={(e) => setContactInfo({ ...contactInfo, yelpUrl: e.target.value })}
+                    placeholder='https://www.yelp.com/biz/your-kennel'
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Hours of Operation */}
+            <div className='border-t pt-4 space-y-4'>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <p className='text-sm font-medium flex items-center gap-1.5'><Clock className='h-3.5 w-3.5' /> Hours of Operation</p>
+                  <p className='text-xs text-muted-foreground'>Show your business hours on the contact page</p>
+                </div>
+                <Switch
+                  checked={hoursEnabled}
+                  onCheckedChange={setHoursEnabled}
+                />
+              </div>
+
+              {hoursEnabled && (
+                <div className='space-y-2'>
+                  {DAYS.map((day) => (
+                    <div key={day} className='flex items-center gap-3 py-1.5'>
+                      <div className='w-10'>
+                        <Switch
+                          checked={hours[day].enabled}
+                          onCheckedChange={(checked) => updateHoursDay(day, 'enabled', checked)}
+                        />
+                      </div>
+                      <span className='w-10 text-sm font-medium'>{DAY_LABELS[day]}</span>
+                      {hours[day].enabled ? (
+                        <div className='flex items-center gap-2'>
+                          <Input
+                            type='time'
+                            value={hours[day].open}
+                            onChange={(e) => updateHoursDay(day, 'open', e.target.value)}
+                            className='w-28 h-8 text-sm'
+                          />
+                          <span className='text-muted-foreground text-sm'>to</span>
+                          <Input
+                            type='time'
+                            value={hours[day].close}
+                            onChange={(e) => updateHoursDay(day, 'close', e.target.value)}
+                            className='w-28 h-8 text-sm'
+                          />
+                        </div>
+                      ) : (
+                        <span className='text-sm text-muted-foreground'>Closed</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className='flex justify-end'>
