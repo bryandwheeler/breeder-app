@@ -9,20 +9,17 @@ import { CustomDomainSetup } from '@/components/website/CustomDomainSetup';
 import { SubscriptionGate } from '@/components/SubscriptionGate';
 import { useWebsiteFeatures } from '@/hooks/useWebsiteFeatures';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { CollapsibleFormSection, FormSectionGroup } from '@/components/ui/collapsible-form-section';
 import {
   Eye,
   Globe,
-  Palette,
-  Layout,
-  Search,
-  ShoppingBag,
   ExternalLink,
   Copy,
   Check,
   Loader2,
+  ShoppingBag,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -208,180 +205,123 @@ export function WebsiteDesign() {
         </Card>
       )}
 
-      {/* Tabs */}
-      <Tabs defaultValue="design" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto">
-          <TabsTrigger value="design" className="gap-2">
-            <Palette className="h-4 w-4" />
-            <span className="hidden sm:inline">Design</span>
-          </TabsTrigger>
-          <TabsTrigger value="domain" className="gap-2">
-            <Globe className="h-4 w-4" />
-            <span className="hidden sm:inline">Domain</span>
-          </TabsTrigger>
-          <TabsTrigger value="themes" className="gap-2">
-            <Layout className="h-4 w-4" />
-            <span className="hidden sm:inline">Themes</span>
-          </TabsTrigger>
-          <TabsTrigger value="seo" className="gap-2">
-            <Search className="h-4 w-4" />
-            <span className="hidden sm:inline">SEO</span>
-          </TabsTrigger>
-          <TabsTrigger value="shop" className="gap-2">
-            <ShoppingBag className="h-4 w-4" />
-            <span className="hidden sm:inline">Shop</span>
-          </TabsTrigger>
-        </TabsList>
+      {/* All settings as collapsible sections */}
+      <FormSectionGroup>
+        {/* Theme Presets */}
+        <CollapsibleFormSection
+          title="Theme Presets"
+          description="Choose from professionally designed theme presets or create your own"
+          defaultOpen
+        >
+          <ThemePresetGallery
+            canAccessPremium={subscriptionTier === 'pro'}
+            onUpgradeClick={() => window.location.href = '/account'}
+          />
+        </CollapsibleFormSection>
 
-        {/* Design Tab */}
-        <TabsContent value="design">
-          <Card>
-            <CardHeader>
-              <CardTitle>Website Customizer</CardTitle>
-              <CardDescription>
-                Customize colors, fonts, and layout of your website
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <WebsiteCustomizer />
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {/* Website Customizer (renders its own collapsible sections) */}
+        <WebsiteCustomizer />
 
-        {/* Domain Tab */}
-        <TabsContent value="domain" className="space-y-6">
-          {/* Subdomain Setup */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Subdomain</CardTitle>
-              <CardDescription>
-                Claim your custom subdomain on expertbreeder.com
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SubdomainSetup />
-            </CardContent>
-          </Card>
+        {/* Domain Settings */}
+        <CollapsibleFormSection
+          title="Subdomain"
+          description="Claim your custom subdomain on expertbreeder.com"
+          defaultOpen={false}
+          collapsedIndicator={
+            websiteSettings?.domain?.subdomain
+              ? `${websiteSettings.domain.subdomain}.expertbreeder.com`
+              : undefined
+          }
+        >
+          <SubdomainSetup />
+        </CollapsibleFormSection>
 
-          {/* Custom Domain (Pro) */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Custom Domain</CardTitle>
-                  <CardDescription>
-                    Use your own domain name for your website
-                  </CardDescription>
-                </div>
-                {!canUseCustomDomain && (
-                  <Badge variant="secondary">Pro</Badge>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              {canUseCustomDomain ? (
-                <CustomDomainSetup />
-              ) : (
-                <SubscriptionGate feature="customDomain" variant="overlay">
-                  <CustomDomainSetup disabled />
-                </SubscriptionGate>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+        <CollapsibleFormSection
+          title="Custom Domain"
+          description="Use your own domain name for your website"
+          defaultOpen={false}
+          collapsedIndicator={
+            !canUseCustomDomain ? (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Pro</Badge>
+            ) : websiteSettings?.domain?.customDomain ? (
+              websiteSettings.domain.customDomain
+            ) : undefined
+          }
+        >
+          {canUseCustomDomain ? (
+            <CustomDomainSetup />
+          ) : (
+            <SubscriptionGate feature="customDomain" variant="overlay">
+              <CustomDomainSetup disabled />
+            </SubscriptionGate>
+          )}
+        </CollapsibleFormSection>
 
-        {/* Themes Tab */}
-        <TabsContent value="themes">
-          <Card>
-            <CardHeader>
-              <CardTitle>Theme Presets</CardTitle>
-              <CardDescription>
-                Choose from professionally designed theme presets
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ThemePresetGallery
-                canAccessPremium={subscriptionTier === 'pro'}
-                onUpgradeClick={() => window.location.href = '/account'}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {/* SEO */}
+        <CollapsibleFormSection
+          title="SEO Settings"
+          description="Optimize your website for search engines"
+          defaultOpen={false}
+          collapsedIndicator={
+            !canAccessAdvancedSeo ? (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Pro for Advanced</Badge>
+            ) : undefined
+          }
+        >
+          <SeoSettingsForm disabled={!canAccessAdvancedSeo && subscriptionTier !== 'builder'} />
+        </CollapsibleFormSection>
 
-        {/* SEO Tab */}
-        <TabsContent value="seo">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>SEO Settings</CardTitle>
-                  <CardDescription>
-                    Optimize your website for search engines
-                  </CardDescription>
-                </div>
-                {!canAccessAdvancedSeo && (
-                  <Badge variant="secondary">Pro for Advanced</Badge>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <SeoSettingsForm disabled={!canAccessAdvancedSeo && subscriptionTier !== 'builder'} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Shop Tab */}
-        <TabsContent value="shop">
-          <Card>
-            <CardHeader>
-              <CardTitle>Available Puppies</CardTitle>
-              <CardDescription>
-                Puppies shown on your website are managed from your litter pages. Use the globe icon on each puppy card to toggle website visibility.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {websiteSettings?.puppyListings && websiteSettings.puppyListings.length > 0 ? (
-                <div className='space-y-3'>
-                  {websiteSettings.puppyListings.map((listing) => (
-                    <div key={listing.id} className='flex items-center justify-between p-3 border rounded-lg'>
-                      <div className='flex items-center gap-3'>
-                        {listing.photos && listing.photos.length > 0 ? (
-                          <img src={listing.photos[0]} alt={listing.name} className='w-10 h-10 rounded object-cover' />
-                        ) : (
-                          <div className='w-10 h-10 rounded bg-muted flex items-center justify-center text-lg'>🐾</div>
-                        )}
-                        <div>
-                          <div className='font-medium'>{listing.name}</div>
-                          <div className='text-xs text-muted-foreground'>
-                            {listing.breed} &middot; {listing.gender === 'male' ? 'Male' : 'Female'}
-                            {listing.price > 0 && ` · $${listing.price.toLocaleString()}`}
-                          </div>
-                        </div>
-                      </div>
-                      <div className='flex items-center gap-2'>
-                        {listing.featured && <Badge variant='secondary'>Featured</Badge>}
-                        <Badge variant={listing.available ? 'default' : 'outline'}>
-                          {listing.reserved ? 'Reserved' : listing.available ? 'Available' : 'Unavailable'}
-                        </Badge>
+        {/* Puppy Listings */}
+        <CollapsibleFormSection
+          title="Available Puppies"
+          description="Puppies shown on your website are managed from your litter pages"
+          defaultOpen={false}
+          collapsedIndicator={
+            websiteSettings?.puppyListings?.length
+              ? `${websiteSettings.puppyListings.length} listed`
+              : undefined
+          }
+        >
+          {websiteSettings?.puppyListings && websiteSettings.puppyListings.length > 0 ? (
+            <div className='space-y-3'>
+              {websiteSettings.puppyListings.map((listing) => (
+                <div key={listing.id} className='flex items-center justify-between p-3 border rounded-lg'>
+                  <div className='flex items-center gap-3'>
+                    {listing.photos && listing.photos.length > 0 ? (
+                      <img src={listing.photos[0]} alt={listing.name} className='w-10 h-10 rounded object-cover' />
+                    ) : (
+                      <div className='w-10 h-10 rounded bg-muted flex items-center justify-center text-lg'>🐾</div>
+                    )}
+                    <div>
+                      <div className='font-medium'>{listing.name}</div>
+                      <div className='text-xs text-muted-foreground'>
+                        {listing.breed} &middot; {listing.gender === 'male' ? 'Male' : 'Female'}
+                        {listing.price > 0 && ` · $${listing.price.toLocaleString()}`}
                       </div>
                     </div>
-                  ))}
+                  </div>
+                  <div className='flex items-center gap-2'>
+                    {listing.featured && <Badge variant='secondary'>Featured</Badge>}
+                    <Badge variant={listing.available ? 'default' : 'outline'}>
+                      {listing.reserved ? 'Reserved' : listing.available ? 'Available' : 'Unavailable'}
+                    </Badge>
+                  </div>
                 </div>
-              ) : (
-                <p className='text-sm text-muted-foreground'>No puppies are currently shown on your website.</p>
-              )}
-              <div className='mt-4'>
-                <Link to='/litters'>
-                  <Button variant='outline' size='sm'>
-                    <ShoppingBag className='mr-2 h-4 w-4' />
-                    Manage from Litters
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              ))}
+            </div>
+          ) : (
+            <p className='text-sm text-muted-foreground'>No puppies are currently shown on your website.</p>
+          )}
+          <div className='mt-4'>
+            <Link to='/litters'>
+              <Button variant='outline' size='sm'>
+                <ShoppingBag className='mr-2 h-4 w-4' />
+                Manage from Litters
+              </Button>
+            </Link>
+          </div>
+        </CollapsibleFormSection>
+      </FormSectionGroup>
     </div>
   );
 }

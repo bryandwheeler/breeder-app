@@ -1,15 +1,7 @@
 import { useState, useEffect } from 'react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -17,98 +9,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Palette, Save } from 'lucide-react';
+import { Save, Loader2 } from 'lucide-react';
 import { useWebsiteStore } from '@breeder/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { WebsiteTheme } from '@breeder/types';
 import { ImageUploadCropper } from '@/components/ImageUploadCropper';
+import { CollapsibleFormSection } from '@/components/ui/collapsible-form-section';
+import { useToast } from '@/hooks/use-toast';
 
 const FONT_FAMILIES = [
-  { value: 'sans', label: 'Sans-Serif - Modern & Clean', preview: 'font-sans' },
-  { value: 'serif', label: 'Serif - Classic & Elegant', preview: 'font-serif' },
-  {
-    value: 'mono',
-    label: 'Monospace - Technical & Code',
-    preview: 'font-mono',
-  },
-  {
-    value: 'display',
-    label: 'Display - Bold & Decorative',
-    preview: 'font-bold text-2xl',
-  },
-  {
-    value: 'elegant',
-    label: 'Elegant - Refined & Professional',
-    preview: 'font-light tracking-wide',
-  },
-  {
-    value: 'playful',
-    label: 'Playful - Fun & Friendly',
-    preview: 'font-semibold',
-  },
-  {
-    value: 'handwritten',
-    label: 'Handwritten - Personal & Warm',
-    preview: 'font-cursive',
-  },
-  {
-    value: 'modern',
-    label: 'Modern - Sleek & Contemporary',
-    preview: 'font-sans font-light',
-  },
-  {
-    value: 'classic',
-    label: 'Classic - Timeless & Traditional',
-    preview: 'font-serif tracking-tight',
-  },
-  {
-    value: 'luxury',
-    label: 'Luxury - Premium & Sophisticated',
-    preview: 'font-serif font-light tracking-widest',
-  },
+  { value: 'sans', label: 'Sans-Serif - Modern & Clean' },
+  { value: 'serif', label: 'Serif - Classic & Elegant' },
+  { value: 'mono', label: 'Monospace - Technical & Code' },
+  { value: 'display', label: 'Display - Bold & Decorative' },
+  { value: 'elegant', label: 'Elegant - Refined & Professional' },
+  { value: 'playful', label: 'Playful - Fun & Friendly' },
+  { value: 'handwritten', label: 'Handwritten - Personal & Warm' },
+  { value: 'modern', label: 'Modern - Sleek & Contemporary' },
+  { value: 'classic', label: 'Classic - Timeless & Traditional' },
+  { value: 'luxury', label: 'Luxury - Premium & Sophisticated' },
 ];
 
 const HEADER_STYLES = [
-  {
-    value: 'minimal',
-    label: 'Minimal',
-    description: 'Simple logo and nav in a single line',
-    icon: '━━━',
-  },
-  {
-    value: 'full',
-    label: 'Full Header',
-    description: 'Logo left, navigation right with color background',
-    icon: '▭━━',
-  },
-  {
-    value: 'banner',
-    label: 'Banner',
-    description: 'Large centered logo with tagline',
-    icon: '▭\n━',
-  },
-  {
-    value: 'centered',
-    label: 'Centered',
-    description: 'Centered logo above centered navigation',
-    icon: '▭\n━',
-  },
-  {
-    value: 'split',
-    label: 'Split',
-    description: 'Logo left with split navigation',
-    icon: '▭◂━▸',
-  },
-  {
-    value: 'overlay',
-    label: 'Overlay',
-    description: 'Transparent header over hero image',
-    icon: '◻━━',
-  },
+  { value: 'minimal', label: 'Minimal', description: 'Simple logo and nav in a single line' },
+  { value: 'full', label: 'Full Header', description: 'Logo left, navigation right with color background' },
+  { value: 'banner', label: 'Banner', description: 'Large centered logo with tagline' },
+  { value: 'centered', label: 'Centered', description: 'Centered logo above centered navigation' },
+  { value: 'split', label: 'Split', description: 'Logo left with split navigation' },
+  { value: 'overlay', label: 'Overlay', description: 'Transparent header over hero image' },
 ];
 
 export function WebsiteCustomizer() {
   const { currentUser } = useAuth();
+  const { toast } = useToast();
   const {
     websiteSettings,
     subscribeToWebsiteSettings,
@@ -122,8 +55,7 @@ export function WebsiteCustomizer() {
     logoUrlDark: '',
     mainImageUrl: '',
   });
-  const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('branding');
+  const [saving, setSaving] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -151,7 +83,7 @@ export function WebsiteCustomizer() {
 
   const handleSaveBranding = async () => {
     if (!currentUser) return;
-    setSaving(true);
+    setSaving('branding');
     try {
       await updateWebsiteSettings(currentUser.uid, {
         businessName: branding.businessName,
@@ -159,647 +91,388 @@ export function WebsiteCustomizer() {
         logoUrlDark: branding.logoUrlDark,
         mainImageUrl: branding.mainImageUrl,
       });
-      alert('Branding saved successfully!');
+      toast({ title: 'Saved', description: 'Branding updated successfully' });
     } catch (error) {
-      console.error('Error saving branding:', error);
-      alert('Failed to save branding');
+      toast({ title: 'Error', description: 'Failed to save branding', variant: 'destructive' });
     } finally {
-      setSaving(false);
+      setSaving(null);
     }
   };
 
   const handleSaveTheme = async () => {
     if (!theme || !currentUser) return;
-    setSaving(true);
+    setSaving('theme');
     try {
       await updateTheme(currentUser.uid, theme);
-      alert('Theme saved successfully!');
+      toast({ title: 'Saved', description: 'Theme updated successfully' });
     } catch (error) {
-      console.error('Error saving theme:', error);
-      alert('Failed to save theme');
+      toast({ title: 'Error', description: 'Failed to save theme', variant: 'destructive' });
     } finally {
-      setSaving(false);
+      setSaving(null);
     }
   };
 
   if (!theme) {
-    return <div>Loading theme...</div>;
+    return (
+      <div className='flex items-center justify-center py-8'>
+        <Loader2 className='h-6 w-6 animate-spin text-muted-foreground' />
+      </div>
+    );
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className='flex items-center gap-2'>
-          <Palette className='h-5 w-5' />
-          Website Theme & Customization
-        </CardTitle>
-        <CardDescription>
-          Customize your breeder website appearance
-        </CardDescription>
-      </CardHeader>
-      <CardContent className='space-y-6'>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className='w-full'>
-          <TabsList className='grid w-full grid-cols-4'>
-            <TabsTrigger value='branding'>Branding</TabsTrigger>
-            <TabsTrigger value='colors'>Colors</TabsTrigger>
-            <TabsTrigger value='typography'>Typography</TabsTrigger>
-            <TabsTrigger value='layout'>Layout</TabsTrigger>
-          </TabsList>
+  const fontFamilyStyle = (ff: string) => {
+    const map: Record<string, string> = {
+      sans: 'system-ui, -apple-system, sans-serif',
+      serif: 'Georgia, serif',
+      mono: 'Courier, monospace',
+      display: 'Georgia, serif',
+      elegant: 'Garamond, serif',
+      playful: 'Comic Sans MS, cursive',
+      handwritten: 'Brush Script MT, cursive',
+      modern: 'Inter, Helvetica Neue, sans-serif',
+      classic: 'Times New Roman, serif',
+      luxury: 'Didot, Bodoni MT, serif',
+    };
+    return map[ff] || 'system-ui, sans-serif';
+  };
 
-          {/* Branding Tab */}
-          <TabsContent value='branding' className='space-y-6'>
-            {/* Business Name */}
-            <div className='space-y-2'>
-              <Label htmlFor='businessName'>Business/Kennel Name</Label>
-              <Input
-                id='businessName'
-                value={branding.businessName}
-                onChange={(e) =>
-                  setBranding({ ...branding, businessName: e.target.value })
-                }
-                placeholder='e.g., Expert Breeder Kennels'
-              />
-              <p className='text-xs text-muted-foreground'>
-                Displayed in the top navigation bar
+  return (
+    <div className='space-y-3'>
+      {/* Branding */}
+      <CollapsibleFormSection
+        title='Branding'
+        description='Business name, logos, and hero image'
+        defaultOpen={false}
+        collapsedIndicator={branding.businessName || 'Not set'}
+      >
+        <div className='space-y-5'>
+          <div className='space-y-2'>
+            <Label htmlFor='businessName'>Business/Kennel Name</Label>
+            <Input
+              id='businessName'
+              value={branding.businessName}
+              onChange={(e) => setBranding({ ...branding, businessName: e.target.value })}
+              placeholder='e.g., Expert Breeder Kennels'
+            />
+            <p className='text-xs text-muted-foreground'>
+              Displayed in the header navigation bar
+            </p>
+          </div>
+
+          <div className='space-y-4'>
+            <div>
+              <h4 className='font-medium text-sm mb-1'>Logo Variants</h4>
+              <p className='text-xs text-muted-foreground mb-3'>
+                Upload logos for light and dark backgrounds
               </p>
             </div>
 
-            {/* Logo Upload - Light and Dark Versions */}
-            <div className='space-y-4'>
-              <div>
-                <h3 className='font-semibold mb-2 flex items-center gap-2'>
-                  Logo Variants
-                  <span className='text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded'>
-                    Light & Dark
-                  </span>
-                </h3>
-                <p className='text-sm text-muted-foreground mb-3'>
-                  Upload different logo versions for light and dark backgrounds
-                </p>
-              </div>
-
-              {/* Light Logo */}
-              <div className='border rounded-lg p-4 bg-blue-50'>
-                <h4 className='font-medium mb-2 text-sm flex items-center gap-2'>
-                  <div className='w-4 h-4 rounded bg-white border'></div>
-                  Light Logo
-                </h4>
-                <ImageUploadCropper
-                  title='Light Logo'
-                  description='Logo for light backgrounds'
-                  aspectRatio={1.5}
-                  imageType='logo'
-                  onImageSave={(imageUrl) => {
-                    if (typeof imageUrl === 'string') {
-                      setBranding({ ...branding, logoUrl: imageUrl });
-                    }
-                  }}
-                />
-                {branding.logoUrl && (
-                  <div className='mt-3'>
-                    <p className='text-xs font-medium text-muted-foreground mb-2'>
-                      Preview:
-                    </p>
-                    <img
-                      src={branding.logoUrl}
-                      alt='Light logo preview'
-                      className='h-16 w-auto object-contain border rounded bg-white p-2'
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Dark Logo */}
-              <div className='border rounded-lg p-4 bg-slate-900'>
-                <h4 className='font-medium mb-2 text-sm flex items-center gap-2 text-white'>
-                  <div className='w-4 h-4 rounded bg-slate-700 border'></div>
-                  Dark Logo
-                </h4>
-                <ImageUploadCropper
-                  title='Dark Logo'
-                  description='Logo for dark backgrounds'
-                  aspectRatio={1.5}
-                  imageType='logo'
-                  onImageSave={(imageUrl) => {
-                    if (typeof imageUrl === 'string') {
-                      setBranding({ ...branding, logoUrlDark: imageUrl });
-                    }
-                  }}
-                />
-                {branding.logoUrlDark && (
-                  <div className='mt-3'>
-                    <p className='text-xs font-medium text-white mb-2'>
-                      Preview:
-                    </p>
-                    <img
-                      src={branding.logoUrlDark}
-                      alt='Dark logo preview'
-                      className='h-16 w-auto object-contain border rounded bg-slate-800 p-2'
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Main Image Upload */}
-            <div>
+            <div className='border rounded-lg p-4 bg-blue-50'>
+              <h4 className='font-medium mb-2 text-sm flex items-center gap-2'>
+                <div className='w-4 h-4 rounded bg-white border'></div>
+                Light Logo
+              </h4>
               <ImageUploadCropper
-                title='Main Hero Image'
-                description='Upload and crop your hero image for the homepage (recommended: landscape, 1920x600px)'
-                aspectRatio={16 / 6}
-                imageType='hero'
+                title='Light Logo'
+                description='Logo for light backgrounds'
+                aspectRatio={1.5}
+                imageType='logo'
                 onImageSave={(imageUrl) => {
-                  if (typeof imageUrl === 'string') {
-                    setBranding({ ...branding, mainImageUrl: imageUrl });
-                  }
+                  if (typeof imageUrl === 'string') setBranding({ ...branding, logoUrl: imageUrl });
                 }}
               />
-              {branding.mainImageUrl && (
+              {branding.logoUrl && (
                 <div className='mt-3'>
-                  <p className='text-xs font-medium text-muted-foreground mb-2'>
-                    Preview:
-                  </p>
-                  <img
-                    src={branding.mainImageUrl}
-                    alt='Hero image preview'
-                    className='w-full h-32 object-cover border rounded'
-                  />
+                  <img src={branding.logoUrl} alt='Light logo' className='h-12 w-auto object-contain border rounded bg-white p-2' />
                 </div>
               )}
             </div>
-          </TabsContent>
-          <TabsContent value='colors' className='space-y-6'>
-            {/* Live Preview */}
-            <div className='border rounded-xl overflow-hidden'>
-              <div className='text-xs text-muted-foreground px-3 py-1.5 bg-muted/50 border-b'>
-                Live Preview
-              </div>
-              <div>
-                {/* Mini header */}
-                <div
-                  className='h-8 flex items-center px-3 gap-2 text-white'
-                  style={{ backgroundColor: theme.primaryColor }}
-                >
-                  <span className='text-xs font-bold'>{branding.businessName || 'Your Kennel'}</span>
-                  <div className='flex-1' />
-                  <div className='flex gap-2'>
-                    <span className='text-[9px] opacity-75'>Home</span>
-                    <span className='text-[9px] opacity-75'>About</span>
-                    <span className='text-[9px] opacity-75'>Puppies</span>
-                  </div>
-                </div>
-                {/* Mini hero */}
-                <div
-                  className='h-14 flex items-center justify-center gap-3'
-                  style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
-                >
-                  <span className='text-white text-xs font-bold'>Welcome to Our Kennel</span>
-                  <span
-                    className='text-white text-[8px] px-2 py-0.5 rounded-full'
-                    style={{ backgroundColor: theme.accentColor }}
-                  >
-                    View Puppies
-                  </span>
-                </div>
-                {/* Mini content */}
-                <div className='h-10 bg-stone-50 px-3 py-2 flex items-center gap-3'>
-                  <div className='space-y-1 flex-1'>
-                    <div className='h-1.5 rounded-full w-2/3' style={{ backgroundColor: theme.primaryColor + '25' }} />
-                    <div className='h-1.5 rounded-full w-1/3' style={{ backgroundColor: theme.secondaryColor + '20' }} />
-                  </div>
-                  <div
-                    className='w-6 h-6 rounded'
-                    style={{ backgroundColor: theme.accentColor + '20' }}
-                  />
-                </div>
-                {/* Mini footer */}
-                <div
-                  className='h-5 flex items-center justify-center'
-                  style={{ backgroundColor: theme.primaryColor }}
-                >
-                  <span className='text-white text-[7px] opacity-60'>© Your Kennel</span>
-                </div>
-              </div>
-            </div>
 
-            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-              {/* Primary Color */}
-              <div className='space-y-2 border rounded-lg p-4'>
-                <Label htmlFor='primary-color' className='text-sm font-semibold'>Primary Color</Label>
-                <p className='text-xs text-muted-foreground'>
-                  Used for headers, footer, navigation text, and section headings across your site.
-                </p>
-                <div className='flex items-center gap-2'>
-                  <input
-                    id='primary-color'
-                    type='color'
-                    value={theme.primaryColor}
-                    onChange={(e) =>
-                      handleThemeChange('primaryColor', e.target.value)
-                    }
-                    className='h-10 w-14 rounded cursor-pointer'
-                  />
-                  <Input
-                    type='text'
-                    value={theme.primaryColor}
-                    onChange={(e) =>
-                      handleThemeChange('primaryColor', e.target.value)
-                    }
-                    placeholder='#3b82f6'
-                    className='flex-1'
-                  />
-                </div>
-                <div
-                  className='h-12 rounded-lg border flex items-center justify-center'
-                  style={{ backgroundColor: theme.primaryColor }}
-                >
-                  <span className='text-white text-xs font-medium'>Header & Nav</span>
-                </div>
-              </div>
-
-              {/* Secondary Color */}
-              <div className='space-y-2 border rounded-lg p-4'>
-                <Label htmlFor='secondary-color' className='text-sm font-semibold'>Secondary Color</Label>
-                <p className='text-xs text-muted-foreground'>
-                  Used for hero gradients, placeholder backgrounds, and supporting visual elements.
-                </p>
-                <div className='flex items-center gap-2'>
-                  <input
-                    id='secondary-color'
-                    type='color'
-                    value={theme.secondaryColor}
-                    onChange={(e) =>
-                      handleThemeChange('secondaryColor', e.target.value)
-                    }
-                    className='h-10 w-14 rounded cursor-pointer'
-                  />
-                  <Input
-                    type='text'
-                    value={theme.secondaryColor}
-                    onChange={(e) =>
-                      handleThemeChange('secondaryColor', e.target.value)
-                    }
-                    placeholder='#1f2937'
-                    className='flex-1'
-                  />
-                </div>
-                <div
-                  className='h-12 rounded-lg border flex items-center justify-center'
-                  style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
-                >
-                  <span className='text-white text-xs font-medium'>Gradients</span>
-                </div>
-              </div>
-
-              {/* Accent Color */}
-              <div className='space-y-2 border rounded-lg p-4'>
-                <Label htmlFor='accent-color' className='text-sm font-semibold'>Accent Color</Label>
-                <p className='text-xs text-muted-foreground'>
-                  Used for buttons, links, prices, badges, and call-to-action elements.
-                </p>
-                <div className='flex items-center gap-2'>
-                  <input
-                    id='accent-color'
-                    type='color'
-                    value={theme.accentColor}
-                    onChange={(e) =>
-                      handleThemeChange('accentColor', e.target.value)
-                    }
-                    className='h-10 w-14 rounded cursor-pointer'
-                  />
-                  <Input
-                    type='text'
-                    value={theme.accentColor}
-                    onChange={(e) =>
-                      handleThemeChange('accentColor', e.target.value)
-                    }
-                    placeholder='#fbbf24'
-                    className='flex-1'
-                  />
-                </div>
-                <div
-                  className='h-12 rounded-lg border flex items-center justify-center'
-                  style={{ backgroundColor: theme.accentColor }}
-                >
-                  <span className='text-white text-xs font-medium'>Buttons & Links</span>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Typography Tab */}
-          <TabsContent value='typography' className='space-y-4'>
-            <div className='space-y-2'>
-              <Label htmlFor='font-family'>Font Family</Label>
-              <Select
-                value={theme.fontFamily}
-                onValueChange={(value) =>
-                  handleThemeChange(
-                    'fontFamily',
-                    value as
-                      | 'sans'
-                      | 'serif'
-                      | 'mono'
-                      | 'display'
-                      | 'elegant'
-                      | 'playful'
-                  )
-                }
-              >
-                <SelectTrigger id='font-family'>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {FONT_FAMILIES.map((font) => (
-                    <SelectItem key={font.value} value={font.value}>
-                      {font.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Font Preview */}
-            <div className='border rounded-lg p-6 space-y-3'>
-              <div
-                style={{
-                  fontFamily:
-                    theme.fontFamily === 'sans'
-                      ? 'system-ui, -apple-system, sans-serif'
-                      : theme.fontFamily === 'serif'
-                      ? 'Georgia, serif'
-                      : theme.fontFamily === 'mono'
-                      ? 'Courier, monospace'
-                      : theme.fontFamily === 'display'
-                      ? 'Georgia, serif'
-                      : theme.fontFamily === 'elegant'
-                      ? 'Garamond, serif'
-                      : theme.fontFamily === 'playful'
-                      ? 'Comic Sans MS, cursive'
-                      : theme.fontFamily === 'handwritten'
-                      ? 'Brush Script MT, cursive'
-                      : theme.fontFamily === 'modern'
-                      ? 'Inter, Helvetica Neue, sans-serif'
-                      : theme.fontFamily === 'classic'
-                      ? 'Times New Roman, serif'
-                      : 'Didot, Bodoni MT, serif',
+            <div className='border rounded-lg p-4 bg-slate-900'>
+              <h4 className='font-medium mb-2 text-sm flex items-center gap-2 text-white'>
+                <div className='w-4 h-4 rounded bg-slate-700 border'></div>
+                Dark Logo
+              </h4>
+              <ImageUploadCropper
+                title='Dark Logo'
+                description='Logo for dark backgrounds'
+                aspectRatio={1.5}
+                imageType='logo'
+                onImageSave={(imageUrl) => {
+                  if (typeof imageUrl === 'string') setBranding({ ...branding, logoUrlDark: imageUrl });
                 }}
-              >
-                <h3 className='text-2xl font-bold'>Heading Preview</h3>
-                <p className='text-gray-600 text-base'>
-                  This is how your body text will look with the selected font.
-                </p>
-                <p className='text-sm text-gray-500 mt-2'>
-                  {
-                    FONT_FAMILIES.find((f) => f.value === theme.fontFamily)
-                      ?.label
-                  }
-                </p>
+              />
+              {branding.logoUrlDark && (
+                <div className='mt-3'>
+                  <img src={branding.logoUrlDark} alt='Dark logo' className='h-12 w-auto object-contain border rounded bg-slate-800 p-2' />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <ImageUploadCropper
+              title='Main Hero Image'
+              description='Homepage hero image (recommended: landscape, 1920x600px)'
+              aspectRatio={16 / 6}
+              imageType='hero'
+              onImageSave={(imageUrl) => {
+                if (typeof imageUrl === 'string') setBranding({ ...branding, mainImageUrl: imageUrl });
+              }}
+            />
+            {branding.mainImageUrl && (
+              <div className='mt-3'>
+                <img src={branding.mainImageUrl} alt='Hero' className='w-full h-28 object-cover border rounded' />
+              </div>
+            )}
+          </div>
+
+          <div className='flex justify-end'>
+            <Button onClick={handleSaveBranding} disabled={saving === 'branding'} size='sm'>
+              {saving === 'branding' ? <Loader2 className='h-4 w-4 mr-2 animate-spin' /> : <Save className='h-4 w-4 mr-2' />}
+              Save Branding
+            </Button>
+          </div>
+        </div>
+      </CollapsibleFormSection>
+
+      {/* Colors */}
+      <CollapsibleFormSection
+        title='Colors'
+        description='Primary, secondary, and accent colors'
+        defaultOpen={false}
+        collapsedIndicator={
+          <div className='flex gap-1'>
+            <div className='w-4 h-4 rounded-full border border-stone-200' style={{ backgroundColor: theme.primaryColor }} />
+            <div className='w-4 h-4 rounded-full border border-stone-200' style={{ backgroundColor: theme.secondaryColor }} />
+            <div className='w-4 h-4 rounded-full border border-stone-200' style={{ backgroundColor: theme.accentColor }} />
+          </div>
+        }
+      >
+        <div className='space-y-5'>
+          {/* Live Preview */}
+          <div className='border rounded-xl overflow-hidden'>
+            <div className='text-xs text-muted-foreground px-3 py-1.5 bg-muted/50 border-b'>
+              Live Preview
+            </div>
+            <div>
+              <div className='h-7 flex items-center px-3 gap-2 text-white' style={{ backgroundColor: theme.primaryColor }}>
+                <span className='text-[9px] font-bold'>{branding.businessName || 'Your Kennel'}</span>
+                <div className='flex-1' />
+                <div className='flex gap-2'>
+                  <span className='text-[8px] opacity-75'>Home</span>
+                  <span className='text-[8px] opacity-75'>About</span>
+                  <span className='text-[8px] opacity-75'>Puppies</span>
+                </div>
+              </div>
+              <div className='h-12 flex items-center justify-center gap-3' style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}>
+                <span className='text-white text-xs font-bold'>Welcome to Our Kennel</span>
+                <span className='text-white text-[8px] px-2 py-0.5 rounded-full' style={{ backgroundColor: theme.accentColor }}>View Puppies</span>
+              </div>
+              <div className='h-8 bg-stone-50 px-3 py-2 flex items-center gap-3'>
+                <div className='space-y-1 flex-1'>
+                  <div className='h-1.5 rounded-full w-2/3' style={{ backgroundColor: theme.primaryColor + '25' }} />
+                  <div className='h-1.5 rounded-full w-1/3' style={{ backgroundColor: theme.secondaryColor + '20' }} />
+                </div>
+                <div className='w-5 h-5 rounded' style={{ backgroundColor: theme.accentColor + '20' }} />
+              </div>
+              <div className='h-4 flex items-center justify-center' style={{ backgroundColor: theme.primaryColor }}>
+                <span className='text-white text-[6px] opacity-60'>© Your Kennel</span>
               </div>
             </div>
-          </TabsContent>
+          </div>
 
-          {/* Layout Tab */}
-          <TabsContent value='layout' className='space-y-4'>
-            <div className='space-y-2'>
-              <Label htmlFor='header-style'>Header Style</Label>
-              <Select
-                value={theme.headerStyle}
-                onValueChange={(value) =>
-                  handleThemeChange(
-                    'headerStyle',
-                    value as
-                      | 'minimal'
-                      | 'full'
-                      | 'banner'
-                      | 'centered'
-                      | 'split'
-                      | 'overlay'
-                  )
-                }
-              >
-                <SelectTrigger id='header-style'>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {HEADER_STYLES.map((style) => (
-                    <SelectItem key={style.value} value={style.value}>
-                      <div>
-                        <div className='font-medium'>{style.label}</div>
-                        <div className='text-xs text-muted-foreground'>
-                          {style.description}
-                        </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+            <div className='space-y-2 border rounded-lg p-3'>
+              <Label className='text-xs font-semibold'>Primary Color</Label>
+              <p className='text-[11px] text-muted-foreground'>Headers, footer, nav, headings</p>
+              <div className='flex items-center gap-2'>
+                <input type='color' value={theme.primaryColor} onChange={(e) => handleThemeChange('primaryColor', e.target.value)} className='h-9 w-12 rounded cursor-pointer' />
+                <Input type='text' value={theme.primaryColor} onChange={(e) => handleThemeChange('primaryColor', e.target.value)} className='flex-1 h-9 text-xs' />
+              </div>
             </div>
-
-            {/* Visual Header Previews */}
-            <div className='space-y-3'>
-              <p className='text-sm font-medium'>Header Preview</p>
-
-              {/* Minimal Preview */}
-              {theme.headerStyle === 'minimal' && (
-                <div className='border rounded-lg overflow-hidden bg-white'>
-                  <div
-                    className='p-3 flex items-center justify-between border-b'
-                    style={{ borderColor: theme.primaryColor }}
-                  >
-                    <div className='flex items-center gap-2'>
-                      {branding.logoUrl && (
-                        <img
-                          src={branding.logoUrl}
-                          alt='Logo'
-                          className='h-6 w-auto object-contain'
-                        />
-                      )}
-                      <span
-                        className='text-sm font-bold'
-                        style={{ color: theme.primaryColor }}
-                      >
-                        {branding.businessName || 'Your Business'}
-                      </span>
-                    </div>
-                    <div
-                      className='flex gap-3 text-xs'
-                      style={{ color: theme.primaryColor }}
-                    >
-                      <span>Home</span>
-                      <span>About</span>
-                      <span>Contact</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Full Header Preview */}
-              {theme.headerStyle === 'full' && (
-                <div className='border rounded-lg overflow-hidden'>
-                  <div
-                    className='p-3'
-                    style={{ backgroundColor: theme.primaryColor }}
-                  >
-                    <div className='flex items-center justify-between text-white'>
-                      <div className='flex items-center gap-2'>
-                        {branding.logoUrl && (
-                          <img
-                            src={branding.logoUrl}
-                            alt='Logo'
-                            className='h-6 w-auto object-contain'
-                          />
-                        )}
-                        <span className='text-sm font-bold'>
-                          {branding.businessName || 'Your Business'}
-                        </span>
-                      </div>
-                      <div className='flex gap-3 text-xs'>
-                        <span>Home</span>
-                        <span>About</span>
-                        <span>Contact</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Banner Preview */}
-              {theme.headerStyle === 'banner' && (
-                <div className='border rounded-lg overflow-hidden'>
-                  <div
-                    className='p-6 text-center text-white'
-                    style={{ backgroundColor: theme.primaryColor }}
-                  >
-                    {branding.logoUrl && (
-                      <img
-                        src={branding.logoUrl}
-                        alt='Logo'
-                        className='h-10 w-auto mx-auto mb-2 object-contain'
-                      />
-                    )}
-                    <h3 className='text-lg font-bold mb-1'>
-                      {branding.businessName || 'Your Business'}
-                    </h3>
-                    <p className='text-xs opacity-90'>Your tagline here</p>
-                    <div className='flex justify-center gap-3 text-xs mt-3 pt-3 border-t border-white/20'>
-                      <span>Home</span>
-                      <span>About</span>
-                      <span>Contact</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Centered Preview */}
-              {theme.headerStyle === 'centered' && (
-                <div className='border rounded-lg overflow-hidden bg-white'>
-                  <div className='p-4 text-center'>
-                    {branding.logoUrl && (
-                      <img
-                        src={branding.logoUrl}
-                        alt='Logo'
-                        className='h-8 w-auto mx-auto mb-2 object-contain'
-                      />
-                    )}
-                    <div
-                      className='text-sm font-bold mb-3'
-                      style={{ color: theme.primaryColor }}
-                    >
-                      {branding.businessName || 'Your Business'}
-                    </div>
-                    <div
-                      className='flex justify-center gap-4 text-xs'
-                      style={{ color: theme.primaryColor }}
-                    >
-                      <span>Home</span>
-                      <span>About</span>
-                      <span>Puppies</span>
-                      <span>Contact</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Split Preview */}
-              {theme.headerStyle === 'split' && (
-                <div className='border rounded-lg overflow-hidden bg-white'>
-                  <div className='p-3 flex items-center justify-between'>
-                    <div className='flex items-center gap-2'>
-                      {branding.logoUrl && (
-                        <img
-                          src={branding.logoUrl}
-                          alt='Logo'
-                          className='h-6 w-auto object-contain'
-                        />
-                      )}
-                      <span
-                        className='text-sm font-bold'
-                        style={{ color: theme.primaryColor }}
-                      >
-                        {branding.businessName || 'Your Business'}
-                      </span>
-                    </div>
-                    <div
-                      className='flex gap-3 text-xs items-center'
-                      style={{ color: theme.primaryColor }}
-                    >
-                      <span>Home</span>
-                      <span>About</span>
-                      <span className='text-gray-300'>|</span>
-                      <span>Puppies</span>
-                      <span>Contact</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Overlay Preview */}
-              {theme.headerStyle === 'overlay' && (
-                <div className='border rounded-lg overflow-hidden relative'>
-                  <div className='h-24 bg-gradient-to-r from-blue-400 to-purple-400'></div>
-                  <div className='absolute top-0 left-0 right-0 p-3 bg-gradient-to-b from-black/50 to-transparent'>
-                    <div className='flex items-center justify-between text-white'>
-                      <div className='flex items-center gap-2'>
-                        {branding.logoUrl && (
-                          <img
-                            src={branding.logoUrl}
-                            alt='Logo'
-                            className='h-6 w-auto object-contain drop-shadow'
-                          />
-                        )}
-                        <span className='text-sm font-bold drop-shadow'>
-                          {branding.businessName || 'Your Business'}
-                        </span>
-                      </div>
-                      <div className='flex gap-3 text-xs drop-shadow'>
-                        <span>Home</span>
-                        <span>About</span>
-                        <span>Contact</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+            <div className='space-y-2 border rounded-lg p-3'>
+              <Label className='text-xs font-semibold'>Secondary Color</Label>
+              <p className='text-[11px] text-muted-foreground'>Hero gradients, placeholders</p>
+              <div className='flex items-center gap-2'>
+                <input type='color' value={theme.secondaryColor} onChange={(e) => handleThemeChange('secondaryColor', e.target.value)} className='h-9 w-12 rounded cursor-pointer' />
+                <Input type='text' value={theme.secondaryColor} onChange={(e) => handleThemeChange('secondaryColor', e.target.value)} className='flex-1 h-9 text-xs' />
+              </div>
             </div>
-          </TabsContent>
-        </Tabs>
+            <div className='space-y-2 border rounded-lg p-3'>
+              <Label className='text-xs font-semibold'>Accent Color</Label>
+              <p className='text-[11px] text-muted-foreground'>Buttons, links, prices, CTAs</p>
+              <div className='flex items-center gap-2'>
+                <input type='color' value={theme.accentColor} onChange={(e) => handleThemeChange('accentColor', e.target.value)} className='h-9 w-12 rounded cursor-pointer' />
+                <Input type='text' value={theme.accentColor} onChange={(e) => handleThemeChange('accentColor', e.target.value)} className='flex-1 h-9 text-xs' />
+              </div>
+            </div>
+          </div>
 
-        {/* Save Button */}
-        <div className='flex justify-end'>
-          <Button
-            onClick={
-              activeTab === 'branding' ? handleSaveBranding : handleSaveTheme
-            }
-            disabled={saving}
-          >
-            <Save className='h-4 w-4 mr-2' />
-            {saving
-              ? 'Saving...'
-              : `Save ${activeTab === 'branding' ? 'Branding' : 'Theme'}`}
-          </Button>
+          <div className='flex justify-end'>
+            <Button onClick={handleSaveTheme} disabled={saving === 'theme'} size='sm'>
+              {saving === 'theme' ? <Loader2 className='h-4 w-4 mr-2 animate-spin' /> : <Save className='h-4 w-4 mr-2' />}
+              Save Colors
+            </Button>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      </CollapsibleFormSection>
+
+      {/* Typography */}
+      <CollapsibleFormSection
+        title='Typography'
+        description='Font family for your website'
+        defaultOpen={false}
+        collapsedIndicator={FONT_FAMILIES.find((f) => f.value === theme.fontFamily)?.label?.split(' - ')[0] || 'Sans-Serif'}
+      >
+        <div className='space-y-4'>
+          <div className='space-y-2'>
+            <Label htmlFor='font-family'>Font Family</Label>
+            <Select
+              value={theme.fontFamily}
+              onValueChange={(value) => handleThemeChange('fontFamily', value)}
+            >
+              <SelectTrigger id='font-family'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {FONT_FAMILIES.map((font) => (
+                  <SelectItem key={font.value} value={font.value}>
+                    {font.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className='border rounded-lg p-5 space-y-2' style={{ fontFamily: fontFamilyStyle(theme.fontFamily) }}>
+            <h3 className='text-2xl font-bold'>Heading Preview</h3>
+            <p className='text-gray-600 text-base'>This is how your body text will look.</p>
+            <p className='text-sm text-gray-400'>
+              {FONT_FAMILIES.find((f) => f.value === theme.fontFamily)?.label}
+            </p>
+          </div>
+
+          <div className='flex justify-end'>
+            <Button onClick={handleSaveTheme} disabled={saving === 'theme'} size='sm'>
+              {saving === 'theme' ? <Loader2 className='h-4 w-4 mr-2 animate-spin' /> : <Save className='h-4 w-4 mr-2' />}
+              Save Typography
+            </Button>
+          </div>
+        </div>
+      </CollapsibleFormSection>
+
+      {/* Header Layout */}
+      <CollapsibleFormSection
+        title='Header Layout'
+        description='Navigation style for your website'
+        defaultOpen={false}
+        collapsedIndicator={HEADER_STYLES.find((s) => s.value === theme.headerStyle)?.label || 'Full'}
+      >
+        <div className='space-y-4'>
+          <div className='space-y-2'>
+            <Label htmlFor='header-style'>Header Style</Label>
+            <Select
+              value={theme.headerStyle}
+              onValueChange={(value) => handleThemeChange('headerStyle', value)}
+            >
+              <SelectTrigger id='header-style'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {HEADER_STYLES.map((style) => (
+                  <SelectItem key={style.value} value={style.value}>
+                    <div>
+                      <div className='font-medium'>{style.label}</div>
+                      <div className='text-xs text-muted-foreground'>{style.description}</div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Header Preview */}
+          <div className='space-y-2'>
+            <p className='text-xs font-medium text-muted-foreground'>Preview</p>
+
+            {theme.headerStyle === 'minimal' && (
+              <div className='border rounded-lg overflow-hidden bg-white'>
+                <div className='p-3 flex items-center justify-between border-b' style={{ borderColor: theme.primaryColor }}>
+                  <span className='text-sm font-bold' style={{ color: theme.primaryColor }}>{branding.businessName || 'Your Business'}</span>
+                  <div className='flex gap-3 text-xs' style={{ color: theme.primaryColor }}>
+                    <span>Home</span><span>About</span><span>Contact</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {theme.headerStyle === 'full' && (
+              <div className='border rounded-lg overflow-hidden'>
+                <div className='p-3' style={{ backgroundColor: theme.primaryColor }}>
+                  <div className='flex items-center justify-between text-white'>
+                    <span className='text-sm font-bold'>{branding.businessName || 'Your Business'}</span>
+                    <div className='flex gap-3 text-xs'><span>Home</span><span>About</span><span>Contact</span></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {theme.headerStyle === 'banner' && (
+              <div className='border rounded-lg overflow-hidden'>
+                <div className='p-5 text-center text-white' style={{ backgroundColor: theme.primaryColor }}>
+                  <h3 className='text-lg font-bold mb-1'>{branding.businessName || 'Your Business'}</h3>
+                  <p className='text-xs opacity-90'>Your tagline here</p>
+                  <div className='flex justify-center gap-3 text-xs mt-3 pt-3 border-t border-white/20'>
+                    <span>Home</span><span>About</span><span>Contact</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {theme.headerStyle === 'centered' && (
+              <div className='border rounded-lg overflow-hidden bg-white'>
+                <div className='p-4 text-center'>
+                  <div className='text-sm font-bold mb-3' style={{ color: theme.primaryColor }}>{branding.businessName || 'Your Business'}</div>
+                  <div className='flex justify-center gap-4 text-xs' style={{ color: theme.primaryColor }}>
+                    <span>Home</span><span>About</span><span>Puppies</span><span>Contact</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {theme.headerStyle === 'split' && (
+              <div className='border rounded-lg overflow-hidden bg-white'>
+                <div className='p-3 flex items-center justify-between'>
+                  <span className='text-sm font-bold' style={{ color: theme.primaryColor }}>{branding.businessName || 'Your Business'}</span>
+                  <div className='flex gap-3 text-xs items-center' style={{ color: theme.primaryColor }}>
+                    <span>Home</span><span>About</span><span className='text-gray-300'>|</span><span>Puppies</span><span>Contact</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {theme.headerStyle === 'overlay' && (
+              <div className='border rounded-lg overflow-hidden relative'>
+                <div className='h-20 bg-gradient-to-r from-blue-400 to-purple-400'></div>
+                <div className='absolute top-0 left-0 right-0 p-3 bg-gradient-to-b from-black/50 to-transparent'>
+                  <div className='flex items-center justify-between text-white'>
+                    <span className='text-sm font-bold drop-shadow'>{branding.businessName || 'Your Business'}</span>
+                    <div className='flex gap-3 text-xs drop-shadow'><span>Home</span><span>About</span><span>Contact</span></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className='flex justify-end'>
+            <Button onClick={handleSaveTheme} disabled={saving === 'theme'} size='sm'>
+              {saving === 'theme' ? <Loader2 className='h-4 w-4 mr-2 animate-spin' /> : <Save className='h-4 w-4 mr-2' />}
+              Save Layout
+            </Button>
+          </div>
+        </div>
+      </CollapsibleFormSection>
+    </div>
   );
 }
