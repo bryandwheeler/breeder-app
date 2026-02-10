@@ -138,6 +138,7 @@ export const useWebsiteStore = create<WebsiteState>((set, get) => ({
             enablePuppyShop: true,
             enableGallery: false,
             enableBlog: false,
+            enableFavoriteThings: false,
             contactFormEmail: '',
             socialLinks: {},
             showPricing: true,

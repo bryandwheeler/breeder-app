@@ -14,8 +14,8 @@
   --popover: #ffffff;
   --popover-foreground: #3a3632;
 
-  /* Primary — Slate Blue-Gray for modern elegance */
-  --primary: #7b8390;
+  /* Primary — Warm Terracotta for inviting CTAs */
+  --primary: #946055;
   --primary-foreground: #ffffff;
 
   /* Secondary — Warm Cream */
@@ -38,8 +38,8 @@
   --border: #d9d2c7;
   --input: #d9d2c7;
 
-  /* Ring matches primary slate */
-  --ring: #7b8390;
+  /* Ring matches primary terracotta */
+  --ring: #946055;
   --radius: 0.5rem;
 }
 
@@ -52,8 +52,8 @@
   --popover: #2a2723;
   --popover-foreground: #f0ece6;
 
-  /* Primary — Lighter Slate Blue for dark backgrounds */
-  --primary: #95a0ac;
+  /* Primary — Lighter Terracotta for dark backgrounds */
+  --primary: #b8897a;
   --primary-foreground: #ffffff;
 
   /* Secondary — Dark Warm Brown */
@@ -71,7 +71,7 @@
   --destructive-foreground: #ffffff;
   --border: #3e3a35; /* Dark Olive */
   --input: #3e3a35;
-  --ring: #95a0ac;
+  --ring: #b8897a;
 }
 
 /* Apply colors to elements directly */

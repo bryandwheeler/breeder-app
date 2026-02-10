@@ -131,6 +131,7 @@ export interface WebsiteSettings {
   enablePuppyShop: boolean;
   enableGallery: boolean;
   enableBlog: boolean;
+  enableFavoriteThings: boolean;
   contactFormEmail: string;
   socialLinks: {
     facebook?: string;

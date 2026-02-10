@@ -16,6 +16,8 @@ import { BreederSettings } from '@/pages/BreederSettings';
 import { WebsiteDesign } from '@/pages/WebsiteDesign';
 import { BlogPosts } from '@/pages/BlogPosts';
 import { BlogPostEditor } from '@/pages/BlogPostEditor';
+import { FavoriteThings } from '@/pages/FavoriteThings';
+import { FavoriteThingEditor } from '@/pages/FavoriteThingEditor';
 import { AccountManagement } from '@/pages/AccountManagement';
 import { Inquiries } from '@/pages/Inquiries';
 import { Waitlist } from '@/pages/Waitlist';
@@ -387,6 +389,30 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <BlogPostEditor />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/favorite-things'
+                element={
+                  <ProtectedRoute>
+                    <FavoriteThings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/favorite-things/new'
+                element={
+                  <ProtectedRoute>
+                    <FavoriteThingEditor />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/favorite-things/:itemId/edit'
+                element={
+                  <ProtectedRoute>
+                    <FavoriteThingEditor />
                   </ProtectedRoute>
                 }
               />

@@ -10,6 +10,7 @@ import { PublicWebsiteContact } from '@/components/PublicWebsiteContact';
 import { PublicWebsitePuppies } from '@/components/PublicWebsitePuppies';
 import { PublicWebsiteBlog } from '@/components/PublicWebsiteBlog';
 import { PublicWebsiteBlogPost } from '@/components/PublicWebsiteBlogPost';
+import { PublicWebsiteFavoriteThings } from '@/components/PublicWebsiteFavoriteThings';
 import { PublicWebsiteSeo } from '@/components/website/PublicWebsiteSeo';
 
 export function PublicWebsite() {
@@ -76,6 +77,8 @@ export function PublicWebsite() {
         return 'Available Puppies';
       case 'blog':
         return 'Blog';
+      case 'favorite-things':
+        return 'Favorite Things';
       default:
         return undefined; // Use default/homepage title
     }
@@ -95,6 +98,8 @@ export function PublicWebsite() {
           return <PublicWebsiteBlogPost settings={websiteSettings} slug={postSlug} />;
         }
         return <PublicWebsiteBlog settings={websiteSettings} />;
+      case 'favorite-things':
+        return <PublicWebsiteFavoriteThings settings={websiteSettings} />;
       default:
         return <PublicWebsiteHome settings={websiteSettings} />;
     }

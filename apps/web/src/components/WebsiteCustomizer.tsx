@@ -435,9 +435,11 @@ export function WebsiteCustomizer() {
 
             {(() => {
               const blogEnabled = websiteSettings?.enableBlog;
-              const navItems = blogEnabled
-                ? ['Home', 'About', 'Puppies', 'Blog', 'Contact']
-                : ['Home', 'About', 'Puppies', 'Contact'];
+              const favoritesEnabled = websiteSettings?.enableFavoriteThings;
+              let navItems = ['Home', 'About', 'Puppies'];
+              if (blogEnabled) navItems.push('Blog');
+              if (favoritesEnabled) navItems.push('Favorites');
+              navItems.push('Contact');
               const bizName = branding.businessName || 'Your Business';
 
               return (

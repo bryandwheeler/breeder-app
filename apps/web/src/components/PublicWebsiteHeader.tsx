@@ -25,10 +25,13 @@ export function PublicWebsiteHeader({ settings }: PublicWebsiteHeaderProps) {
     { label: 'Contact', page: 'contact' },
   ];
 
-  // Dynamically add Blog link when enabled
-  const menuItems = settings.enableBlog
+  // Dynamically add optional page links when enabled
+  let menuItems = settings.enableBlog
     ? [...baseMenuItems, { label: 'Blog', page: 'blog' }]
-    : baseMenuItems;
+    : [...baseMenuItems];
+  if (settings.enableFavoriteThings) {
+    menuItems = [...menuItems, { label: 'Favorite Things', page: 'favorite-things' }];
+  }
 
   if (headerStyle === 'minimal') {
     return (

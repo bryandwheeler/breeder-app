@@ -535,6 +535,15 @@
         { "fieldPath": "slug", "order": "ASCENDING" },
         { "fieldPath": "published", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "favoriteThings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "category", "order": "ASCENDING" },
+        { "fieldPath": "order", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

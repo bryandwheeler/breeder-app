@@ -23,6 +23,7 @@ import {
   Loader2,
   ShoppingBag,
   FileText,
+  Heart,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -352,6 +353,39 @@ export function WebsiteDesign() {
                 <Button variant='outline' size='sm'>
                   <FileText className='mr-2 h-4 w-4' />
                   Manage Blog Posts
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </CollapsibleFormSection>
+        {/* Favorite Things */}
+        <CollapsibleFormSection
+          title="Favorite Things"
+          description="Share recommended products and supplies on your website"
+          defaultOpen={false}
+          collapsedIndicator={websiteSettings?.enableFavoriteThings ? 'Enabled' : 'Disabled'}
+        >
+          <div className='space-y-4'>
+            <div className='flex items-center justify-between'>
+              <div>
+                <Label htmlFor='enable-favorite-things'>Enable Favorite Things</Label>
+                <p className='text-xs text-muted-foreground'>Show a favorites page with product recommendations on your public website</p>
+              </div>
+              <Switch
+                id='enable-favorite-things'
+                checked={websiteSettings?.enableFavoriteThings ?? false}
+                onCheckedChange={async (checked) => {
+                  if (!currentUser) return;
+                  await updateWebsiteSettings(currentUser.uid, { enableFavoriteThings: checked });
+                  toast({ title: checked ? 'Favorite Things enabled' : 'Favorite Things disabled' });
+                }}
+              />
+            </div>
+            <div className='pt-2 border-t'>
+              <Link to='/favorite-things'>
+                <Button variant='outline' size='sm'>
+                  <Heart className='mr-2 h-4 w-4' />
+                  Manage Favorite Things
                 </Button>
               </Link>
             </div>

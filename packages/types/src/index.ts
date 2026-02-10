@@ -1,6 +1,7 @@
 // Re-export all types from individual modules
 export * from './admin';
 export * from './blog';
+export * from './favoriteThings';
 export * from './dog';
 export * from './email';
 export * from './emailTemplate';

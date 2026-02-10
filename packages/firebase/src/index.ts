@@ -11,6 +11,7 @@ export * from './migrations/migrateToContacts';
 export * from './stores/adminStore';
 export * from './stores/blogStore';
 export * from './stores/breederStore';
+export * from './stores/favoriteThingsStore';
 export * from './stores/careTemplateStore';
 export * from './stores/connectionStore';
 export * from './stores/crmStore';

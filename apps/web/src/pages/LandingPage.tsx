@@ -108,7 +108,7 @@ export function LandingPage() {
             <Link
               to='/signup'
               className='inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-full text-white transition-all shadow-sm hover:shadow-md'
-              style={{ backgroundColor: '#7b8390' }}
+              style={{ backgroundColor: '#946055' }}
             >
               Get Started
             </Link>
@@ -143,7 +143,7 @@ export function LandingPage() {
               <Link
                 to='/signup'
                 className='inline-flex items-center justify-center px-8 py-3.5 text-base font-medium rounded-full text-white transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5'
-                style={{ backgroundColor: '#7b8390' }}
+                style={{ backgroundColor: '#946055' }}
               >
                 Start Free Today
                 <ArrowRight className='ml-2 h-4 w-4' />
@@ -198,7 +198,7 @@ export function LandingPage() {
             <div className='text-center mb-16'>
               <div className='flex items-center justify-center gap-2 mb-4'>
                 <Sparkles className='h-4 w-4 text-amber-500' />
-                <span className='text-xs font-medium tracking-widest uppercase' style={{ color: '#7b8390' }}>Features</span>
+                <span className='text-xs font-medium tracking-widest uppercase' style={{ color: '#946055' }}>Features</span>
               </div>
               <h2 className='text-3xl sm:text-4xl font-bold text-stone-800 mb-4 tracking-tight'>
                 Everything you need, nothing you don't
@@ -268,7 +268,7 @@ export function LandingPage() {
             <Link
               to='/signup'
               className='inline-flex items-center justify-center px-8 py-3.5 text-base font-medium rounded-full text-white transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5'
-              style={{ backgroundColor: '#7b8390' }}
+              style={{ backgroundColor: '#946055' }}
             >
               Create Your Free Account
               <ArrowRight className='ml-2 h-4 w-4' />
