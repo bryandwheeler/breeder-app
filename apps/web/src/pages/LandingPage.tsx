@@ -101,13 +101,13 @@ export function LandingPage() {
           <div className='flex items-center gap-3'>
             <Link
               to='/login'
-              className='inline-flex items-center px-4 py-2 text-sm font-medium text-breeder-navy hover:text-breeder-orange transition-colors'
+              className='inline-flex items-center px-4 py-2 text-sm font-medium text-slate-800 hover:text-orange-500 transition-colors'
             >
               Log In
             </Link>
             <Link
               to='/signup'
-              className='inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg bg-breeder-orange text-white hover:bg-breeder-orange/90 transition-colors shadow-sm'
+              className='inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors shadow-sm'
             >
               Sign Up Free
             </Link>
@@ -119,20 +119,20 @@ export function LandingPage() {
         {/* Hero Section */}
         <section className='relative overflow-hidden'>
           {/* Gradient background */}
-          <div className='absolute inset-0 bg-gradient-to-br from-breeder-navy via-breeder-navy to-[#0d3a62]' />
+          <div className='absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800' />
           {/* Decorative circles */}
-          <div className='absolute top-0 right-0 w-[600px] h-[600px] bg-breeder-blue/10 rounded-full -translate-y-1/2 translate-x-1/3' />
-          <div className='absolute bottom-0 left-0 w-[400px] h-[400px] bg-breeder-orange/10 rounded-full translate-y-1/2 -translate-x-1/3' />
+          <div className='absolute top-0 right-0 w-[600px] h-[600px] bg-sky-400/10 rounded-full -translate-y-1/2 translate-x-1/3' />
+          <div className='absolute bottom-0 left-0 w-[400px] h-[400px] bg-orange-500/10 rounded-full translate-y-1/2 -translate-x-1/3' />
 
           <div className='relative max-w-5xl mx-auto px-4 sm:px-6 py-20 sm:py-28 lg:py-32 text-center'>
             <div className='inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5 mb-8 border border-white/20'>
-              <Zap className='h-4 w-4 text-breeder-orange' />
+              <Zap className='h-4 w-4 text-orange-500' />
               <span className='text-white/90 text-sm font-medium'>The #1 platform for professional breeders</span>
             </div>
 
             <h1 className='text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight'>
               Manage Your Entire Breeding{' '}
-              <span className='text-breeder-orange'>Program</span>{' '}
+              <span className='text-orange-500'>Program</span>{' '}
               From One Dashboard
             </h1>
 
@@ -143,7 +143,7 @@ export function LandingPage() {
             <div className='flex flex-col sm:flex-row gap-4 justify-center mb-8'>
               <Link
                 to='/signup'
-                className='inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-xl bg-breeder-orange text-white hover:bg-breeder-orange/90 transition-all shadow-lg shadow-breeder-orange/30 hover:shadow-xl hover:shadow-breeder-orange/40 hover:-translate-y-0.5'
+                className='inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-xl bg-orange-500 text-white hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 hover:-translate-y-0.5'
               >
                 Get Started Free
                 <ChevronRight className='ml-2 h-5 w-5' />
@@ -171,24 +171,24 @@ export function LandingPage() {
         <section className='bg-gray-50 border-b border-gray-100 py-6 px-4'>
           <div className='max-w-4xl mx-auto flex flex-wrap items-center justify-center gap-8 sm:gap-12 text-center'>
             <div>
-              <div className='text-2xl font-bold text-breeder-navy'>All-in-One</div>
+              <div className='text-2xl font-bold text-slate-900'>All-in-One</div>
               <div className='text-sm text-gray-500'>Breeding Platform</div>
             </div>
             <div className='hidden sm:block w-px h-10 bg-gray-200' />
             <div>
-              <div className='text-2xl font-bold text-breeder-navy'>Unlimited</div>
+              <div className='text-2xl font-bold text-slate-900'>Unlimited</div>
               <div className='text-sm text-gray-500'>Dogs & Records</div>
             </div>
             <div className='hidden sm:block w-px h-10 bg-gray-200' />
             <div>
-              <div className='text-2xl font-bold text-breeder-navy'>Free</div>
+              <div className='text-2xl font-bold text-slate-900'>Free</div>
               <div className='text-sm text-gray-500'>To Get Started</div>
             </div>
             <div className='hidden sm:block w-px h-10 bg-gray-200' />
             <div>
               <div className='flex items-center justify-center gap-1'>
                 <Shield className='h-5 w-5 text-green-500' />
-                <span className='text-2xl font-bold text-breeder-navy'>Secure</span>
+                <span className='text-2xl font-bold text-slate-900'>Secure</span>
               </div>
               <div className='text-sm text-gray-500'>Cloud Storage</div>
             </div>
@@ -199,8 +199,8 @@ export function LandingPage() {
         <section id='features' className='py-16 sm:py-24 px-4'>
           <div className='max-w-6xl mx-auto'>
             <div className='text-center mb-16'>
-              <span className='inline-block text-breeder-orange font-semibold text-sm uppercase tracking-wider mb-3'>Features</span>
-              <h2 className='text-3xl sm:text-4xl font-bold text-breeder-navy mb-4'>
+              <span className='inline-block text-orange-500 font-semibold text-sm uppercase tracking-wider mb-3'>Features</span>
+              <h2 className='text-3xl sm:text-4xl font-bold text-slate-900 mb-4'>
                 Everything You Need to Run Your Breeding Program
               </h2>
               <p className='text-gray-600 max-w-2xl mx-auto text-lg'>
@@ -211,12 +211,12 @@ export function LandingPage() {
               {features.map((feature) => (
                 <div
                   key={feature.title}
-                  className='group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-lg hover:border-breeder-blue/30 transition-all duration-300 hover:-translate-y-1'
+                  className='group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-lg hover:border-sky-400/30 transition-all duration-300 hover:-translate-y-1'
                 >
                   <div className={`inline-flex items-center justify-center h-12 w-12 rounded-xl ${feature.color} mb-4`}>
                     <feature.icon className='h-6 w-6' />
                   </div>
-                  <h3 className='text-lg font-semibold text-breeder-navy mb-2'>
+                  <h3 className='text-lg font-semibold text-slate-900 mb-2'>
                     {feature.title}
                   </h3>
                   <p className='text-gray-600 text-sm leading-relaxed'>
@@ -229,21 +229,21 @@ export function LandingPage() {
         </section>
 
         {/* Secondary Features */}
-        <section className='bg-gradient-to-b from-breeder-powder-blue/50 to-breeder-powder-blue py-16 sm:py-24 px-4'>
+        <section className='bg-gradient-to-b from-sky-50 to-sky-100 py-16 sm:py-24 px-4'>
           <div className='max-w-6xl mx-auto'>
             <div className='text-center mb-16'>
-              <span className='inline-block text-breeder-blue font-semibold text-sm uppercase tracking-wider mb-3'>And More</span>
-              <h2 className='text-3xl sm:text-4xl font-bold text-breeder-navy mb-4'>
+              <span className='inline-block text-sky-500 font-semibold text-sm uppercase tracking-wider mb-3'>And More</span>
+              <h2 className='text-3xl sm:text-4xl font-bold text-slate-900 mb-4'>
                 Built for the Way Breeders Work
               </h2>
             </div>
             <div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
               {secondaryFeatures.map((feature) => (
                 <div key={feature.title} className='bg-white/80 backdrop-blur-sm rounded-2xl p-8 text-center border border-white shadow-sm'>
-                  <div className='inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-breeder-navy/5 mb-5'>
-                    <feature.icon className='h-8 w-8 text-breeder-navy' />
+                  <div className='inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-slate-900/5 mb-5'>
+                    <feature.icon className='h-8 w-8 text-slate-900' />
                   </div>
-                  <h3 className='text-lg font-semibold text-breeder-navy mb-3'>
+                  <h3 className='text-lg font-semibold text-slate-900 mb-3'>
                     {feature.title}
                   </h3>
                   <p className='text-gray-600 text-sm leading-relaxed'>
@@ -257,8 +257,8 @@ export function LandingPage() {
 
         {/* Closing CTA */}
         <section className='relative overflow-hidden'>
-          <div className='absolute inset-0 bg-gradient-to-br from-breeder-navy via-breeder-navy to-[#0d3a62]' />
-          <div className='absolute top-0 left-1/2 w-[800px] h-[800px] bg-breeder-orange/5 rounded-full -translate-x-1/2 -translate-y-1/2' />
+          <div className='absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800' />
+          <div className='absolute top-0 left-1/2 w-[800px] h-[800px] bg-orange-500/5 rounded-full -translate-x-1/2 -translate-y-1/2' />
 
           <div className='relative max-w-3xl mx-auto px-4 py-16 sm:py-24 text-center'>
             <h2 className='text-3xl sm:text-4xl font-bold text-white mb-4'>
@@ -269,7 +269,7 @@ export function LandingPage() {
             </p>
             <Link
               to='/signup'
-              className='inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-xl bg-breeder-orange text-white hover:bg-breeder-orange/90 transition-all shadow-lg shadow-breeder-orange/30 hover:shadow-xl hover:shadow-breeder-orange/40 hover:-translate-y-0.5'
+              className='inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-xl bg-orange-500 text-white hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 hover:-translate-y-0.5'
             >
               Create Your Free Account
               <ChevronRight className='ml-2 h-5 w-5' />
@@ -279,7 +279,7 @@ export function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className='bg-breeder-navy border-t border-white/10 py-8 px-4'>
+      <footer className='bg-slate-900 border-t border-white/10 py-8 px-4'>
         <div className='max-w-6xl mx-auto text-center text-sm'>
           <p className='text-white/60'>
             &copy; {new Date().getFullYear()} Expert Breeder. All rights reserved.
