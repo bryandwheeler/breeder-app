@@ -22,11 +22,10 @@ export const EXPERT_BREEDER_COLORS = {
  * Get theme colors with fallbacks to Expert Breeder brand colors
  */
 export function getThemeColors(settings: WebsiteSettings) {
-  return {
-    primary: settings.theme.primaryColor || EXPERT_BREEDER_COLORS.navy,
-    accent: settings.theme.accentColor || EXPERT_BREEDER_COLORS.orange,
-    blue: EXPERT_BREEDER_COLORS.blue,
-  };
+  const primary = settings.theme.primaryColor || '#3d3d3d';
+  const secondary = settings.theme.secondaryColor || '#6b7280';
+  const accent = settings.theme.accentColor || '#c45a6e';
+  return { primary, secondary, accent };
 }
 
 /**

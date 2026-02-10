@@ -1,5 +1,4 @@
 import { WebsiteSettings } from '@breeder/types';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +8,7 @@ import { ChevronLeft, Mail, Phone, MapPin } from 'lucide-react';
 import { PublicWebsiteHeader } from '@/components/PublicWebsiteHeader';
 import { PublicWebsiteFooter } from '@/components/PublicWebsiteFooter';
 import { PublicWebsiteSEO } from '@/components/PublicWebsiteSEO';
-import { getFontFamily } from '@/lib/websiteTheme';
+import { getFontFamily, getThemeColors } from '@/lib/websiteTheme';
 import { useState } from 'react';
 
 interface PublicWebsiteContactProps {
@@ -17,6 +16,7 @@ interface PublicWebsiteContactProps {
 }
 
 export function PublicWebsiteContact({ settings }: PublicWebsiteContactProps) {
+  const { primary, accent } = getThemeColors(settings);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -44,15 +44,14 @@ export function PublicWebsiteContact({ settings }: PublicWebsiteContactProps) {
 
       <main className='flex-1'>
         {/* Header */}
-        <section
-          className='py-12 px-4 text-white bg-breeder-navy'
-        >
+        <section className='py-12 px-4 text-white' style={{ backgroundColor: primary }}>
           <div className='max-w-4xl mx-auto'>
-            <Link to='?page=home' className='inline-block mb-4'>
-              <Button variant='ghost' className='text-white hover:bg-white/20'>
-                <ChevronLeft className='h-4 w-4 mr-2' />
-                Back
-              </Button>
+            <Link
+              to='?page=home'
+              className='inline-flex items-center mb-4 text-white/80 hover:text-white transition text-sm'
+            >
+              <ChevronLeft className='h-4 w-4 mr-1' />
+              Back
             </Link>
             <h1
               className='text-4xl font-bold'
@@ -73,10 +72,8 @@ export function PublicWebsiteContact({ settings }: PublicWebsiteContactProps) {
               {/* Contact Form */}
               <div>
                 <h2
-                  className='text-2xl font-bold mb-6 text-breeder-navy'
-                  style={{
-                    fontFamily: getFontFamily(settings.theme.fontFamily),
-                  }}
+                  className='text-2xl font-bold mb-6'
+                  style={{ color: primary, fontFamily: getFontFamily(settings.theme.fontFamily) }}
                 >
                   Send us a Message
                 </h2>
@@ -155,9 +152,13 @@ export function PublicWebsiteContact({ settings }: PublicWebsiteContactProps) {
                       />
                     </div>
 
-                    <Button type='submit' className='w-full bg-breeder-orange hover:bg-breeder-orange/90 text-white' size='lg'>
+                    <button
+                      type='submit'
+                      className='w-full py-3 rounded-full text-white font-semibold transition hover:opacity-90'
+                      style={{ backgroundColor: accent }}
+                    >
                       Send Message
-                    </Button>
+                    </button>
                   </form>
                 )}
               </div>
@@ -165,26 +166,28 @@ export function PublicWebsiteContact({ settings }: PublicWebsiteContactProps) {
               {/* Contact Info */}
               <div>
                 <h2
-                  className='text-2xl font-bold mb-6 text-breeder-navy'
-                  style={{
-                    fontFamily: getFontFamily(settings.theme.fontFamily),
-                  }}
+                  className='text-2xl font-bold mb-6'
+                  style={{ color: primary, fontFamily: getFontFamily(settings.theme.fontFamily) }}
                 >
                   Contact Information
                 </h2>
 
                 <div className='space-y-6'>
                   {settings.email && (
-                    <Card className='p-4 border-breeder-gray'>
+                    <Card className='p-4 border-stone-200 rounded-2xl'>
                       <div className='flex items-start gap-4'>
-                        <Mail
-                          className='h-6 w-6 flex-shrink-0 mt-1 text-breeder-blue'
-                        />
+                        <div
+                          className='w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0'
+                          style={{ backgroundColor: accent + '20' }}
+                        >
+                          <Mail className='h-5 w-5' style={{ color: accent }} />
+                        </div>
                         <div>
-                          <p className='font-semibold mb-1 text-breeder-navy'>Email</p>
+                          <p className='font-semibold mb-1' style={{ color: primary }}>Email</p>
                           <a
                             href={`mailto:${settings.email}`}
-                            className='text-breeder-orange hover:underline'
+                            className='hover:underline'
+                            style={{ color: accent }}
                           >
                             {settings.email}
                           </a>
@@ -194,16 +197,20 @@ export function PublicWebsiteContact({ settings }: PublicWebsiteContactProps) {
                   )}
 
                   {settings.phone && (
-                    <Card className='p-4 border-breeder-gray'>
+                    <Card className='p-4 border-stone-200 rounded-2xl'>
                       <div className='flex items-start gap-4'>
-                        <Phone
-                          className='h-6 w-6 flex-shrink-0 mt-1 text-breeder-blue'
-                        />
+                        <div
+                          className='w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0'
+                          style={{ backgroundColor: accent + '20' }}
+                        >
+                          <Phone className='h-5 w-5' style={{ color: accent }} />
+                        </div>
                         <div>
-                          <p className='font-semibold mb-1 text-breeder-navy'>Phone</p>
+                          <p className='font-semibold mb-1' style={{ color: primary }}>Phone</p>
                           <a
                             href={`tel:${settings.phone}`}
-                            className='text-breeder-orange hover:underline'
+                            className='hover:underline'
+                            style={{ color: accent }}
                           >
                             {settings.phone}
                           </a>
@@ -213,14 +220,17 @@ export function PublicWebsiteContact({ settings }: PublicWebsiteContactProps) {
                   )}
 
                   {(settings.city || settings.state) && (
-                    <Card className='p-4 border-breeder-gray'>
+                    <Card className='p-4 border-stone-200 rounded-2xl'>
                       <div className='flex items-start gap-4'>
-                        <MapPin
-                          className='h-6 w-6 flex-shrink-0 mt-1 text-breeder-blue'
-                        />
+                        <div
+                          className='w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0'
+                          style={{ backgroundColor: accent + '20' }}
+                        >
+                          <MapPin className='h-5 w-5' style={{ color: accent }} />
+                        </div>
                         <div>
-                          <p className='font-semibold mb-1 text-breeder-navy'>Location</p>
-                          <p className='text-breeder-charcoal'>
+                          <p className='font-semibold mb-1' style={{ color: primary }}>Location</p>
+                          <p className='text-stone-600'>
                             {[settings.city, settings.state, settings.zipCode]
                               .filter(Boolean)
                               .join(', ')}
@@ -230,10 +240,9 @@ export function PublicWebsiteContact({ settings }: PublicWebsiteContactProps) {
                     </Card>
                   )}
 
-                  {/* Social Links - can be added later */}
-                  <Card className='p-4 border-breeder-gray bg-breeder-powder-blue'>
-                    <p className='font-semibold mb-3 text-breeder-navy'>Response Time</p>
-                    <p className='text-breeder-charcoal'>
+                  <Card className='p-4 border-stone-200 rounded-2xl' style={{ backgroundColor: '#faf8f5' }}>
+                    <p className='font-semibold mb-3' style={{ color: primary }}>Response Time</p>
+                    <p className='text-stone-600'>
                       We typically respond within 24 hours during business days.
                     </p>
                   </Card>
@@ -248,4 +257,3 @@ export function PublicWebsiteContact({ settings }: PublicWebsiteContactProps) {
     </div>
   );
 }
-

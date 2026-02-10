@@ -1,18 +1,18 @@
 import { WebsiteSettings } from '@breeder/types';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Heart, Award, Shield } from 'lucide-react';
+import { ArrowRight, Heart, Award, Shield } from 'lucide-react';
 import { PublicWebsiteHeader } from '@/components/PublicWebsiteHeader';
 import { PublicWebsiteFooter } from '@/components/PublicWebsiteFooter';
 import { PublicWebsiteSEO } from '@/components/PublicWebsiteSEO';
-import { getFontFamily } from '@/lib/websiteTheme';
+import { getFontFamily, getThemeColors } from '@/lib/websiteTheme';
 
 interface PublicWebsiteHomeProps {
   settings: WebsiteSettings;
 }
 
 export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
+  const { primary, secondary, accent } = getThemeColors(settings);
   const featuredPuppies = (settings.puppyListings || [])
     .filter((p) => p.featured)
     .slice(0, 3);
@@ -25,10 +25,11 @@ export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
       <main className='flex-1'>
         {/* Hero Section */}
         <section
-          className='py-20 px-4 text-center text-white bg-breeder-navy'
+          className='py-20 px-4 text-center text-white'
           style={{
+            backgroundColor: primary,
             backgroundImage: settings.mainImageUrl
-              ? `linear-gradient(rgba(11, 46, 78, 0.85), rgba(11, 46, 78, 0.85)), url('${settings.mainImageUrl}')`
+              ? `linear-gradient(${primary}dd, ${primary}dd), url('${settings.mainImageUrl}')`
               : undefined,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
@@ -42,24 +43,23 @@ export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
               {settings.kennelName || 'Welcome'}
             </h1>
             <p className='text-xl opacity-90 mb-8'>{settings.tagline}</p>
-            <Link to={`?page=puppies`}>
-              <Button
-                size='lg'
-                className='text-white bg-breeder-orange hover:bg-breeder-orange/90'
-              >
-                View Available Puppies <ChevronRight className='ml-2 h-4 w-4' />
-              </Button>
+            <Link
+              to='?page=puppies'
+              className='inline-flex items-center px-8 py-3 rounded-full text-white font-semibold transition hover:opacity-90'
+              style={{ backgroundColor: accent }}
+            >
+              View Available Puppies <ArrowRight className='ml-2 h-4 w-4' />
             </Link>
           </div>
         </section>
 
         {/* Featured Puppies */}
         {featuredPuppies.length > 0 && (
-          <section className='py-16 px-4 bg-breeder-powder-blue'>
+          <section className='py-16 px-4' style={{ backgroundColor: '#faf8f5' }}>
             <div className='max-w-6xl mx-auto'>
               <h2
-                className='text-3xl font-bold text-center mb-12 text-breeder-navy'
-                style={{ fontFamily: getFontFamily(settings.theme.fontFamily) }}
+                className='text-3xl font-bold text-center mb-12'
+                style={{ color: primary, fontFamily: getFontFamily(settings.theme.fontFamily) }}
               >
                 Featured Puppies
               </h2>
@@ -68,12 +68,12 @@ export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
                 {featuredPuppies.map((puppy) => (
                   <Card
                     key={puppy.id}
-                    className='overflow-hidden hover:shadow-lg transition border-breeder-gray'
+                    className='overflow-hidden hover:shadow-lg transition border-stone-200 rounded-2xl'
                   >
                     <div
                       className='h-48 bg-gradient-to-br flex items-center justify-center text-white'
                       style={puppy.photos && puppy.photos.length > 0 ? {} : {
-                        backgroundImage: `linear-gradient(135deg, #4DB3E6, #A9DBF4)`,
+                        backgroundImage: `linear-gradient(135deg, ${secondary}, ${secondary}88)`,
                       }}
                     >
                       {puppy.photos && puppy.photos.length > 0 ? (
@@ -87,14 +87,14 @@ export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
                       )}
                     </div>
                     <div className='p-4'>
-                      <h3 className='font-semibold text-lg mb-1 text-breeder-navy'>
+                      <h3 className='font-semibold text-lg mb-1' style={{ color: primary }}>
                         {puppy.name}
                       </h3>
-                      <p className='text-sm text-breeder-charcoal mb-3'>
+                      <p className='text-sm text-stone-500 mb-3'>
                         {puppy.breed}
                       </p>
                       <div className='flex justify-between items-center'>
-                        <span className='text-lg font-bold text-breeder-orange'>
+                        <span className='text-lg font-bold' style={{ color: accent }}>
                           ${puppy.price.toFixed(2)}
                         </span>
                         <span className='text-xs bg-green-100 text-green-800 px-2 py-1 rounded'>
@@ -107,10 +107,12 @@ export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
               </div>
 
               <div className='text-center mt-8'>
-                <Link to={`?page=puppies`}>
-                  <Button variant='outline' size='lg' className='border-breeder-navy text-breeder-navy hover:bg-breeder-navy hover:text-white'>
-                    View All Puppies
-                  </Button>
+                <Link
+                  to='?page=puppies'
+                  className='inline-flex items-center px-6 py-3 rounded-full border-2 font-semibold transition'
+                  style={{ borderColor: primary, color: primary }}
+                >
+                  View All Puppies
                 </Link>
               </div>
             </div>
@@ -122,62 +124,77 @@ export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
           <section className='py-16 px-4 bg-white'>
             <div className='max-w-4xl mx-auto'>
               <h2
-                className='text-3xl font-bold mb-6 text-breeder-navy'
-                style={{ fontFamily: getFontFamily(settings.theme.fontFamily) }}
+                className='text-3xl font-bold mb-6'
+                style={{ color: primary, fontFamily: getFontFamily(settings.theme.fontFamily) }}
               >
                 About Us
               </h2>
-              <p className='text-lg text-breeder-charcoal mb-6 line-clamp-3'>
+              <p className='text-lg text-stone-500 mb-6 line-clamp-3'>
                 {settings.about}
               </p>
-              <Link to={`?page=about`}>
-                <Button variant='outline' className='border-breeder-navy text-breeder-navy hover:bg-breeder-navy hover:text-white'>
-                  Learn More <ChevronRight className='ml-2 h-4 w-4' />
-                </Button>
+              <Link
+                to='?page=about'
+                className='inline-flex items-center px-6 py-3 rounded-full border-2 font-semibold transition'
+                style={{ borderColor: primary, color: primary }}
+              >
+                Learn More <ArrowRight className='ml-2 h-4 w-4' />
               </Link>
             </div>
           </section>
         )}
 
         {/* Why Choose Us */}
-        <section className='py-16 px-4 bg-breeder-powder-blue'>
+        <section className='py-16 px-4' style={{ backgroundColor: '#f5f0eb' }}>
           <div className='max-w-6xl mx-auto'>
             <h2
-              className='text-3xl font-bold text-center mb-12 text-breeder-navy'
-              style={{ fontFamily: getFontFamily(settings.theme.fontFamily) }}
+              className='text-3xl font-bold text-center mb-12'
+              style={{ color: primary, fontFamily: getFontFamily(settings.theme.fontFamily) }}
             >
               Why Choose Us
             </h2>
 
             <div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
-              <div className='text-center'>
-                <Award
-                  className='h-12 w-12 mx-auto mb-4 text-breeder-blue'
-                />
-                <h3 className='font-semibold text-lg mb-2 text-breeder-navy'>Quality Breeding</h3>
-                <p className='text-breeder-charcoal'>
+              <div className='text-center bg-white rounded-2xl p-8 shadow-sm'>
+                <div
+                  className='w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4'
+                  style={{ backgroundColor: accent + '20' }}
+                >
+                  <Award className='h-7 w-7' style={{ color: accent }} />
+                </div>
+                <h3 className='font-semibold text-lg mb-2' style={{ color: primary }}>
+                  Quality Breeding
+                </h3>
+                <p className='text-stone-500'>
                   Committed to breeding healthy, well-socialized puppies
                 </p>
               </div>
 
-              <div className='text-center'>
-                <Shield
-                  className='h-12 w-12 mx-auto mb-4 text-breeder-blue'
-                />
-                <h3 className='font-semibold text-lg mb-2 text-breeder-navy'>
+              <div className='text-center bg-white rounded-2xl p-8 shadow-sm'>
+                <div
+                  className='w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4'
+                  style={{ backgroundColor: accent + '20' }}
+                >
+                  <Shield className='h-7 w-7' style={{ color: accent }} />
+                </div>
+                <h3 className='font-semibold text-lg mb-2' style={{ color: primary }}>
                   Health Guaranteed
                 </h3>
-                <p className='text-breeder-charcoal'>
+                <p className='text-stone-500'>
                   All puppies come with health guarantees and certifications
                 </p>
               </div>
 
-              <div className='text-center'>
-                <Heart
-                  className='h-12 w-12 mx-auto mb-4 text-breeder-blue'
-                />
-                <h3 className='font-semibold text-lg mb-2 text-breeder-navy'>Lifetime Support</h3>
-                <p className='text-breeder-charcoal'>
+              <div className='text-center bg-white rounded-2xl p-8 shadow-sm'>
+                <div
+                  className='w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4'
+                  style={{ backgroundColor: accent + '20' }}
+                >
+                  <Heart className='h-7 w-7' style={{ color: accent }} />
+                </div>
+                <h3 className='font-semibold text-lg mb-2' style={{ color: primary }}>
+                  Lifetime Support
+                </h3>
+                <p className='text-stone-500'>
                   We provide ongoing support and guidance to all our families
                 </p>
               </div>
@@ -190,4 +207,3 @@ export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
     </div>
   );
 }
-

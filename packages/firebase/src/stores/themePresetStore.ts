@@ -28,15 +28,15 @@ interface ThemePresetState {
 export const DEFAULT_THEME_PRESETS: Omit<ThemePreset, 'createdAt' | 'updatedAt'>[] = [
   {
     id: 'classic-kennel',
-    name: 'Classic Kennel',
-    description: 'Professional and trustworthy with warm earth tones',
+    name: 'Warm & Classic',
+    description: 'Warm earth tones with elegant serif typography',
     category: 'professional',
     theme: {
-      primaryColor: '#8B4513', // Saddle brown
-      secondaryColor: '#2F4F4F', // Dark slate gray
-      accentColor: '#D2691E', // Chocolate
+      primaryColor: '#5c4033',
+      secondaryColor: '#8b7355',
+      accentColor: '#c45a6e',
       fontFamily: 'serif',
-      headerStyle: 'full',
+      headerStyle: 'minimal',
     },
     isPremium: false,
     order: 1,
@@ -44,13 +44,13 @@ export const DEFAULT_THEME_PRESETS: Omit<ThemePreset, 'createdAt' | 'updatedAt'>
   },
   {
     id: 'modern-breeder',
-    name: 'Modern Breeder',
-    description: 'Clean and contemporary with a professional feel',
+    name: 'Clean & Modern',
+    description: 'Minimal and contemporary with soft neutrals',
     category: 'modern',
     theme: {
-      primaryColor: '#3B82F6', // Blue
-      secondaryColor: '#1F2937', // Gray 800
-      accentColor: '#10B981', // Emerald
+      primaryColor: '#374151',
+      secondaryColor: '#6b7280',
+      accentColor: '#6366f1',
       fontFamily: 'sans',
       headerStyle: 'minimal',
     },
@@ -60,15 +60,15 @@ export const DEFAULT_THEME_PRESETS: Omit<ThemePreset, 'createdAt' | 'updatedAt'>
   },
   {
     id: 'playful-pups',
-    name: 'Playful Pups',
-    description: 'Fun and friendly with warm inviting colors',
+    name: 'Soft & Playful',
+    description: 'Gentle pastels with a friendly, approachable feel',
     category: 'playful',
     theme: {
-      primaryColor: '#F59E0B', // Amber
-      secondaryColor: '#7C3AED', // Violet
-      accentColor: '#EC4899', // Pink
-      fontFamily: 'playful',
-      headerStyle: 'banner',
+      primaryColor: '#7c6f64',
+      secondaryColor: '#a8a29e',
+      accentColor: '#f472b6',
+      fontFamily: 'modern',
+      headerStyle: 'centered',
     },
     isPremium: false,
     order: 3,
@@ -76,17 +76,17 @@ export const DEFAULT_THEME_PRESETS: Omit<ThemePreset, 'createdAt' | 'updatedAt'>
   },
   {
     id: 'luxury-lineage',
-    name: 'Luxury Lineage',
-    description: 'Sophisticated and elegant for premium breeders',
+    name: 'Elegant & Refined',
+    description: 'Sophisticated dark palette with gold accents',
     category: 'elegant',
     theme: {
-      primaryColor: '#0B2E4E', // Navy
-      secondaryColor: '#1F2937', // Charcoal
-      accentColor: '#D4AF37', // Gold
-      fontFamily: 'luxury',
+      primaryColor: '#1c1917',
+      secondaryColor: '#44403c',
+      accentColor: '#b8860b',
+      fontFamily: 'elegant',
       headerStyle: 'overlay',
     },
-    isPremium: true, // Pro only
+    isPremium: true,
     order: 4,
     isActive: true,
   },

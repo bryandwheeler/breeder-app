@@ -1,17 +1,18 @@
 import { WebsiteSettings } from '@breeder/types';
-import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, ArrowRight } from 'lucide-react';
 import { PublicWebsiteHeader } from '@/components/PublicWebsiteHeader';
 import { PublicWebsiteFooter } from '@/components/PublicWebsiteFooter';
 import { PublicWebsiteSEO } from '@/components/PublicWebsiteSEO';
-import { getFontFamily } from '@/lib/websiteTheme';
+import { getFontFamily, getThemeColors } from '@/lib/websiteTheme';
 
 interface PublicWebsiteAboutProps {
   settings: WebsiteSettings;
 }
 
 export function PublicWebsiteAbout({ settings }: PublicWebsiteAboutProps) {
+  const { primary, accent } = getThemeColors(settings);
+
   return (
     <div className='min-h-screen flex flex-col'>
       <PublicWebsiteSEO settings={settings} page='about' />
@@ -19,15 +20,14 @@ export function PublicWebsiteAbout({ settings }: PublicWebsiteAboutProps) {
 
       <main className='flex-1'>
         {/* Header */}
-        <section
-          className='py-12 px-4 text-white bg-breeder-navy'
-        >
+        <section className='py-12 px-4 text-white' style={{ backgroundColor: primary }}>
           <div className='max-w-4xl mx-auto'>
-            <Link to='?page=home' className='inline-block mb-4'>
-              <Button variant='ghost' className='text-white hover:bg-white/20'>
-                <ChevronLeft className='h-4 w-4 mr-2' />
-                Back
-              </Button>
+            <Link
+              to='?page=home'
+              className='inline-flex items-center mb-4 text-white/80 hover:text-white transition text-sm'
+            >
+              <ChevronLeft className='h-4 w-4 mr-1' />
+              Back
             </Link>
             <h1
               className='text-4xl font-bold'
@@ -44,12 +44,12 @@ export function PublicWebsiteAbout({ settings }: PublicWebsiteAboutProps) {
             {/* Breeder Info */}
             <div>
               <h2
-                className='text-2xl font-bold mb-4 text-breeder-navy'
-                style={{ fontFamily: getFontFamily(settings.theme.fontFamily) }}
+                className='text-2xl font-bold mb-4'
+                style={{ color: primary, fontFamily: getFontFamily(settings.theme.fontFamily) }}
               >
                 {settings.kennelName || 'Our Kennel'}
               </h2>
-              <p className='text-breeder-charcoal text-lg'>
+              <p className='text-stone-600 text-lg'>
                 {settings.tagline}
               </p>
             </div>
@@ -58,16 +58,14 @@ export function PublicWebsiteAbout({ settings }: PublicWebsiteAboutProps) {
             {settings.about && (
               <div>
                 <h3
-                  className='text-xl font-semibold mb-4 text-breeder-navy'
-                  style={{
-                    fontFamily: getFontFamily(settings.theme.fontFamily),
-                  }}
+                  className='text-xl font-semibold mb-4'
+                  style={{ color: primary, fontFamily: getFontFamily(settings.theme.fontFamily) }}
                 >
                   Our Story
                 </h3>
                 <div className='prose prose-sm max-w-none'>
                   {settings.about.split('\n').map((paragraph, i) => (
-                    <p key={i} className='text-breeder-charcoal mb-4'>
+                    <p key={i} className='text-stone-600 mb-4'>
                       {paragraph}
                     </p>
                   ))}
@@ -77,20 +75,16 @@ export function PublicWebsiteAbout({ settings }: PublicWebsiteAboutProps) {
 
             {/* Philosophy */}
             {settings.philosophy && (
-              <div
-                className='border-l-4 pl-6 border-breeder-blue'
-              >
+              <div className='border-l-4 pl-6' style={{ borderColor: accent }}>
                 <h3
-                  className='text-xl font-semibold mb-4 text-breeder-navy'
-                  style={{
-                    fontFamily: getFontFamily(settings.theme.fontFamily),
-                  }}
+                  className='text-xl font-semibold mb-4'
+                  style={{ color: primary, fontFamily: getFontFamily(settings.theme.fontFamily) }}
                 >
                   Our Philosophy
                 </h3>
                 <div className='prose prose-sm max-w-none'>
                   {settings.philosophy.split('\n').map((paragraph, i) => (
-                    <p key={i} className='text-breeder-charcoal mb-4'>
+                    <p key={i} className='text-stone-600 mb-4'>
                       {paragraph}
                     </p>
                   ))}
@@ -102,16 +96,14 @@ export function PublicWebsiteAbout({ settings }: PublicWebsiteAboutProps) {
             {settings.experience && (
               <div>
                 <h3
-                  className='text-xl font-semibold mb-4 text-breeder-navy'
-                  style={{
-                    fontFamily: getFontFamily(settings.theme.fontFamily),
-                  }}
+                  className='text-xl font-semibold mb-4'
+                  style={{ color: primary, fontFamily: getFontFamily(settings.theme.fontFamily) }}
                 >
                   Our Experience
                 </h3>
                 <div className='prose prose-sm max-w-none'>
                   {settings.experience.split('\n').map((paragraph, i) => (
-                    <p key={i} className='text-breeder-charcoal mb-4'>
+                    <p key={i} className='text-stone-600 mb-4'>
                       {paragraph}
                     </p>
                   ))}
@@ -123,17 +115,15 @@ export function PublicWebsiteAbout({ settings }: PublicWebsiteAboutProps) {
             {settings.primaryBreed && (
               <div>
                 <h3
-                  className='text-xl font-semibold mb-4 text-breeder-navy'
-                  style={{
-                    fontFamily: getFontFamily(settings.theme.fontFamily),
-                  }}
+                  className='text-xl font-semibold mb-4'
+                  style={{ color: primary, fontFamily: getFontFamily(settings.theme.fontFamily) }}
                 >
                   Our Breeds
                 </h3>
                 <div className='space-y-2'>
-                  <p className='font-medium text-breeder-navy'>{settings.primaryBreed}</p>
+                  <p className='font-medium' style={{ color: primary }}>{settings.primaryBreed}</p>
                   {settings.otherBreeds && settings.otherBreeds.length > 0 && (
-                    <ul className='list-disc list-inside text-breeder-charcoal'>
+                    <ul className='list-disc list-inside text-stone-600'>
                       {settings.otherBreeds.map((breed, i) => (
                         <li key={i}>{breed}</li>
                       ))}
@@ -145,13 +135,19 @@ export function PublicWebsiteAbout({ settings }: PublicWebsiteAboutProps) {
 
             {/* CTA */}
             <div className='flex gap-4 pt-8'>
-              <Link to='?page=puppies'>
-                <Button size='lg' className='bg-breeder-orange hover:bg-breeder-orange/90 text-white'>View Available Puppies</Button>
+              <Link
+                to='?page=puppies'
+                className='inline-flex items-center px-6 py-3 rounded-full text-white font-semibold transition hover:opacity-90'
+                style={{ backgroundColor: accent }}
+              >
+                View Available Puppies
               </Link>
-              <Link to='?page=contact'>
-                <Button variant='outline' size='lg' className='border-breeder-navy text-breeder-navy hover:bg-breeder-navy hover:text-white'>
-                  Get in Touch
-                </Button>
+              <Link
+                to='?page=contact'
+                className='inline-flex items-center px-6 py-3 rounded-full border-2 font-semibold transition'
+                style={{ borderColor: primary, color: primary }}
+              >
+                Get in Touch <ArrowRight className='ml-2 h-4 w-4' />
               </Link>
             </div>
           </div>
@@ -162,4 +158,3 @@ export function PublicWebsiteAbout({ settings }: PublicWebsiteAboutProps) {
     </div>
   );
 }
-

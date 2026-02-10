@@ -1,13 +1,11 @@
 import { WebsiteSettings } from '@breeder/types';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, Heart } from 'lucide-react';
 import { PublicWebsiteHeader } from '@/components/PublicWebsiteHeader';
 import { PublicWebsiteFooter } from '@/components/PublicWebsiteFooter';
 import { PublicWebsiteSEO } from '@/components/PublicWebsiteSEO';
-import { getFontFamily } from '@/lib/websiteTheme';
+import { getFontFamily, getThemeColors } from '@/lib/websiteTheme';
 import { useState } from 'react';
 
 interface PublicWebsitePuppiesProps {
@@ -15,6 +13,7 @@ interface PublicWebsitePuppiesProps {
 }
 
 export function PublicWebsitePuppies({ settings }: PublicWebsitePuppiesProps) {
+  const { primary, secondary, accent } = getThemeColors(settings);
   const [favorites, setFavorites] = useState<string[]>([]);
 
   const puppies = settings.puppyListings || [];
@@ -33,15 +32,14 @@ export function PublicWebsitePuppies({ settings }: PublicWebsitePuppiesProps) {
 
       <main className='flex-1'>
         {/* Header */}
-        <section
-          className='py-12 px-4 text-white bg-breeder-navy'
-        >
+        <section className='py-12 px-4 text-white' style={{ backgroundColor: primary }}>
           <div className='max-w-6xl mx-auto'>
-            <Link to='?page=home' className='inline-block mb-4'>
-              <Button variant='ghost' className='text-white hover:bg-white/20'>
-                <ChevronLeft className='h-4 w-4 mr-2' />
-                Back
-              </Button>
+            <Link
+              to='?page=home'
+              className='inline-flex items-center mb-4 text-white/80 hover:text-white transition text-sm'
+            >
+              <ChevronLeft className='h-4 w-4 mr-1' />
+              Back
             </Link>
             <h1
               className='text-4xl font-bold'
@@ -56,15 +54,19 @@ export function PublicWebsitePuppies({ settings }: PublicWebsitePuppiesProps) {
         </section>
 
         {/* Puppies Grid */}
-        <section className='py-16 px-4 bg-breeder-powder-blue'>
+        <section className='py-16 px-4' style={{ backgroundColor: '#faf8f5' }}>
           <div className='max-w-6xl mx-auto'>
             {availablePuppies.length === 0 ? (
               <div className='text-center py-12'>
-                <p className='text-lg text-breeder-charcoal mb-4'>
+                <p className='text-lg text-stone-500 mb-4'>
                   No puppies currently available
                 </p>
-                <Link to='?page=contact'>
-                  <Button className='bg-breeder-orange hover:bg-breeder-orange/90 text-white'>Contact Us for More Information</Button>
+                <Link
+                  to='?page=contact'
+                  className='inline-flex items-center px-6 py-3 rounded-full text-white font-semibold transition hover:opacity-90'
+                  style={{ backgroundColor: accent }}
+                >
+                  Contact Us for More Information
                 </Link>
               </div>
             ) : (
@@ -72,13 +74,13 @@ export function PublicWebsitePuppies({ settings }: PublicWebsitePuppiesProps) {
                 {availablePuppies.map((puppy) => (
                   <Card
                     key={puppy.id}
-                    className='overflow-hidden hover:shadow-lg transition border-breeder-gray bg-white'
+                    className='overflow-hidden hover:shadow-lg transition border-stone-200 bg-white rounded-2xl'
                   >
                     {/* Puppy Photo */}
                     <div
                       className='h-64 bg-gradient-to-br flex items-center justify-center text-white relative group'
                       style={puppy.photos && puppy.photos.length > 0 ? {} : {
-                        backgroundImage: `linear-gradient(135deg, #4DB3E6, #A9DBF4)`,
+                        backgroundImage: `linear-gradient(135deg, ${secondary}, ${secondary}88)`,
                       }}
                     >
                       {puppy.photos && puppy.photos.length > 0 ? (
@@ -113,42 +115,41 @@ export function PublicWebsitePuppies({ settings }: PublicWebsitePuppiesProps) {
                       <div className='flex justify-between items-start mb-3'>
                         <div>
                           <h3
-                            className='text-xl font-bold text-breeder-navy'
+                            className='text-xl font-bold'
                             style={{
-                              fontFamily: getFontFamily(
-                                settings.theme.fontFamily
-                              ),
+                              color: primary,
+                              fontFamily: getFontFamily(settings.theme.fontFamily),
                             }}
                           >
                             {puppy.name}
                           </h3>
-                          <p className='text-sm text-breeder-charcoal'>
+                          <p className='text-sm text-stone-500'>
                             {puppy.breed}
                           </p>
                         </div>
                         {puppy.featured && (
-                          <Badge
-                            variant='default'
-                            className='bg-breeder-orange text-white'
+                          <span
+                            className='text-xs font-semibold px-2.5 py-1 rounded-full text-white'
+                            style={{ backgroundColor: accent }}
                           >
                             Featured
-                          </Badge>
+                          </span>
                         )}
                       </div>
 
                       <div className='space-y-2 mb-4'>
                         <div className='flex justify-between text-sm'>
-                          <span className='text-breeder-charcoal'>Gender</span>
-                          <span className='font-medium capitalize text-breeder-navy'>
+                          <span className='text-stone-500'>Gender</span>
+                          <span className='font-medium capitalize' style={{ color: primary }}>
                             {puppy.gender}
                           </span>
                         </div>
                         {puppy.dateOfBirth && (
                           <div className='flex justify-between text-sm'>
-                            <span className='text-breeder-charcoal'>
+                            <span className='text-stone-500'>
                               Date of Birth
                             </span>
-                            <span className='font-medium text-breeder-navy'>
+                            <span className='font-medium' style={{ color: primary }}>
                               {new Date(puppy.dateOfBirth).toLocaleDateString()}
                             </span>
                           </div>
@@ -156,20 +157,24 @@ export function PublicWebsitePuppies({ settings }: PublicWebsitePuppiesProps) {
                       </div>
 
                       {puppy.description && (
-                        <p className='text-sm text-breeder-charcoal mb-4'>
+                        <p className='text-sm text-stone-500 mb-4'>
                           {puppy.description}
                         </p>
                       )}
 
-                      <div className='border-t border-breeder-gray pt-4 flex justify-between items-center'>
+                      <div className='border-t border-stone-200 pt-4 flex justify-between items-center'>
                         <div>
-                          <p className='text-xs text-breeder-charcoal'>Price</p>
-                          <p className='text-2xl font-bold text-breeder-orange'>
+                          <p className='text-xs text-stone-400'>Price</p>
+                          <p className='text-2xl font-bold' style={{ color: accent }}>
                             ${puppy.price.toFixed(2)}
                           </p>
                         </div>
-                        <Link to='?page=contact'>
-                          <Button size='sm' className='bg-breeder-blue hover:bg-breeder-blue/90 text-white'>Inquire</Button>
+                        <Link
+                          to='?page=contact'
+                          className='inline-flex items-center px-5 py-2 rounded-full text-white text-sm font-semibold transition hover:opacity-90'
+                          style={{ backgroundColor: accent }}
+                        >
+                          Inquire
                         </Link>
                       </div>
                     </div>
@@ -185,4 +190,3 @@ export function PublicWebsitePuppies({ settings }: PublicWebsitePuppiesProps) {
     </div>
   );
 }
-

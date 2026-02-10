@@ -7,15 +7,19 @@ import {
   Mail,
   Phone,
 } from 'lucide-react';
+import { getThemeColors } from '@/lib/websiteTheme';
 
 interface PublicWebsiteFooterProps {
   settings: WebsiteSettings;
 }
 
 export function PublicWebsiteFooter({ settings }: PublicWebsiteFooterProps) {
+  const { primary } = getThemeColors(settings);
+
   return (
     <footer
-      className='text-white py-12 px-4 mt-16 bg-breeder-navy'
+      className='text-white py-12 px-4 mt-16'
+      style={{ backgroundColor: primary }}
     >
       <div className='max-w-6xl mx-auto'>
         <div className='grid grid-cols-1 md:grid-cols-4 gap-8 mb-8'>
