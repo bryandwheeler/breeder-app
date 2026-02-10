@@ -53,20 +53,21 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        // Expert Breeder Brand Colors
+        // Expert Breeder Brand Colors — Rustic Farmhouse
         breeder: {
-          rose: '#c45a6e',
-          'rose-light': '#f9e4e8',
-          ivory: '#faf8f5',
-          taupe: '#f5f0eb',
-          orange: '#FF8A1E', // kept for PublicWebsite backwards compat
-          navy: '#0B2E4E', // kept for PublicWebsite backwards compat
-          blue: '#4DB3E6',
-          'sky-blue': '#A9DBF4',
-          'powder-blue': '#D8F0FB',
+          slate: '#7b8390',      // Primary slate blue-gray
+          'slate-light': '#e8eaee',
+          terracotta: '#946055', // Warm terracotta accent
+          sage: '#9a9480',       // Sage green
+          olive: '#4e4940',      // Dark olive
+          linen: '#f5f0ea',      // Warm linen background
+          cream: '#ece6de',      // Warm cream
+          greige: '#d9d2c7',     // Border greige
+          charcoal: '#3a3632',   // Text charcoal
+          brown: '#8a7c6c',      // Warm brown
+          orange: '#FF8A1E',     // kept for PublicWebsite backwards compat
+          navy: '#0B2E4E',       // kept for PublicWebsite backwards compat
           white: '#FFFFFF',
-          gray: '#E6EAF0',
-          charcoal: '#1F2933',
         },
       },
       borderRadius: {

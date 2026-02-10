@@ -21,21 +21,21 @@ const features = [
     title: 'Dog & Puppy Management',
     description:
       'Track your dogs, puppies, litters, and pedigrees all in one place. Manage profiles, photos, and lineage records effortlessly.',
-    color: 'bg-rose-50 text-rose-400',
+    color: 'bg-amber-50 text-amber-600',
   },
   {
     icon: Heart,
     title: 'Health Records',
     description:
       'Maintain comprehensive health records, vaccinations, vet visits, and genetic testing results for every animal.',
-    color: 'bg-pink-50 text-pink-400',
+    color: 'bg-emerald-50 text-emerald-500',
   },
   {
     icon: Globe,
     title: 'Website Builder',
     description:
       'Create a professional public website for your kennel in minutes. Showcase available puppies and your breeding program.',
-    color: 'bg-violet-50 text-violet-400',
+    color: 'bg-slate-100 text-slate-500',
   },
   {
     icon: Users,
@@ -89,9 +89,9 @@ const highlights = [
 
 export function LandingPage() {
   return (
-    <div className='min-h-screen flex flex-col' style={{ backgroundColor: '#faf8f5' }}>
+    <div className='min-h-screen flex flex-col' style={{ backgroundColor: '#f5f0ea' }}>
       {/* Navigation */}
-      <nav className='sticky top-0 z-50 backdrop-blur-md border-b border-stone-200/60' style={{ backgroundColor: 'rgba(250, 248, 245, 0.95)' }}>
+      <nav className='sticky top-0 z-50 backdrop-blur-md border-b border-stone-200/60' style={{ backgroundColor: 'rgba(245, 240, 234, 0.95)' }}>
         <div className='max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 flex items-center justify-between h-16'>
           <img
             src='/expert-breeder-logo.webp'
@@ -101,14 +101,14 @@ export function LandingPage() {
           <div className='flex items-center gap-4'>
             <Link
               to='/login'
-              className='inline-flex items-center px-4 py-2 text-sm font-medium text-stone-600 hover:text-rose-500 transition-colors'
+              className='inline-flex items-center px-4 py-2 text-sm font-medium text-stone-600 hover:text-stone-800 transition-colors'
             >
               Log In
             </Link>
             <Link
               to='/signup'
               className='inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-full text-white transition-all shadow-sm hover:shadow-md'
-              style={{ backgroundColor: '#c45a6e' }}
+              style={{ backgroundColor: '#7b8390' }}
             >
               Get Started
             </Link>
@@ -120,19 +120,19 @@ export function LandingPage() {
         {/* Hero Section */}
         <section className='relative overflow-hidden py-20 sm:py-28 lg:py-36 px-5'>
           {/* Soft decorative shapes */}
-          <div className='absolute top-10 right-0 w-[500px] h-[500px] rounded-full opacity-30' style={{ backgroundColor: '#f9e4e8' }} />
-          <div className='absolute -bottom-20 -left-20 w-[400px] h-[400px] rounded-full opacity-20' style={{ backgroundColor: '#e8d5c4' }} />
-          <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full opacity-10' style={{ backgroundColor: '#d4bfb0' }} />
+          <div className='absolute top-10 right-0 w-[500px] h-[500px] rounded-full opacity-20' style={{ backgroundColor: '#d9d2c7' }} />
+          <div className='absolute -bottom-20 -left-20 w-[400px] h-[400px] rounded-full opacity-15' style={{ backgroundColor: '#c4b9a4' }} />
+          <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full opacity-10' style={{ backgroundColor: '#b8b3a2' }} />
 
           <div className='relative max-w-3xl mx-auto text-center'>
             <div className='inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-8 border border-stone-200 bg-white/70 backdrop-blur-sm'>
-              <PawPrint className='h-3.5 w-3.5 text-rose-400' />
+              <PawPrint className='h-3.5 w-3.5 text-amber-600' />
               <span className='text-stone-500 text-xs font-medium tracking-wide uppercase'>Built for breeders who care</span>
             </div>
 
             <h1 className='text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-stone-800 mb-6 leading-[1.15] tracking-tight'>
               The thoughtful way to manage your{' '}
-              <span className='italic' style={{ color: '#c45a6e' }}>breeding program</span>
+              <span className='italic' style={{ color: '#946055' }}>breeding program</span>
             </h1>
 
             <p className='text-lg sm:text-xl text-stone-500 mb-12 max-w-xl mx-auto leading-relaxed'>
@@ -143,7 +143,7 @@ export function LandingPage() {
               <Link
                 to='/signup'
                 className='inline-flex items-center justify-center px-8 py-3.5 text-base font-medium rounded-full text-white transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5'
-                style={{ backgroundColor: '#c45a6e' }}
+                style={{ backgroundColor: '#7b8390' }}
               >
                 Start Free Today
                 <ArrowRight className='ml-2 h-4 w-4' />
@@ -168,7 +168,7 @@ export function LandingPage() {
         </section>
 
         {/* Trust bar */}
-        <section className='border-y border-stone-200/60 py-8 px-5' style={{ backgroundColor: '#f5f0eb' }}>
+        <section className='border-y border-stone-200/60 py-8 px-5' style={{ backgroundColor: '#ece6de' }}>
           <div className='max-w-4xl mx-auto flex flex-wrap items-center justify-center gap-10 sm:gap-16 text-center'>
             <div>
               <div className='text-xl font-semibold text-stone-700'>All-in-One</div>
@@ -197,8 +197,8 @@ export function LandingPage() {
           <div className='max-w-5xl mx-auto'>
             <div className='text-center mb-16'>
               <div className='flex items-center justify-center gap-2 mb-4'>
-                <Sparkles className='h-4 w-4 text-rose-400' />
-                <span className='text-xs font-medium tracking-widest uppercase' style={{ color: '#c45a6e' }}>Features</span>
+                <Sparkles className='h-4 w-4 text-amber-500' />
+                <span className='text-xs font-medium tracking-widest uppercase' style={{ color: '#7b8390' }}>Features</span>
               </div>
               <h2 className='text-3xl sm:text-4xl font-bold text-stone-800 mb-4 tracking-tight'>
                 Everything you need, nothing you don't
@@ -213,7 +213,7 @@ export function LandingPage() {
                   key={feature.title}
                   className='group bg-white rounded-2xl p-6 border border-stone-100 hover:border-stone-200 shadow-sm hover:shadow-md transition-all duration-300'
                 >
-                  <div className={`inline-flex items-center justify-center h-11 w-11 rounded-xl ${feature.color} mb-4`}>
+                  <div className={`inline-flex items-center justify-center h-11 w-11 rounded-2xl ${feature.color} mb-4`}>
                     <feature.icon className='h-5 w-5' />
                   </div>
                   <h3 className='text-base font-semibold text-stone-800 mb-2'>
@@ -229,7 +229,7 @@ export function LandingPage() {
         </section>
 
         {/* Secondary Features */}
-        <section className='py-20 sm:py-28 px-5' style={{ backgroundColor: '#f5f0eb' }}>
+        <section className='py-20 sm:py-28 px-5' style={{ backgroundColor: '#ece6de' }}>
           <div className='max-w-5xl mx-auto'>
             <div className='text-center mb-16'>
               <span className='text-xs font-medium tracking-widest uppercase text-stone-400'>And more</span>
@@ -240,8 +240,8 @@ export function LandingPage() {
             <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
               {secondaryFeatures.map((feature) => (
                 <div key={feature.title} className='bg-white rounded-2xl p-8 text-center border border-stone-100 shadow-sm'>
-                  <div className='inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-rose-50 mb-5'>
-                    <feature.icon className='h-6 w-6 text-rose-400' />
+                  <div className='inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-stone-100 mb-5'>
+                    <feature.icon className='h-6 w-6 text-stone-500' />
                   </div>
                   <h3 className='text-base font-semibold text-stone-800 mb-2'>
                     {feature.title}
@@ -258,7 +258,7 @@ export function LandingPage() {
         {/* Closing CTA */}
         <section className='py-20 sm:py-28 px-5'>
           <div className='max-w-2xl mx-auto text-center'>
-            <PawPrint className='h-8 w-8 mx-auto mb-6 text-rose-300' />
+            <PawPrint className='h-8 w-8 mx-auto mb-6 text-stone-300' />
             <h2 className='text-3xl sm:text-4xl font-bold text-stone-800 mb-4 tracking-tight'>
               Ready to simplify your breeding program?
             </h2>
@@ -268,7 +268,7 @@ export function LandingPage() {
             <Link
               to='/signup'
               className='inline-flex items-center justify-center px-8 py-3.5 text-base font-medium rounded-full text-white transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5'
-              style={{ backgroundColor: '#c45a6e' }}
+              style={{ backgroundColor: '#7b8390' }}
             >
               Create Your Free Account
               <ArrowRight className='ml-2 h-4 w-4' />
@@ -278,7 +278,7 @@ export function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className='border-t border-stone-200/60 py-10 px-5' style={{ backgroundColor: '#f5f0eb' }}>
+      <footer className='border-t border-stone-200/60 py-10 px-5' style={{ backgroundColor: '#ece6de' }}>
         <div className='max-w-5xl mx-auto text-center'>
           <img
             src='/expert-breeder-logo.webp'

@@ -1,77 +1,77 @@
 /* src/index.css */
 @import 'tailwindcss';
 
-/* Expert Breeder color palette — Elegant Rose & Stone */
+/* Expert Breeder color palette — Rustic Farmhouse */
 :root {
-  /* Light mode — Warm, feminine aesthetic */
-  --background: #faf8f5; /* Warm Ivory */
-  --foreground: #1c1917; /* Stone 900 */
+  /* Light mode — Modern farmhouse aesthetic */
+  --background: #f5f0ea; /* Warm Linen */
+  --foreground: #3a3632; /* Rich Warm Charcoal */
 
-  /* Cards stay white to contrast with ivory background */
+  /* Cards stay white to contrast with linen background */
   --card: #ffffff;
-  --card-foreground: #1c1917;
+  --card-foreground: #3a3632;
 
   --popover: #ffffff;
-  --popover-foreground: #1c1917;
+  --popover-foreground: #3a3632;
 
-  /* Primary — Warm Rose for CTAs and highlights */
-  --primary: #ba9a91;
+  /* Primary — Slate Blue-Gray for modern elegance */
+  --primary: #7b8390;
   --primary-foreground: #ffffff;
 
-  /* Secondary — Warm Taupe for subtle accents */
-  --secondary: #f5f0eb;
-  --secondary-foreground: #44403c; /* Stone 700 */
+  /* Secondary — Warm Cream */
+  --secondary: #ece6de;
+  --secondary-foreground: #4e4840; /* Dark Olive */
 
-  /* Muted — Warm Taupe */
-  --muted: #f5f0eb;
-  --muted-foreground: #78716c; /* Stone 500 */
+  /* Muted — Warm Cream */
+  --muted: #ece6de;
+  --muted-foreground: #78736c; /* Medium Warm Gray */
 
-  /* Accent — Warm Taupe */
-  --accent: #f5f0eb;
-  --accent-foreground: #1c1917;
+  /* Accent — Warm Cream */
+  --accent: #ece6de;
+  --accent-foreground: #3a3632;
 
-  /* Destructive stays reddish for warnings */
-  --destructive: #dc2626;
+  /* Destructive — Muted Rust */
+  --destructive: #b83a2e;
   --destructive-foreground: #ffffff;
 
-  /* Borders — Stone 200 */
-  --border: #e7e5e4;
-  --input: #e7e5e4;
+  /* Borders — Warm Greige */
+  --border: #d9d2c7;
+  --input: #d9d2c7;
 
-  /* Ring matches primary rose */
-  --ring: #c45a6e;
+  /* Ring matches primary slate */
+  --ring: #7b8390;
   --radius: 0.5rem;
 }
 
-/* Dark mode — Warm Stone Dark */
+/* Dark mode — Warm Charcoal */
 .dark {
-  --background: #1c1917; /* Stone 900 */
-  --foreground: #fafaf9; /* Stone 50 */
-  --card: #292524; /* Stone 800 */
-  --card-foreground: #fafaf9;
-  --popover: #292524;
-  --popover-foreground: #fafaf9;
+  --background: #1e1c19; /* Deep Warm Charcoal */
+  --foreground: #f0ece6; /* Warm Light Cream */
+  --card: #2a2723; /* Dark Warm Brown */
+  --card-foreground: #f0ece6;
+  --popover: #2a2723;
+  --popover-foreground: #f0ece6;
 
-  /* Primary — Slightly lighter rose for dark backgrounds */
-  --primary: #d4738a;
+  /* Primary — Lighter Slate Blue for dark backgrounds */
+  --primary: #95a0ac;
   --primary-foreground: #ffffff;
 
-  /* Secondary — Stone 800 */
-  --secondary: #292524;
-  --secondary-foreground: #e7e5e4;
+  /* Secondary — Dark Warm Brown */
+  --secondary: #2a2723;
+  --secondary-foreground: #d9d2c7;
 
-  --muted: #292524;
-  --muted-foreground: #a8a29e; /* Stone 400 */
+  --muted: #2a2723;
+  --muted-foreground: #a09a92; /* Warm Gray */
 
-  /* Accent — Stone 700 */
-  --accent: #44403c;
-  --accent-foreground: #fafaf9;
+  /* Accent — Dark Olive */
+  --accent: #3e3a35;
+  --accent-foreground: #f0ece6;
 
-  --destructive: #ef4444;
+  --destructive: #d45a4e;
   --destructive-foreground: #ffffff;
-  --border: #44403c; /* Stone 700 */
-  --input: #44403c;
-  --ring: #d4738a;
+  --border: #3e3a35; /* Dark Olive */
+  --input: #3e3a35;
+  --ring: #95a0ac;
 }
 
 /* Apply colors to elements directly */
@@ -266,10 +266,10 @@ body {
 
 .switch-thumb[data-state='unchecked'] {
   transform: translateX(0);
-  background-color: #a8a29e; /* Stone 400 */
+  background-color: #a09a92; /* Warm Gray */
 }
 
 /* Dark mode switch thumb */
 .dark .switch-thumb[data-state='unchecked'] {
-  background-color: #d6d3d1; /* Stone 300 */
+  background-color: #d0c9be; /* Warm Greige */
 }
