@@ -28,7 +28,7 @@ export function VolhardScoreSelector({
   const getScoreColor = (score: VolhardScore, isSelected: boolean) => {
     const baseColors: Record<VolhardScore, { bg: string; border: string; text: string }> = {
       1: { bg: 'bg-red-50', border: 'border-red-300', text: 'text-red-700' },
-      2: { bg: 'bg-orange-50', border: 'border-orange-300', text: 'text-orange-700' },
+      2: { bg: 'bg-rose-50', border: 'border-rose-300', text: 'text-rose-700' },
       3: { bg: 'bg-yellow-50', border: 'border-yellow-300', text: 'text-yellow-700' },
       4: { bg: 'bg-green-50', border: 'border-green-300', text: 'text-green-700' },
       5: { bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-700' },
@@ -107,7 +107,7 @@ export function FlinksRatingSelector({
       excellent: { bg: 'bg-green-50', border: 'border-green-300' },
       good: { bg: 'bg-blue-50', border: 'border-blue-300' },
       acceptable: { bg: 'bg-yellow-50', border: 'border-yellow-300' },
-      poor: { bg: 'bg-orange-50', border: 'border-orange-300' },
+      poor: { bg: 'bg-rose-50', border: 'border-rose-300' },
       fail: { bg: 'bg-red-50', border: 'border-red-300' },
     };
 

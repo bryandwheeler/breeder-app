@@ -206,7 +206,7 @@ export function Reminders() {
       case 'deworming': return 'bg-green-500';
       case 'vet_visit': return 'bg-purple-500';
       case 'heat_expected': return 'bg-pink-500';
-      case 'due_date': return 'bg-orange-500';
+      case 'due_date': return 'bg-rose-500';
       case 'pickup': return 'bg-teal-500';
       case 'ultrasound': return 'bg-cyan-500';
       default: return 'bg-gray-500';
@@ -230,7 +230,7 @@ export function Reminders() {
                 </span>
               )}
               {isToday(reminder.date) && (
-                <span className='text-orange-500 ml-2 font-medium'>Today!</span>
+                <span className='text-rose-500 ml-2 font-medium'>Today!</span>
               )}
               {!reminder.isOverdue && !isToday(reminder.date) && (
                 <span className='text-muted-foreground ml-2'>
@@ -274,10 +274,10 @@ export function Reminders() {
             </div>
           </CardContent>
         </Card>
-        <Card className={todayReminders.length > 0 ? 'border-orange-500' : ''}>
+        <Card className={todayReminders.length > 0 ? 'border-rose-500' : ''}>
           <CardContent className='pt-6'>
             <div className='text-center'>
-              <p className='text-4xl font-bold text-orange-500'>{todayReminders.length}</p>
+              <p className='text-4xl font-bold text-rose-500'>{todayReminders.length}</p>
               <p className='text-muted-foreground'>Due Today</p>
             </div>
           </CardContent>
@@ -308,9 +308,9 @@ export function Reminders() {
 
       {/* Today */}
       {todayReminders.length > 0 && (
-        <Card className='border-orange-500'>
+        <Card className='border-rose-500'>
           <CardHeader>
-            <CardTitle className='text-orange-500 flex items-center gap-2'>
+            <CardTitle className='text-rose-500 flex items-center gap-2'>
               <Calendar className='h-5 w-5' /> Due Today ({todayReminders.length})
             </CardTitle>
           </CardHeader>
@@ -359,7 +359,7 @@ export function Reminders() {
               <span className='text-sm'>Expected Heat</span>
             </div>
             <div className='flex items-center gap-2'>
-              <div className='w-4 h-4 rounded bg-orange-500' />
+              <div className='w-4 h-4 rounded bg-rose-500' />
               <span className='text-sm'>Due Date</span>
             </div>
             <div className='flex items-center gap-2'>

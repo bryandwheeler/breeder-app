@@ -1,78 +1,77 @@
 /* src/index.css */
 @import 'tailwindcss';
 
-/* Expert Breeder color palette - Official Brand Colors */
+/* Expert Breeder color palette — Elegant Rose & Stone */
 :root {
-  /* Light mode - Expert Breeder Brand */
-  --background: #FFFFFF; /* Clean White */
-  --foreground: #0B2E4E; /* Breeder Navy */
+  /* Light mode — Warm, feminine aesthetic */
+  --background: #faf8f5; /* Warm Ivory */
+  --foreground: #1c1917; /* Stone 900 */
 
-  /* Cards use Clean White */
-  --card: #FFFFFF;
-  --card-foreground: #0B2E4E;
+  /* Cards stay white to contrast with ivory background */
+  --card: #ffffff;
+  --card-foreground: #1c1917;
 
-  --popover: #FFFFFF;
-  --popover-foreground: #0B2E4E;
+  --popover: #ffffff;
+  --popover-foreground: #1c1917;
 
-  /* Primary - Expert Orange for CTAs and highlights */
-  --primary: #FF8A1E;
-  --primary-foreground: #FFFFFF;
+  /* Primary — Warm Rose for CTAs and highlights */
+  --primary: #c45a6e;
+  --primary-foreground: #ffffff;
 
-  /* Secondary - Puppy Blue for accents */
-  --secondary: #4DB3E6;
-  --secondary-foreground: #FFFFFF;
+  /* Secondary — Warm Taupe for subtle accents */
+  --secondary: #f5f0eb;
+  --secondary-foreground: #44403c; /* Stone 700 */
 
-  /* Muted grays */
-  --muted: #E6EAF0; /* Soft Gray */
-  --muted-foreground: #1F2933; /* Dark Charcoal */
+  /* Muted — Warm Taupe */
+  --muted: #f5f0eb;
+  --muted-foreground: #78716c; /* Stone 500 */
 
-  /* Accent using very light gray/blue */
-  --accent: #F8FAFC;
-  --accent-foreground: #0B2E4E;
+  /* Accent — Warm Taupe */
+  --accent: #f5f0eb;
+  --accent-foreground: #1c1917;
 
   /* Destructive stays reddish for warnings */
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
 
-  /* Borders */
-  --border: #E6EAF0; /* Soft Gray */
-  --input: #E6EAF0;
+  /* Borders — Stone 200 */
+  --border: #e7e5e4;
+  --input: #e7e5e4;
 
-  /* Ring matches primary orange */
-  --ring: #FF8A1E;
+  /* Ring matches primary rose */
+  --ring: #c45a6e;
   --radius: 0.5rem;
 }
 
-/* Dark mode - Expert Breeder Brand (Dark Theme) */
+/* Dark mode — Warm Stone Dark */
 .dark {
-  /* Dark Breeder Navy background */
-  --background: #0B2E4E; /* Breeder Navy */
-  --foreground: #FFFFFF;
-  --card: #1F2933; /* Dark Charcoal */
-  --card-foreground: #FFFFFF;
-  --popover: #1F2933;
-  --popover-foreground: #FFFFFF;
+  --background: #1c1917; /* Stone 900 */
+  --foreground: #fafaf9; /* Stone 50 */
+  --card: #292524; /* Stone 800 */
+  --card-foreground: #fafaf9;
+  --popover: #292524;
+  --popover-foreground: #fafaf9;
 
-  /* Primary - Expert Orange (stays vibrant in dark mode) */
-  --primary: #FF8A1E;
-  --primary-foreground: #FFFFFF;
+  /* Primary — Slightly lighter rose for dark backgrounds */
+  --primary: #d4738a;
+  --primary-foreground: #ffffff;
 
-  /* Secondary - Puppy Blue for accents */
-  --secondary: #4DB3E6;
-  --secondary-foreground: #FFFFFF;
+  /* Secondary — Stone 800 */
+  --secondary: #292524;
+  --secondary-foreground: #e7e5e4;
 
-  --muted: #1F2933; /* Dark Charcoal */
-  --muted-foreground: #E6EAF0;
+  --muted: #292524;
+  --muted-foreground: #a8a29e; /* Stone 400 */
 
-  /* Accent using Light Sky Blue */
-  --accent: #A9DBF4;
-  --accent-foreground: #0B2E4E;
+  /* Accent — Stone 700 */
+  --accent: #44403c;
+  --accent-foreground: #fafaf9;
 
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #1F2933;
-  --input: #1F2933;
-  --ring: #FF8A1E;
+  --border: #44403c; /* Stone 700 */
+  --input: #44403c;
+  --ring: #d4738a;
 }
 
 /* Apply colors to elements directly */
@@ -260,10 +259,10 @@ body {
 
 .switch-thumb[data-state='unchecked'] {
   transform: translateX(0);
-  background-color: #475569;
+  background-color: #a8a29e; /* Stone 400 */
 }
 
 /* Dark mode switch thumb */
 .dark .switch-thumb[data-state='unchecked'] {
-  background-color: #94a3b8;
+  background-color: #d6d3d1; /* Stone 300 */
 }

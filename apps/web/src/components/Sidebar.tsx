@@ -234,7 +234,7 @@ export function Sidebar({
               {isOpen ? (
                 <button
                   onClick={() => setAdminExpanded(!adminExpanded)}
-                  className='flex items-center justify-between w-full px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors'
+                  className='flex items-center justify-between w-full px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 transition-colors'
                 >
                   <span className='flex items-center gap-2'>
                     <Shield className='h-3.5 w-3.5' />
@@ -252,7 +252,7 @@ export function Sidebar({
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => setAdminExpanded(!adminExpanded)}
-                      className='flex items-center justify-center w-full px-3 py-2 mb-2 rounded-md text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors'
+                      className='flex items-center justify-center w-full px-3 py-2 mb-2 rounded-md text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-colors'
                     >
                       <Shield className='h-5 w-5' />
                     </button>
@@ -279,8 +279,8 @@ export function Sidebar({
                             className={cn(
                               'flex items-center gap-3 px-3 py-2 rounded-md transition-colors',
                               isActive
-                                ? 'bg-orange-600 text-white'
-                                : 'text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30',
+                                ? 'bg-rose-600 text-white'
+                                : 'text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/30',
                               !isOpen && 'justify-center'
                             )}
                             title={!isOpen ? item.name : undefined}

@@ -79,7 +79,7 @@ export function Header({
               <div className='hidden lg:flex flex-col'>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className='font-bold text-lg cursor-pointer text-breeder-navy dark:text-white'>
+                    <span className='font-bold text-lg cursor-pointer text-stone-800 dark:text-white'>
                       Expert Breeder
                     </span>
                   </TooltipTrigger>

@@ -173,7 +173,7 @@ export function CustomerDetailsDialog({ open, setOpen, customer }: Props) {
       case 'stud_client':
         return 'bg-pink-500';
       case 'referral_source':
-        return 'bg-orange-500';
+        return 'bg-rose-500';
       default:
         return 'bg-gray-500';
     }

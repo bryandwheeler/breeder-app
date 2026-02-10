@@ -720,48 +720,48 @@ export function CustomDomainSetup({ disabled = false }: CustomDomainSetupProps) 
             )}
 
             {/* Troubleshooting Section */}
-            <details className="text-sm border rounded-lg border-orange-200 bg-orange-50">
-              <summary className="font-medium cursor-pointer hover:bg-orange-100 p-3 flex items-center gap-2 text-orange-900">
-                <AlertCircle className="h-4 w-4 text-orange-600" />
+            <details className="text-sm border rounded-lg border-rose-200 bg-rose-50">
+              <summary className="font-medium cursor-pointer hover:bg-rose-100 p-3 flex items-center gap-2 text-rose-900">
+                <AlertCircle className="h-4 w-4 text-rose-600" />
                 <span>Troubleshooting: Domain Still Pending?</span>
               </summary>
 
-              <div className="p-4 pt-2 space-y-4 text-orange-900">
+              <div className="p-4 pt-2 space-y-4 text-rose-900">
                 <div className="space-y-3">
-                  <div className="p-3 bg-white rounded border border-orange-200">
+                  <div className="p-3 bg-white rounded border border-rose-200">
                     <p className="font-semibold flex items-center gap-2 mb-2">
                       <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs">Common Issue</span>
                       CNAME Instead of A Record
                     </p>
-                    <p className="text-sm text-orange-800">
-                      If you set up a CNAME record for a root domain (like <code className="bg-orange-100 px-1 rounded">{currentDomain}</code>),
+                    <p className="text-sm text-rose-800">
+                      If you set up a CNAME record for a root domain (like <code className="bg-rose-100 px-1 rounded">{currentDomain}</code>),
                       it may appear to work in some DNS lookups but <strong>Firebase cannot verify ownership</strong>.
                     </p>
-                    <p className="text-sm text-orange-800 mt-2">
-                      <strong>Fix:</strong> Delete any CNAME record and create an A record pointing to <code className="bg-orange-100 px-1 rounded">{FIREBASE_HOSTING_IP}</code>
+                    <p className="text-sm text-rose-800 mt-2">
+                      <strong>Fix:</strong> Delete any CNAME record and create an A record pointing to <code className="bg-rose-100 px-1 rounded">{FIREBASE_HOSTING_IP}</code>
                     </p>
                   </div>
 
-                  <div className="p-3 bg-white rounded border border-orange-200">
+                  <div className="p-3 bg-white rounded border border-rose-200">
                     <p className="font-semibold flex items-center gap-2 mb-2">
                       <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs">Check</span>
                       CDN or Proxy Enabled
                     </p>
-                    <p className="text-sm text-orange-800">
+                    <p className="text-sm text-rose-800">
                       If you're using Cloudflare or another CDN with proxying enabled (orange cloud),
                       Firebase cannot verify the domain because requests go through the CDN.
                     </p>
-                    <p className="text-sm text-orange-800 mt-2">
+                    <p className="text-sm text-rose-800 mt-2">
                       <strong>Fix:</strong> Disable proxying (set to "DNS only" / gray cloud) until verification completes.
                     </p>
                   </div>
 
-                  <div className="p-3 bg-white rounded border border-orange-200">
+                  <div className="p-3 bg-white rounded border border-rose-200">
                     <p className="font-semibold flex items-center gap-2 mb-2">
                       <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">Verify</span>
                       Check Your DNS Records
                     </p>
-                    <p className="text-sm text-orange-800">
+                    <p className="text-sm text-rose-800">
                       Use a free DNS lookup tool to verify your records are correct:
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -782,12 +782,12 @@ export function CustomDomainSetup({ disabled = false }: CustomDomainSetupProps) 
                         WhatsMyDNS <ExternalLink className="h-3 w-3" />
                       </a>
                     </div>
-                    <p className="text-xs text-orange-700 mt-2">
+                    <p className="text-xs text-rose-700 mt-2">
                       The A record should show: <strong>{FIREBASE_HOSTING_IP}</strong> (not a CNAME, not Cloudflare IPs)
                     </p>
                   </div>
 
-                  <div className="p-3 bg-white rounded border border-orange-200">
+                  <div className="p-3 bg-white rounded border border-rose-200">
                     <p className="font-semibold flex items-center gap-2 mb-2">
                       <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">Required</span>
                       All DNS Records for {currentDomain}

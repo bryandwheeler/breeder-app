@@ -334,7 +334,7 @@ export function BreedManagement() {
         <Card>
           <CardHeader>
             <CardTitle className='flex items-center gap-2'>
-              <AlertCircle className='h-5 w-5 text-orange-500' />
+              <AlertCircle className='h-5 w-5 text-rose-500' />
               Custom Breeds Not in Global List ({customOnlyBreeds.length})
             </CardTitle>
             <CardDescription>
@@ -344,7 +344,7 @@ export function BreedManagement() {
           </CardHeader>
           <CardContent>
             <div className='border rounded-lg overflow-hidden'>
-              <div className='bg-orange-50 dark:bg-orange-950/20 px-4 py-2 grid grid-cols-12 gap-4 text-xs font-semibold text-muted-foreground'>
+              <div className='bg-rose-50 dark:bg-rose-950/20 px-4 py-2 grid grid-cols-12 gap-4 text-xs font-semibold text-muted-foreground'>
                 <div className='col-span-7'>Breed Name</div>
                 <div className='col-span-3'>Breeders</div>
                 <div className='col-span-2 text-right'>Actions</div>

@@ -321,7 +321,7 @@ export function BreederCommunity() {
             <Card>
               <CardHeader>
                 <CardTitle className='text-lg flex items-center gap-2'>
-                  <AlertCircle className='h-5 w-5 text-orange-500' />
+                  <AlertCircle className='h-5 w-5 text-rose-500' />
                   Friend Requests ({pendingRequests.length})
                 </CardTitle>
               </CardHeader>

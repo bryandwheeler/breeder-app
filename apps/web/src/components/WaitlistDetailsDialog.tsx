@@ -71,7 +71,7 @@ export function WaitlistDetailsDialog({ open, setOpen, entry }: Props) {
       case 'matched': return 'bg-purple-500';
       case 'reserved': return 'bg-cyan-500';
       case 'completed': return 'bg-gray-500';
-      case 'withdrawn': return 'bg-orange-500';
+      case 'withdrawn': return 'bg-rose-500';
       case 'declined': return 'bg-red-500';
       default: return 'bg-gray-500';
     }

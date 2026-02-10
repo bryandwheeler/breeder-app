@@ -799,7 +799,7 @@ export function DefaultTasksManager() {
       case 'morning':
         return <Sunrise className="h-4 w-4 text-amber-500" />;
       case 'midday':
-        return <Sun className="h-4 w-4 text-orange-500" />;
+        return <Sun className="h-4 w-4 text-rose-500" />;
       case 'evening':
         return <Moon className="h-4 w-4 text-indigo-500" />;
       case 'both':
@@ -1090,7 +1090,7 @@ export function DefaultTasksManager() {
                   </SelectItem>
                   <SelectItem value="midday">
                     <div className="flex items-center gap-2">
-                      <Sun className="h-4 w-4 text-orange-500" />
+                      <Sun className="h-4 w-4 text-rose-500" />
                       Midday
                     </div>
                   </SelectItem>

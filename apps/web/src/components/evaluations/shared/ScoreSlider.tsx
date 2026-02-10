@@ -38,7 +38,7 @@ export function ScoreSlider({
   const getSliderColor = (score: APETScore | undefined): string => {
     if (!score) return 'bg-gray-400';
     if (score <= 2) return 'bg-red-500';
-    if (score <= 4) return 'bg-orange-500';
+    if (score <= 4) return 'bg-rose-500';
     if (score <= 6) return 'bg-yellow-500';
     if (score <= 8) return 'bg-blue-500';
     return 'bg-green-500';

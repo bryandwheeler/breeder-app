@@ -243,13 +243,13 @@ export function AdminDashboard() {
           onClick={() => openUserList('inactive', 'Inactive Users')}
         >
           <CardHeader className='pb-3'>
-            <CardTitle className='text-sm font-medium text-orange-600 dark:text-orange-400 flex items-center gap-2'>
+            <CardTitle className='text-sm font-medium text-rose-600 dark:text-rose-400 flex items-center gap-2'>
               <Ban className='h-4 w-4' />
               Inactive Users
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold text-orange-600 dark:text-orange-400'>
+            <div className='text-2xl font-bold text-rose-600 dark:text-rose-400'>
               {statsLoading
                 ? '...'
                 : users.filter((u) => !u.isActive).length || 0}

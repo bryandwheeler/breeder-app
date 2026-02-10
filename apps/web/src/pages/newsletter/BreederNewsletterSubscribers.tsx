@@ -102,7 +102,7 @@ const statusConfig: Record<SubscriberStatus, { label: string; className: string;
   },
   complained: {
     label: 'Complained',
-    className: 'bg-orange-100 text-orange-800',
+    className: 'bg-rose-100 text-rose-800',
     icon: <Ban className="h-3 w-3" />,
   },
 };

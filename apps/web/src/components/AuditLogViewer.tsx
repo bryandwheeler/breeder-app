@@ -111,7 +111,7 @@ export function AuditLogViewer() {
       auth: 'bg-blue-100 text-blue-800',
       user_management: 'bg-purple-100 text-purple-800',
       subscription: 'bg-green-100 text-green-800',
-      settings: 'bg-orange-100 text-orange-800',
+      settings: 'bg-rose-100 text-rose-800',
       content: 'bg-pink-100 text-pink-800',
       security: 'bg-red-100 text-red-800',
       data_export: 'bg-yellow-100 text-yellow-800',

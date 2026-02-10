@@ -406,7 +406,7 @@ export function Tasks() {
 
               {/* Today's Tasks */}
               <Card>
-                <CardHeader className='py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-t-lg'>
+                <CardHeader className='py-3 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-t-lg'>
                   <CardTitle className='flex items-center justify-between text-base'>
                     <span className='flex items-center gap-2'>
                       <Sun className='h-4 w-4' />
@@ -430,7 +430,7 @@ export function Tasks() {
                             <Sunrise className='h-3.5 w-3.5 text-amber-500' />
                           )}
                           {group.timeOfDay === 'midday' && (
-                            <Sun className='h-3.5 w-3.5 text-orange-500' />
+                            <Sun className='h-3.5 w-3.5 text-rose-500' />
                           )}
                           {group.timeOfDay === 'evening' && (
                             <Moon className='h-3.5 w-3.5 text-indigo-500' />

@@ -658,7 +658,7 @@ export function LitterCareTasks({ litter }: LitterCareTasksProps) {
                 {middayTasks.length > 0 && (
                   <div className="border rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <Sun className="h-5 w-5 text-orange-500" />
+                      <Sun className="h-5 w-5 text-rose-500" />
                       <h3 className="font-semibold">Midday</h3>
                       <Badge variant={middayComplete === middayTasks.length ? 'default' : 'outline'} className="ml-auto">
                         {middayComplete}/{middayTasks.length}
@@ -682,7 +682,7 @@ export function LitterCareTasks({ litter }: LitterCareTasksProps) {
                             {isCompleted ? (
                               <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
                             ) : (
-                              <Circle className="h-5 w-5 text-orange-400 mt-0.5 flex-shrink-0" />
+                              <Circle className="h-5 w-5 text-rose-400 mt-0.5 flex-shrink-0" />
                             )}
                             <div className="flex-1 min-w-0">
                               <p className={cn(

@@ -409,7 +409,7 @@ function CampaignStatusBadge({ status }: { status: string }) {
     },
     paused: {
       label: 'Paused',
-      className: 'bg-orange-100 text-orange-800',
+      className: 'bg-rose-100 text-rose-800',
       icon: <Clock className="h-3 w-3" />,
     },
     cancelled: {

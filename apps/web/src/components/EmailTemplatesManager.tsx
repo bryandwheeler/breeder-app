@@ -241,7 +241,7 @@ export function EmailTemplatesManager() {
       waitlist: 'bg-purple-500',
       deposit: 'bg-green-500',
       payment: 'bg-yellow-500',
-      pickup: 'bg-orange-500',
+      pickup: 'bg-rose-500',
       followup: 'bg-pink-500',
       birthday: 'bg-red-500',
       health_update: 'bg-cyan-500',

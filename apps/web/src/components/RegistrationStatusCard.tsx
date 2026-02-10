@@ -57,7 +57,7 @@ export function RegistrationStatusCard({ puppies, onManageRegistration }: Regist
       );
     } else if (daysUntil <= 7) {
       return (
-        <Badge variant='destructive' className='ml-2 bg-orange-500 hover:bg-orange-500'>
+        <Badge variant='destructive' className='ml-2 bg-rose-500 hover:bg-rose-500'>
           <AlertTriangle className='h-3 w-3 mr-1' />
           {daysUntil}d left
         </Badge>
@@ -131,14 +131,14 @@ export function RegistrationStatusCard({ puppies, onManageRegistration }: Regist
 
         {/* Upcoming Deadlines Alert */}
         {upcomingDeadlines.length > 0 && (
-          <div className='bg-orange-50 border border-orange-200 rounded-lg p-3'>
+          <div className='bg-rose-50 border border-rose-200 rounded-lg p-3'>
             <div className='flex items-center gap-2 mb-2'>
-              <AlertTriangle className='h-4 w-4 text-orange-600' />
-              <strong className='text-sm text-orange-800'>Upcoming Deadlines</strong>
+              <AlertTriangle className='h-4 w-4 text-rose-600' />
+              <strong className='text-sm text-rose-800'>Upcoming Deadlines</strong>
             </div>
             <div className='space-y-1'>
               {upcomingDeadlines.map(({ puppy, daysUntil }) => (
-                <div key={puppy.id} className='text-sm text-orange-700'>
+                <div key={puppy.id} className='text-sm text-rose-700'>
                   {puppy.name || puppy.tempName} - {daysUntil === 0 ? 'Today' : `${daysUntil} day${daysUntil > 1 ? 's' : ''}`}
                 </div>
               ))}

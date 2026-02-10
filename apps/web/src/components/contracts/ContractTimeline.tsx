@@ -43,7 +43,7 @@ const eventColors: Record<string, string> = {
   viewed: 'bg-indigo-500',
   signed: 'bg-green-500',
   declined: 'bg-red-500',
-  expired: 'bg-orange-500',
+  expired: 'bg-rose-500',
   cancelled: 'bg-gray-500',
   voided: 'bg-red-500',
   reminder_sent: 'bg-yellow-500',

@@ -104,7 +104,7 @@ const statusConfig: Record<CampaignStatus, { label: string; className: string; i
   },
   paused: {
     label: 'Paused',
-    className: 'bg-orange-100 text-orange-800',
+    className: 'bg-rose-100 text-rose-800',
     icon: <Pause className="h-3 w-3" />,
   },
   cancelled: {

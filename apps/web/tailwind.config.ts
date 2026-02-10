@@ -55,8 +55,12 @@ const config: Config = {
         },
         // Expert Breeder Brand Colors
         breeder: {
-          orange: '#FF8A1E',
-          navy: '#0B2E4E',
+          rose: '#c45a6e',
+          'rose-light': '#f9e4e8',
+          ivory: '#faf8f5',
+          taupe: '#f5f0eb',
+          orange: '#FF8A1E', // kept for PublicWebsite backwards compat
+          navy: '#0B2E4E', // kept for PublicWebsite backwards compat
           blue: '#4DB3E6',
           'sky-blue': '#A9DBF4',
           'powder-blue': '#D8F0FB',

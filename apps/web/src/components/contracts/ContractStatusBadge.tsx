@@ -64,7 +64,7 @@ const statusConfig: Record<ContractStatus, {
   },
   expired: {
     variant: 'secondary',
-    className: 'bg-orange-100 text-orange-700 border-orange-300',
+    className: 'bg-rose-100 text-rose-700 border-rose-300',
     icon: AlertTriangle,
   },
   cancelled: {

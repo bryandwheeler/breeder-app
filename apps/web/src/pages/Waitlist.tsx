@@ -89,7 +89,7 @@ function SortableWaitlistItem({
       case 'completed':
         return 'bg-gray-500';
       case 'withdrawn':
-        return 'bg-orange-500';
+        return 'bg-rose-500';
       case 'declined':
         return 'bg-red-500';
       default:
