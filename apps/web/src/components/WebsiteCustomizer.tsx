@@ -328,11 +328,67 @@ export function WebsiteCustomizer() {
               )}
             </div>
           </TabsContent>
-          <TabsContent value='colors' className='space-y-4'>
+          <TabsContent value='colors' className='space-y-6'>
+            {/* Live Preview */}
+            <div className='border rounded-xl overflow-hidden'>
+              <div className='text-xs text-muted-foreground px-3 py-1.5 bg-muted/50 border-b'>
+                Live Preview
+              </div>
+              <div>
+                {/* Mini header */}
+                <div
+                  className='h-8 flex items-center px-3 gap-2 text-white'
+                  style={{ backgroundColor: theme.primaryColor }}
+                >
+                  <span className='text-xs font-bold'>{branding.businessName || 'Your Kennel'}</span>
+                  <div className='flex-1' />
+                  <div className='flex gap-2'>
+                    <span className='text-[9px] opacity-75'>Home</span>
+                    <span className='text-[9px] opacity-75'>About</span>
+                    <span className='text-[9px] opacity-75'>Puppies</span>
+                  </div>
+                </div>
+                {/* Mini hero */}
+                <div
+                  className='h-14 flex items-center justify-center gap-3'
+                  style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+                >
+                  <span className='text-white text-xs font-bold'>Welcome to Our Kennel</span>
+                  <span
+                    className='text-white text-[8px] px-2 py-0.5 rounded-full'
+                    style={{ backgroundColor: theme.accentColor }}
+                  >
+                    View Puppies
+                  </span>
+                </div>
+                {/* Mini content */}
+                <div className='h-10 bg-stone-50 px-3 py-2 flex items-center gap-3'>
+                  <div className='space-y-1 flex-1'>
+                    <div className='h-1.5 rounded-full w-2/3' style={{ backgroundColor: theme.primaryColor + '25' }} />
+                    <div className='h-1.5 rounded-full w-1/3' style={{ backgroundColor: theme.secondaryColor + '20' }} />
+                  </div>
+                  <div
+                    className='w-6 h-6 rounded'
+                    style={{ backgroundColor: theme.accentColor + '20' }}
+                  />
+                </div>
+                {/* Mini footer */}
+                <div
+                  className='h-5 flex items-center justify-center'
+                  style={{ backgroundColor: theme.primaryColor }}
+                >
+                  <span className='text-white text-[7px] opacity-60'>© Your Kennel</span>
+                </div>
+              </div>
+            </div>
+
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
               {/* Primary Color */}
-              <div className='space-y-2'>
-                <Label htmlFor='primary-color'>Primary Color</Label>
+              <div className='space-y-2 border rounded-lg p-4'>
+                <Label htmlFor='primary-color' className='text-sm font-semibold'>Primary Color</Label>
+                <p className='text-xs text-muted-foreground'>
+                  Used for headers, footer, navigation text, and section headings across your site.
+                </p>
                 <div className='flex items-center gap-2'>
                   <input
                     id='primary-color'
@@ -354,14 +410,19 @@ export function WebsiteCustomizer() {
                   />
                 </div>
                 <div
-                  className='h-16 rounded border'
+                  className='h-12 rounded-lg border flex items-center justify-center'
                   style={{ backgroundColor: theme.primaryColor }}
-                ></div>
+                >
+                  <span className='text-white text-xs font-medium'>Header & Nav</span>
+                </div>
               </div>
 
               {/* Secondary Color */}
-              <div className='space-y-2'>
-                <Label htmlFor='secondary-color'>Secondary Color</Label>
+              <div className='space-y-2 border rounded-lg p-4'>
+                <Label htmlFor='secondary-color' className='text-sm font-semibold'>Secondary Color</Label>
+                <p className='text-xs text-muted-foreground'>
+                  Used for hero gradients, placeholder backgrounds, and supporting visual elements.
+                </p>
                 <div className='flex items-center gap-2'>
                   <input
                     id='secondary-color'
@@ -383,14 +444,19 @@ export function WebsiteCustomizer() {
                   />
                 </div>
                 <div
-                  className='h-16 rounded border'
-                  style={{ backgroundColor: theme.secondaryColor }}
-                ></div>
+                  className='h-12 rounded-lg border flex items-center justify-center'
+                  style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+                >
+                  <span className='text-white text-xs font-medium'>Gradients</span>
+                </div>
               </div>
 
               {/* Accent Color */}
-              <div className='space-y-2'>
-                <Label htmlFor='accent-color'>Accent Color</Label>
+              <div className='space-y-2 border rounded-lg p-4'>
+                <Label htmlFor='accent-color' className='text-sm font-semibold'>Accent Color</Label>
+                <p className='text-xs text-muted-foreground'>
+                  Used for buttons, links, prices, badges, and call-to-action elements.
+                </p>
                 <div className='flex items-center gap-2'>
                   <input
                     id='accent-color'
@@ -412,9 +478,11 @@ export function WebsiteCustomizer() {
                   />
                 </div>
                 <div
-                  className='h-16 rounded border'
+                  className='h-12 rounded-lg border flex items-center justify-center'
                   style={{ backgroundColor: theme.accentColor }}
-                ></div>
+                >
+                  <span className='text-white text-xs font-medium'>Buttons & Links</span>
+                </div>
               </div>
             </div>
           </TabsContent>
