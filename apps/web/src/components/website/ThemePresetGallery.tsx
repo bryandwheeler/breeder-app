@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Check, Palette, Lock, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getFontFamily } from '@/lib/websiteTheme';
 
 interface ThemePresetGalleryProps {
   canAccessPremium?: boolean;
@@ -94,9 +95,7 @@ export function ThemePresetGallery({
     );
   }
 
-  // Group presets by category
-  const categories = ['professional', 'modern', 'playful', 'elegant'] as const;
-  const categoryLabels: Record<(typeof categories)[number], string> = {
+  const categoryLabels: Record<string, string> = {
     professional: 'Professional',
     modern: 'Modern',
     playful: 'Playful',
@@ -109,34 +108,77 @@ export function ThemePresetGallery({
         {presets.map((preset) => {
           const applied = isApplied(preset.id);
           const locked = preset.isPremium && !canAccessPremium;
+          const fontFamily = getFontFamily(preset.theme.fontFamily);
 
           return (
             <Card
               key={preset.id}
               className={cn(
-                'overflow-hidden transition-all cursor-pointer hover:shadow-md',
+                'overflow-hidden transition-all cursor-pointer hover:shadow-md rounded-xl',
                 applied && 'ring-2 ring-primary',
                 locked && 'opacity-75'
               )}
               onClick={() => !locked && handleApplyPreset(preset)}
             >
-              {/* Theme Preview */}
-              <div
-                className="h-24 relative"
-                style={{
-                  background: `linear-gradient(135deg, ${preset.theme.primaryColor} 0%, ${preset.theme.secondaryColor} 100%)`,
-                }}
-              >
-                {/* Accent color dot */}
+              {/* Mini Website Preview */}
+              <div className="relative">
+                {/* Mini header bar */}
                 <div
-                  className="absolute bottom-2 right-2 w-6 h-6 rounded-full border-2 border-white"
-                  style={{ backgroundColor: preset.theme.accentColor }}
-                />
+                  className="h-8 flex items-center px-3 gap-2"
+                  style={{ backgroundColor: preset.theme.primaryColor }}
+                >
+                  <div className="w-3 h-3 rounded-full bg-white/30" />
+                  <div className="flex-1" />
+                  <div className="flex gap-2">
+                    <div className="w-6 h-1.5 rounded-full bg-white/40" />
+                    <div className="w-6 h-1.5 rounded-full bg-white/40" />
+                    <div className="w-6 h-1.5 rounded-full bg-white/40" />
+                  </div>
+                </div>
+
+                {/* Mini hero area */}
+                <div
+                  className="h-16 flex flex-col items-center justify-center"
+                  style={{
+                    background: `linear-gradient(135deg, ${preset.theme.primaryColor} 0%, ${preset.theme.secondaryColor} 100%)`,
+                  }}
+                >
+                  <div
+                    className="text-white text-xs font-bold truncate px-4"
+                    style={{ fontFamily }}
+                  >
+                    Your Kennel Name
+                  </div>
+                  <div
+                    className="mt-1 px-3 py-0.5 rounded-full text-white"
+                    style={{ backgroundColor: preset.theme.accentColor, fontSize: '7px' }}
+                  >
+                    View Puppies
+                  </div>
+                </div>
+
+                {/* Mini content area */}
+                <div className="h-12 bg-white px-3 py-2 flex items-start gap-2">
+                  <div className="flex-1 space-y-1">
+                    <div className="h-1.5 rounded-full w-3/4" style={{ backgroundColor: preset.theme.primaryColor + '30' }} />
+                    <div className="h-1.5 rounded-full w-1/2" style={{ backgroundColor: preset.theme.secondaryColor + '20' }} />
+                  </div>
+                  <div className="flex gap-1">
+                    <div
+                      className="w-8 h-8 rounded-lg"
+                      style={{ backgroundColor: preset.theme.accentColor + '15' }}
+                    />
+                    <div
+                      className="w-8 h-8 rounded-lg"
+                      style={{ backgroundColor: preset.theme.accentColor + '15' }}
+                    />
+                  </div>
+                </div>
 
                 {/* Applied badge */}
                 {applied && (
-                  <div className="absolute top-2 left-2">
-                    <Badge className="bg-white text-primary">
+                  <div className="absolute top-10 left-2">
+                    <Badge className="bg-white text-primary shadow-sm text-xs">
                       <Check className="h-3 w-3 mr-1" />
                       Applied
                     </Badge>
@@ -145,8 +187,8 @@ export function ThemePresetGallery({
 
                 {/* Premium badge */}
                 {preset.isPremium && (
-                  <div className="absolute top-2 right-2">
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                  <div className="absolute top-1 right-1">
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-800 text-xs">
                       Pro
                     </Badge>
                   </div>
@@ -168,16 +210,35 @@ export function ThemePresetGallery({
                       {preset.description}
                     </p>
                   </div>
-                  <Badge variant="outline" className="shrink-0">
-                    {categoryLabels[preset.category]}
+                  <Badge variant="outline" className="shrink-0 text-xs">
+                    {categoryLabels[preset.category] || preset.category}
                   </Badge>
                 </div>
 
-                {/* Font preview */}
-                <div className="mt-3 text-xs text-muted-foreground">
-                  Font: <span className="font-medium capitalize">{preset.theme.fontFamily}</span>
-                  {' · '}
-                  Header: <span className="font-medium capitalize">{preset.theme.headerStyle}</span>
+                {/* Color swatches */}
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="flex gap-1">
+                    <div
+                      className="w-5 h-5 rounded-full border border-stone-200"
+                      style={{ backgroundColor: preset.theme.primaryColor }}
+                      title="Primary"
+                    />
+                    <div
+                      className="w-5 h-5 rounded-full border border-stone-200"
+                      style={{ backgroundColor: preset.theme.secondaryColor }}
+                      title="Secondary"
+                    />
+                    <div
+                      className="w-5 h-5 rounded-full border border-stone-200"
+                      style={{ backgroundColor: preset.theme.accentColor }}
+                      title="Accent"
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    <span className="capitalize">{preset.theme.fontFamily}</span>
+                    {' · '}
+                    <span className="capitalize">{preset.theme.headerStyle}</span>
+                  </span>
                 </div>
 
                 {locked && onUpgradeClick && (

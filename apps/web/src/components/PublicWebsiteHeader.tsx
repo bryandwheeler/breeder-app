@@ -28,8 +28,7 @@ export function PublicWebsiteHeader({ settings }: PublicWebsiteHeaderProps) {
   if (headerStyle === 'minimal') {
     return (
       <header
-        className={`py-4 px-4 border-b bg-breeder-white ${fontClass}`}
-        style={{ borderColor: '#E6EAF0' }}
+        className={`py-4 px-4 border-b border-stone-200 bg-white ${fontClass}`}
       >
         <div className='max-w-6xl mx-auto flex items-center justify-between'>
           <Link to='?page=home' className='flex items-center gap-3'>
@@ -42,7 +41,7 @@ export function PublicWebsiteHeader({ settings }: PublicWebsiteHeaderProps) {
               }}
             />
             {!settings.logoUrl && (
-              <span className='font-bold text-lg text-breeder-navy'>
+              <span className='font-bold text-lg' style={{ color: primaryColor }}>
                 {getBusinessName(settings)}
               </span>
             )}
@@ -52,7 +51,8 @@ export function PublicWebsiteHeader({ settings }: PublicWebsiteHeaderProps) {
               <Link
                 key={item.page}
                 to={`?page=${item.page}`}
-                className='text-sm hover:text-breeder-orange transition text-breeder-navy'
+                className='text-sm transition hover:opacity-70'
+                style={{ color: primaryColor }}
               >
                 {item.label}
               </Link>
@@ -60,7 +60,8 @@ export function PublicWebsiteHeader({ settings }: PublicWebsiteHeaderProps) {
           </nav>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className='md:hidden text-breeder-navy'
+            className='md:hidden'
+            style={{ color: primaryColor }}
           >
             <Menu className='h-5 w-5' />
           </button>
@@ -71,7 +72,8 @@ export function PublicWebsiteHeader({ settings }: PublicWebsiteHeaderProps) {
               <Link
                 key={item.page}
                 to={`?page=${item.page}`}
-                className='text-sm py-2 hover:text-breeder-orange transition text-breeder-navy'
+                className='text-sm py-2 transition hover:opacity-70'
+                style={{ color: primaryColor }}
               >
                 {item.label}
               </Link>
@@ -85,7 +87,7 @@ export function PublicWebsiteHeader({ settings }: PublicWebsiteHeaderProps) {
   // Centered Header Style
   if (headerStyle === 'centered') {
     return (
-      <header className={`py-6 px-4 border-b bg-white ${fontClass}`}>
+      <header className={`py-6 px-4 border-b border-stone-200 bg-white ${fontClass}`}>
         <div className='max-w-6xl mx-auto text-center'>
           <Link to='?page=home' className='inline-block mb-4'>
             <img
@@ -156,7 +158,7 @@ export function PublicWebsiteHeader({ settings }: PublicWebsiteHeaderProps) {
                 {item.label}
               </Link>
             ))}
-            <div className='h-8 w-px bg-gray-300'></div>
+            <div className='h-8 w-px bg-stone-300'></div>
             {menuItems.slice(2).map((item) => (
               <Link
                 key={item.page}
@@ -211,9 +213,11 @@ export function PublicWebsiteHeader({ settings }: PublicWebsiteHeaderProps) {
     );
   }
 
+  // Full / Banner header styles (dark background)
   return (
     <header
-      className={`text-white bg-breeder-navy ${fontClass}`}
+      className={`text-white ${fontClass}`}
+      style={{ backgroundColor: primaryColor }}
     >
       {headerStyle === 'banner' && (
         <div className='bg-opacity-90 py-8 text-center'>
@@ -261,7 +265,7 @@ export function PublicWebsiteHeader({ settings }: PublicWebsiteHeaderProps) {
               <Link
                 key={item.page}
                 to={`?page=${item.page}`}
-                className='text-sm hover:text-breeder-orange transition'
+                className='text-sm hover:opacity-70 transition'
               >
                 {item.label}
               </Link>
@@ -282,7 +286,7 @@ export function PublicWebsiteHeader({ settings }: PublicWebsiteHeaderProps) {
               <Link
                 key={item.page}
                 to={`?page=${item.page}`}
-                className='text-sm py-2 hover:text-breeder-orange transition'
+                className='text-sm py-2 hover:opacity-70 transition'
               >
                 {item.label}
               </Link>
