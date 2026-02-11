@@ -46,7 +46,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ImageCropDialog } from '@/components/ImageCropDialog';
 import { LinkExternalDogDialog } from '@/components/LinkExternalDogDialog';
 import { MultiRegistrationManager } from '@/components/MultiRegistrationManager';
-import { searchDogs, type DogSearchResult } from '@/lib/kennelSearch';
+import { searchDogs, type DogSearchResult } from '@/lib/algoliaSearch';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useConnectionStore } from '@breeder/firebase';

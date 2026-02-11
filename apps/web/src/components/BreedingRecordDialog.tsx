@@ -21,7 +21,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { searchDogs, type DogSearchResult } from '@/lib/kennelSearch';
+import { searchDogs, type DogSearchResult } from '@/lib/algoliaSearch';
 import { useAuth } from '@/contexts/AuthContext';
 import { Search, Loader2, Check, ChevronsUpDown } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';

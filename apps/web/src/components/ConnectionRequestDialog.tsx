@@ -9,7 +9,7 @@ import { useConnectionStore } from '@breeder/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBreederStore } from '@breeder/firebase';
 import { Loader2, Search } from 'lucide-react';
-import { searchDogs, type DogSearchResult } from '@/lib/kennelSearch';
+import { searchDogs, type DogSearchResult } from '@/lib/algoliaSearch';
 
 interface ConnectionRequestDialogProps {
   open: boolean;

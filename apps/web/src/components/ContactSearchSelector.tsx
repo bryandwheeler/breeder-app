@@ -1,6 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import type { Customer, ContactRole } from '@breeder/types';
 import { useCrmStore } from '@breeder/firebase';
+import { useAuth } from '@/contexts/AuthContext';
+import { searchContacts } from '@/lib/algoliaSearch';
 
 interface ContactSearchSelectorProps {
   value: string | undefined;
@@ -21,12 +23,14 @@ export function ContactSearchSelector({
   allowCreate = true,
   required = false,
 }: ContactSearchSelectorProps) {
-  const { customers, searchContactByEmail, searchContactByPhone, searchContactByName } = useCrmStore();
+  const { customers } = useCrmStore();
+  const { currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [algoliaResults, setAlgoliaResults] = useState<Array<{ id: string; name: string; email: string; phone: string; contactRoles: string[] }>>([]);
 
-  // Filter contacts by roles if specified
+  // Filter contacts by roles if specified (used for default/empty search)
   const filteredContacts = useMemo(() => {
     let contacts = customers;
 
@@ -39,38 +43,47 @@ export function ContactSearchSelector({
     return contacts;
   }, [customers, roles]);
 
-  // Search results based on query
+  // Debounced Algolia search
+  useEffect(() => {
+    if (!searchQuery.trim() || !currentUser?.uid) {
+      setAlgoliaResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const results = await searchContacts(searchQuery.trim(), currentUser.uid);
+        setAlgoliaResults(results);
+      } catch (err) {
+        console.error('Algolia contact search failed:', err);
+        setAlgoliaResults([]);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, currentUser?.uid]);
+
+  // Search results: Algolia results when searching, CRM store when idle
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) {
-      return filteredContacts.slice(0, 10); // Show first 10 contacts when no search
+      return filteredContacts.slice(0, 10);
     }
 
-    const query = searchQuery.trim();
-    const results: Customer[] = [];
-    const seen = new Set<string>();
-
-    // Try email match first
-    const emailMatch = searchContactByEmail(query);
-    if (emailMatch && filteredContacts.some((c) => c.id === emailMatch.id)) {
-      results.push(emailMatch);
-      seen.add(emailMatch.id);
-    }
-
-    // Try phone match
-    const phoneMatch = searchContactByPhone(query);
-    if (phoneMatch && !seen.has(phoneMatch.id) && filteredContacts.some((c) => c.id === phoneMatch.id)) {
-      results.push(phoneMatch);
-      seen.add(phoneMatch.id);
-    }
-
-    // Add name matches
-    const nameMatches = searchContactByName(query).filter(
-      (c) => !seen.has(c.id) && filteredContacts.some((fc) => fc.id === c.id)
-    );
-    results.push(...nameMatches);
-
-    return results.slice(0, 10); // Limit to 10 results
-  }, [searchQuery, filteredContacts, searchContactByEmail, searchContactByPhone, searchContactByName]);
+    // Map Algolia results to Customer-compatible objects, or match with CRM store
+    return algoliaResults
+      .map((hit) => {
+        // Try to find full Customer object from CRM store
+        const existing = customers.find((c) => c.id === hit.id);
+        if (existing) return existing;
+        // Fallback: create minimal Customer-like object
+        return { id: hit.id, name: hit.name, email: hit.email, phone: hit.phone, contactRoles: hit.contactRoles } as Customer;
+      })
+      .filter((c) => {
+        if (!roles || roles.length === 0) return true;
+        return c.contactRoles?.some((role) => roles.includes(role as ContactRole));
+      })
+      .slice(0, 10);
+  }, [searchQuery, filteredContacts, algoliaResults, customers, roles]);
 
   // Get selected contact
   const selectedContact = useMemo(() => {

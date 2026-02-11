@@ -22,7 +22,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useDogStore, useTaskStore } from '@breeder/firebase';
 import { Litter } from '@breeder/types';
-import { searchDogs, type DogSearchResult } from '@/lib/kennelSearch';
+import { searchDogs, type DogSearchResult } from '@/lib/algoliaSearch';
 import { useAuth } from '@/contexts/AuthContext';
 import { Search, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';

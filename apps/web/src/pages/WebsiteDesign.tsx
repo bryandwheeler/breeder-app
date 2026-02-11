@@ -103,10 +103,9 @@ export function WebsiteDesign() {
     if (!currentUser) return;
     setSaving('whyChooseUs');
     try {
-      await updateWebsiteSettings(currentUser.uid, {
-        whyChooseUsTitle: whyChooseUsTitle || undefined,
-        whyChooseUs: whyChooseUsCards,
-      });
+      const whyPayload: Record<string, unknown> = { whyChooseUs: whyChooseUsCards };
+      if (whyChooseUsTitle) whyPayload.whyChooseUsTitle = whyChooseUsTitle;
+      await updateWebsiteSettings(currentUser.uid, whyPayload);
       toast({ title: 'Saved', description: '"Why Choose Us" section updated' });
     } catch {
       toast({ title: 'Error', description: 'Failed to save', variant: 'destructive' });
@@ -119,18 +118,17 @@ export function WebsiteDesign() {
     if (!currentUser) return;
     setSaving('contact');
     try {
-      await updateWebsiteSettings(currentUser.uid, {
-        email: contactInfo.email || undefined,
-        phone: contactInfo.phone || undefined,
-        city: contactInfo.city || undefined,
-        state: contactInfo.state || undefined,
-        zipCode: contactInfo.zipCode || undefined,
-        country: contactInfo.country || undefined,
-        googleBusinessUrl: contactInfo.googleBusinessUrl || undefined,
-        yelpUrl: contactInfo.yelpUrl || undefined,
-        hoursEnabled,
-        hours: hoursEnabled ? hours : undefined,
-      });
+      const payload: Record<string, unknown> = { hoursEnabled };
+      if (contactInfo.email) payload.email = contactInfo.email;
+      if (contactInfo.phone) payload.phone = contactInfo.phone;
+      if (contactInfo.city) payload.city = contactInfo.city;
+      if (contactInfo.state) payload.state = contactInfo.state;
+      if (contactInfo.zipCode) payload.zipCode = contactInfo.zipCode;
+      if (contactInfo.country) payload.country = contactInfo.country;
+      if (contactInfo.googleBusinessUrl) payload.googleBusinessUrl = contactInfo.googleBusinessUrl;
+      if (contactInfo.yelpUrl) payload.yelpUrl = contactInfo.yelpUrl;
+      if (hoursEnabled) payload.hours = hours;
+      await updateWebsiteSettings(currentUser.uid, payload);
       toast({ title: 'Saved', description: 'Contact information updated' });
     } catch {
       toast({ title: 'Error', description: 'Failed to save', variant: 'destructive' });

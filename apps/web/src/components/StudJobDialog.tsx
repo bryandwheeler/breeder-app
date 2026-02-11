@@ -24,7 +24,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card } from '@/components/ui/card';
 import { StudJob, StudJobBreeding, StudJobAddOn } from '@breeder/types';
 import { toast } from '@/hooks/use-toast';
-import { searchDogs, type DogSearchResult } from '@/lib/kennelSearch';
+import { searchDogs, type DogSearchResult } from '@/lib/algoliaSearch';
 import { useAuth } from '@/contexts/AuthContext';
 import { Search, Loader2, Plus, Trash2, FileText } from 'lucide-react';
 import { ContactSearchSelector } from './ContactSearchSelector';

@@ -3860,3 +3860,149 @@ exports.disconnectGoogleCalendar = functions.https.onCall(async (data, context) 
     throw new functions.https.HttpsError('internal', 'Failed to disconnect Google Calendar');
   }
 });
+
+// ============================================
+// ALGOLIA SEARCH SYNC
+// ============================================
+
+// Lazy-load Algolia client (same pattern as Stripe)
+let algoliaClient = null;
+function getAlgoliaClient() {
+  if (!algoliaClient && process.env.ALGOLIA_APP_ID && process.env.ALGOLIA_ADMIN_KEY) {
+    const { algoliasearch } = require('algoliasearch');
+    algoliaClient = algoliasearch(process.env.ALGOLIA_APP_ID, process.env.ALGOLIA_ADMIN_KEY);
+  }
+  return algoliaClient;
+}
+
+// Sync breederProfiles → Algolia 'breeder_profiles' index
+exports.onBreederProfileWrite = functions.firestore
+  .document('breederProfiles/{profileId}')
+  .onWrite(async (change, context) => {
+    const client = getAlgoliaClient();
+    if (!client) {
+      console.log('Algolia not configured, skipping sync');
+      return;
+    }
+
+    const { profileId } = context.params;
+
+    // Document deleted
+    if (!change.after.exists) {
+      try {
+        await client.deleteObject({ indexName: 'breeder_profiles', objectID: profileId });
+        console.log(`Deleted breeder profile ${profileId} from Algolia`);
+      } catch (err) {
+        console.error(`Error deleting breeder profile ${profileId} from Algolia:`, err);
+      }
+      return;
+    }
+
+    // Document created or updated
+    const data = change.after.data();
+    const record = {
+      objectID: profileId,
+      userId: data.userId || profileId,
+      kennelName: data.kennelName || '',
+      breederName: data.breederName || '',
+      city: data.city || '',
+      state: data.state || '',
+      primaryBreed: data.primaryBreed || '',
+    };
+
+    try {
+      await client.saveObject({ indexName: 'breeder_profiles', body: record });
+      console.log(`Synced breeder profile ${profileId} to Algolia`);
+    } catch (err) {
+      console.error(`Error syncing breeder profile ${profileId} to Algolia:`, err);
+    }
+  });
+
+// Sync dogs → Algolia 'dogs' index
+exports.onDogWrite = functions.firestore
+  .document('dogs/{dogId}')
+  .onWrite(async (change, context) => {
+    const client = getAlgoliaClient();
+    if (!client) {
+      console.log('Algolia not configured, skipping sync');
+      return;
+    }
+
+    const { dogId } = context.params;
+
+    // Document deleted
+    if (!change.after.exists) {
+      try {
+        await client.deleteObject({ indexName: 'dogs', objectID: dogId });
+        console.log(`Deleted dog ${dogId} from Algolia`);
+      } catch (err) {
+        console.error(`Error deleting dog ${dogId} from Algolia:`, err);
+      }
+      return;
+    }
+
+    // Document created or updated
+    const data = change.after.data();
+    const record = {
+      objectID: dogId,
+      name: data.name || '',
+      registeredName: data.registeredName || '',
+      registrationNumber: data.registrationNumber || data.registration?.number || '',
+      breed: data.breed || '',
+      sex: data.sex || '',
+      userId: data.userId || '',
+      kennelName: data.kennelName || '',
+      breederName: data.breederName || '',
+    };
+
+    try {
+      await client.saveObject({ indexName: 'dogs', body: record });
+      console.log(`Synced dog ${dogId} to Algolia`);
+    } catch (err) {
+      console.error(`Error syncing dog ${dogId} to Algolia:`, err);
+    }
+  });
+
+// Sync customers → Algolia 'customers' index
+exports.onCustomerWrite = functions.firestore
+  .document('customers/{customerId}')
+  .onWrite(async (change, context) => {
+    const client = getAlgoliaClient();
+    if (!client) {
+      console.log('Algolia not configured, skipping sync');
+      return;
+    }
+
+    const { customerId } = context.params;
+
+    // Document deleted
+    if (!change.after.exists) {
+      try {
+        await client.deleteObject({ indexName: 'customers', objectID: customerId });
+        console.log(`Deleted customer ${customerId} from Algolia`);
+      } catch (err) {
+        console.error(`Error deleting customer ${customerId} from Algolia:`, err);
+      }
+      return;
+    }
+
+    // Document created or updated
+    const data = change.after.data();
+    const record = {
+      objectID: customerId,
+      name: data.name || '',
+      email: data.email || '',
+      phone: data.phone || '',
+      contactRoles: data.contactRoles || [],
+      type: data.type || '',
+      status: data.status || '',
+      userId: data.userId || '',
+    };
+
+    try {
+      await client.saveObject({ indexName: 'customers', body: record });
+      console.log(`Synced customer ${customerId} to Algolia`);
+    } catch (err) {
+      console.error(`Error syncing customer ${customerId} to Algolia:`, err);
+    }
+  });

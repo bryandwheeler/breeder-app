@@ -7,6 +7,9 @@ import { PublicWebsiteHome } from '@/components/PublicWebsiteHome';
 import { PublicWebsiteAbout } from '@/components/PublicWebsiteAbout';
 import { PublicWebsiteContact } from '@/components/PublicWebsiteContact';
 import { PublicWebsitePuppies } from '@/components/PublicWebsitePuppies';
+import { PublicWebsiteBlog } from '@/components/PublicWebsiteBlog';
+import { PublicWebsiteBlogPost } from '@/components/PublicWebsiteBlogPost';
+import { PublicWebsiteFavoriteThings } from '@/components/PublicWebsiteFavoriteThings';
 import { PublicWebsiteSeo } from '@/components/website/PublicWebsiteSeo';
 import { detectSubdomain, SubdomainInfo } from '@/lib/subdomainRouter';
 import { Loader2 } from 'lucide-react';
@@ -85,6 +88,7 @@ function PublicWebsiteByBreederId({ breederId }: { breederId: string }) {
   const { getPublicProfile } = useBreederStore();
 
   const page = searchParams.get('page') || 'home';
+  const postSlug = searchParams.get('post') || '';
 
   useEffect(() => {
     const loadWebsite = async () => {
@@ -132,6 +136,10 @@ function PublicWebsiteByBreederId({ breederId }: { breederId: string }) {
         return 'Contact';
       case 'puppies':
         return 'Available Puppies';
+      case 'blog':
+        return 'Blog';
+      case 'favorite-things':
+        return 'Favorite Things';
       default:
         return undefined;
     }
@@ -145,6 +153,13 @@ function PublicWebsiteByBreederId({ breederId }: { breederId: string }) {
         return <PublicWebsiteContact settings={websiteSettings} />;
       case 'puppies':
         return <PublicWebsitePuppies settings={websiteSettings} />;
+      case 'blog':
+        if (postSlug) {
+          return <PublicWebsiteBlogPost settings={websiteSettings} slug={postSlug} />;
+        }
+        return <PublicWebsiteBlog settings={websiteSettings} />;
+      case 'favorite-things':
+        return <PublicWebsiteFavoriteThings settings={websiteSettings} />;
       default:
         return <PublicWebsiteHome settings={websiteSettings} />;
     }

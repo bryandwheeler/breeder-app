@@ -9,7 +9,7 @@ import { useConnectionStore } from '@breeder/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBreederStore } from '@breeder/firebase';
 import { Loader2, Search, Link2, X } from 'lucide-react';
-import { searchDogs, type DogSearchResult } from '@/lib/kennelSearch';
+import { searchDogs, type DogSearchResult } from '@/lib/algoliaSearch';
 import { useToast } from '@/hooks/use-toast';
 import { Dog } from '@breeder/types';
 import { cn } from '@/lib/utils';
