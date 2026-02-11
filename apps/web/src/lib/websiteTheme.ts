@@ -39,19 +39,19 @@ export function getFontFamily(fontFamily?: string): string {
     case 'mono':
       return 'Courier New, monospace';
     case 'display':
-      return 'Playfair Display, serif';
+      return '"Playfair Display", Georgia, serif';
     case 'elegant':
-      return 'Cormorant Garamond, serif';
+      return '"Cormorant Garamond", Garamond, serif';
     case 'playful':
-      return 'Comic Sans MS, cursive';
+      return 'Nunito, Quicksand, system-ui, sans-serif';
     case 'handwritten':
-      return 'Brush Script MT, cursive';
+      return 'Caveat, Kalam, cursive';
     case 'modern':
-      return 'Montserrat, sans-serif';
+      return 'Inter, Montserrat, system-ui, sans-serif';
     case 'classic':
-      return 'Times New Roman, serif';
+      return '"Times New Roman", serif';
     case 'luxury':
-      return 'Didot, Bodoni MT, serif';
+      return '"Playfair Display", Didot, "Bodoni MT", serif';
     default:
       return '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   }
