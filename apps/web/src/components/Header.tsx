@@ -76,20 +76,13 @@ export function Header({
               className='h-16 w-auto'
             />
             {profile?.kennelName && (
-              <div className='hidden lg:flex flex-col'>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className='font-bold text-lg cursor-pointer text-stone-800 dark:text-white'>
-                      Expert Breeder
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>Go to dashboard</TooltipContent>
-                </Tooltip>
-                {profile.kennelName && (
-                  <span className='text-xs text-muted-foreground'>
-                    {profile.kennelName}
-                  </span>
-                )}
+              <div className='hidden lg:block border-l pl-3 ml-1'>
+                <span className='font-semibold text-base text-stone-800 dark:text-white leading-tight block'>
+                  {profile.kennelName}
+                </span>
+                <span className='text-[11px] text-muted-foreground'>
+                  Dashboard
+                </span>
               </div>
             )}
           </Link>
