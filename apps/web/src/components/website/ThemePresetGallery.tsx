@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWebsiteStore, useThemePresetStore, seedThemePresets } from '@breeder/firebase';
 import { ThemePreset } from '@breeder/types';
@@ -25,7 +25,7 @@ export function ThemePresetGallery({
   const { websiteSettings, applyThemePreset, updateTheme } = useWebsiteStore();
   const { presets, loading, subscribeToPresets } = useThemePresetStore();
   const { toast } = useToast();
-  const [seeding, setSeeding] = useState(false);
+  const hasSynced = useRef(false);
   const [editingColors, setEditingColors] = useState(false);
   const [customColors, setCustomColors] = useState({
     primaryColor: '#3d3d3d',
@@ -34,30 +34,21 @@ export function ThemePresetGallery({
   });
   const [savingColors, setSavingColors] = useState(false);
 
-  // Subscribe to presets and seed if empty
+  // Subscribe to presets
   useEffect(() => {
     const unsubscribe = subscribeToPresets();
     return () => unsubscribe();
   }, [subscribeToPresets]);
 
-  // Sync presets on first load — adds missing presets and updates existing ones
+  // Sync presets once after initial load (silent — no spinner)
   useEffect(() => {
-    let synced = false;
-    async function syncPresets() {
-      if (!loading && !seeding && !synced) {
-        synced = true;
-        setSeeding(true);
-        try {
-          await seedThemePresets();
-        } catch (error) {
-          console.error('Failed to sync theme presets:', error);
-        } finally {
-          setSeeding(false);
-        }
-      }
+    if (!loading && !hasSynced.current) {
+      hasSynced.current = true;
+      seedThemePresets().catch((error) => {
+        console.error('Failed to sync theme presets:', error);
+      });
     }
-    syncPresets();
-  }, [loading, seeding]);
+  }, [loading]);
 
   // Sync custom colors with current theme
   useEffect(() => {
@@ -130,7 +121,7 @@ export function ThemePresetGallery({
   const isApplied = (presetId: string) =>
     websiteSettings?.appliedPresetId === presetId;
 
-  if (loading || seeding) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
