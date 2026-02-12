@@ -40,22 +40,24 @@ export function ThemePresetGallery({
     return () => unsubscribe();
   }, [subscribeToPresets]);
 
-  // Seed presets if collection is empty (one-time setup)
+  // Sync presets on first load — adds missing presets and updates existing ones
   useEffect(() => {
-    async function checkAndSeedPresets() {
-      if (!loading && presets.length === 0 && !seeding) {
+    let synced = false;
+    async function syncPresets() {
+      if (!loading && !seeding && !synced) {
+        synced = true;
         setSeeding(true);
         try {
           await seedThemePresets();
         } catch (error) {
-          console.error('Failed to seed theme presets:', error);
+          console.error('Failed to sync theme presets:', error);
         } finally {
           setSeeding(false);
         }
       }
     }
-    checkAndSeedPresets();
-  }, [loading, presets.length, seeding]);
+    syncPresets();
+  }, [loading, seeding]);
 
   // Sync custom colors with current theme
   useEffect(() => {

@@ -236,28 +236,35 @@ export const useThemePresetStore = create<ThemePresetState>((set, get) => ({
   },
 }));
 
-// Helper function to seed initial presets (admin use only)
+// Helper function to seed/sync presets — adds missing presets and updates existing ones
 export async function seedThemePresets(): Promise<void> {
   const presetsRef = collection(db, 'themePresets');
   const existing = await getDocs(presetsRef);
-
-  // Only seed if collection is empty
-  if (!existing.empty) {
-    console.log('[themePresetStore] Theme presets already exist, skipping seed');
-    return;
-  }
-
-  console.log('[themePresetStore] Seeding default theme presets...');
+  const existingIds = new Set(existing.docs.map((d) => d.id));
   const now = new Date().toISOString();
+
+  let added = 0;
+  let updated = 0;
 
   for (const preset of DEFAULT_THEME_PRESETS) {
     const presetRef = doc(db, 'themePresets', preset.id);
-    await setDoc(presetRef, {
-      ...preset,
-      createdAt: now,
-      updatedAt: now,
-    });
+    if (!existingIds.has(preset.id)) {
+      // New preset — create it
+      await setDoc(presetRef, {
+        ...preset,
+        createdAt: now,
+        updatedAt: now,
+      });
+      added++;
+    } else {
+      // Existing preset — update name, description, theme, order, etc.
+      await setDoc(presetRef, {
+        ...preset,
+        updatedAt: now,
+      }, { merge: true });
+      updated++;
+    }
   }
 
-  console.log('[themePresetStore] Seeded', DEFAULT_THEME_PRESETS.length, 'theme presets');
+  console.log(`[themePresetStore] Synced presets: ${added} added, ${updated} updated`);
 }
