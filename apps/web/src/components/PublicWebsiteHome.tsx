@@ -30,7 +30,7 @@ export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
             backgroundColor: primary,
             backgroundImage: settings.mainImageUrl
               ? `linear-gradient(${primary}${Math.round((settings.heroOverlayOpacity ?? 85) * 2.55).toString(16).padStart(2, '0')}, ${primary}${Math.round((settings.heroOverlayOpacity ?? 85) * 2.55).toString(16).padStart(2, '0')}), url('${settings.mainImageUrl}')`
-              : `linear-gradient(160deg, ${primary} 0%, ${secondary} 60%, ${accent}44 100%)`,
+              : 'none',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
@@ -71,9 +71,9 @@ export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
                     className='overflow-hidden hover:shadow-lg transition border-stone-200 rounded-2xl'
                   >
                     <div
-                      className='h-48 bg-gradient-to-br flex items-center justify-center text-white'
+                      className='h-48 flex items-center justify-center text-white'
                       style={puppy.photos && puppy.photos.length > 0 ? {} : {
-                        backgroundImage: `linear-gradient(135deg, ${primary}cc, ${secondary})`,
+                        backgroundColor: `${secondary}30`,
                       }}
                     >
                       {puppy.photos && puppy.photos.length > 0 ? (

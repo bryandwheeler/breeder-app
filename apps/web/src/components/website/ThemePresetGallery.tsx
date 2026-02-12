@@ -176,43 +176,58 @@ export function ThemePresetGallery({
 
             {/* Live Preview */}
             <div className="border rounded-xl overflow-hidden bg-white">
-              <div>
-                <div
-                  className="h-7 flex items-center px-3 text-white"
-                  style={{ backgroundColor: customColors.primaryColor }}
+              {/* Header */}
+              <div
+                className="h-7 flex items-center px-3 text-white"
+                style={{ backgroundColor: customColors.primaryColor }}
+              >
+                <div className="w-3 h-3 rounded-full bg-white/25" />
+                <span className="text-[8px] font-semibold ml-1.5 opacity-90">Your Kennel</span>
+                <div className="flex-1" />
+                <div className="flex gap-2.5">
+                  <span className="text-[7px] opacity-60">Home</span>
+                  <span className="text-[7px] opacity-60">Puppies</span>
+                  <span className="text-[7px] opacity-60">About</span>
+                  <span className="text-[7px] opacity-60">Contact</span>
+                </div>
+              </div>
+
+              {/* Hero */}
+              <div
+                className="h-14 flex flex-col items-center justify-center"
+                style={{ backgroundColor: customColors.primaryColor }}
+              >
+                <span className="text-white text-[10px] font-bold tracking-wide">Welcome to Our Kennel</span>
+                <span
+                  className="mt-1 text-white text-[7px] px-2.5 py-0.5 rounded-full"
+                  style={{ backgroundColor: customColors.accentColor }}
                 >
-                  <span className="text-[9px] font-bold">Your Kennel</span>
-                  <div className="flex-1" />
-                  <div className="flex gap-2">
-                    <span className="text-[8px] opacity-70">Home</span>
-                    <span className="text-[8px] opacity-70">About</span>
-                    <span className="text-[8px] opacity-70">Puppies</span>
-                  </div>
+                  View Available Puppies
+                </span>
+              </div>
+
+              {/* Puppy Cards */}
+              <div className="bg-stone-50 px-2.5 py-2">
+                <div className="text-[7px] font-semibold mb-1.5" style={{ color: customColors.primaryColor }}>Available Puppies</div>
+                <div className="flex gap-1.5">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex-1 bg-white rounded-md overflow-hidden shadow-[0_0_2px_rgba(0,0,0,0.08)]">
+                      <div className="h-8" style={{ backgroundColor: customColors.secondaryColor + '18' }} />
+                      <div className="p-1">
+                        <div className="h-1 w-3/4 rounded-full mb-0.5" style={{ backgroundColor: customColors.primaryColor + '20' }} />
+                        <div className="h-1 w-1/2 rounded-full" style={{ backgroundColor: customColors.accentColor + '30' }} />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div
-                  className="h-12 flex items-center justify-center gap-2"
-                  style={{ background: `linear-gradient(160deg, ${customColors.primaryColor} 0%, ${customColors.secondaryColor} 60%, ${customColors.accentColor}44 100%)` }}
-                >
-                  <span className="text-white text-[10px] font-bold">Welcome</span>
-                  <span
-                    className="text-white text-[7px] px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: customColors.accentColor }}
-                  >
-                    View Puppies
-                  </span>
-                </div>
-                <div className="h-8 bg-stone-50 px-3 flex items-center gap-2">
-                  <div className="h-1 rounded-full w-1/3" style={{ backgroundColor: customColors.primaryColor + '25' }} />
-                  <div className="h-1 rounded-full w-1/5" style={{ backgroundColor: customColors.secondaryColor + '20' }} />
-                  <div className="flex-1" />
-                  <div className="w-4 h-4 rounded" style={{ backgroundColor: customColors.accentColor + '20' }} />
-                </div>
-                <div
-                  className="h-4 flex items-center justify-center"
-                  style={{ backgroundColor: customColors.primaryColor }}
-                >
-                  <span className="text-white text-[6px] opacity-50">© Footer</span>
-                </div>
+              </div>
+
+              {/* Footer */}
+              <div
+                className="h-4 flex items-center justify-center"
+                style={{ backgroundColor: customColors.primaryColor }}
+              >
+                <span className="text-white text-[5px] opacity-40">© 2026 Your Kennel</span>
               </div>
             </div>
 
@@ -386,62 +401,73 @@ export function ThemePresetGallery({
             >
               {/* Mini Website Preview */}
               <div className="relative">
-                {/* Mini header bar */}
+                {/* Header */}
                 <div
-                  className="h-8 flex items-center px-3 gap-2"
+                  className="h-7 flex items-center px-3 text-white"
                   style={{ backgroundColor: preset.theme.primaryColor }}
                 >
-                  <div className="w-3 h-3 rounded-full bg-white/30" />
-                  <div className="flex-1" />
-                  <div className="flex gap-2">
-                    <div className="w-6 h-1.5 rounded-full bg-white/40" />
-                    <div className="w-6 h-1.5 rounded-full bg-white/40" />
-                    <div className="w-6 h-1.5 rounded-full bg-white/40" />
-                  </div>
-                </div>
-
-                {/* Mini hero area */}
-                <div
-                  className="h-16 flex flex-col items-center justify-center"
-                  style={{
-                    background: `linear-gradient(160deg, ${preset.theme.primaryColor} 0%, ${preset.theme.secondaryColor} 60%, ${preset.theme.accentColor}44 100%)`,
-                  }}
-                >
+                  <div className="w-2.5 h-2.5 rounded-full bg-white/25" />
                   <div
-                    className="text-white text-xs font-bold truncate px-4"
+                    className="text-[7px] font-semibold ml-1.5 opacity-90"
                     style={{ fontFamily }}
                   >
-                    Your Kennel Name
+                    Your Kennel
                   </div>
-                  <div
-                    className="mt-1 px-3 py-0.5 rounded-full text-white"
-                    style={{ backgroundColor: preset.theme.accentColor, fontSize: '7px' }}
-                  >
-                    View Puppies
+                  <div className="flex-1" />
+                  <div className="flex gap-2">
+                    <div className="w-5 h-1 rounded-full bg-white/35" />
+                    <div className="w-5 h-1 rounded-full bg-white/35" />
+                    <div className="w-5 h-1 rounded-full bg-white/35" />
+                    <div className="w-5 h-1 rounded-full bg-white/35" />
                   </div>
                 </div>
 
-                {/* Mini content area */}
-                <div className="h-12 bg-white px-3 py-2 flex items-start gap-2">
-                  <div className="flex-1 space-y-1">
-                    <div className="h-1.5 rounded-full w-3/4" style={{ backgroundColor: preset.theme.primaryColor + '30' }} />
-                    <div className="h-1.5 rounded-full w-1/2" style={{ backgroundColor: preset.theme.secondaryColor + '20' }} />
+                {/* Hero */}
+                <div
+                  className="h-14 flex flex-col items-center justify-center"
+                  style={{ backgroundColor: preset.theme.primaryColor }}
+                >
+                  <div
+                    className="text-white text-[10px] font-bold tracking-wide"
+                    style={{ fontFamily }}
+                  >
+                    Welcome to Our Kennel
                   </div>
+                  <div
+                    className="mt-1 px-2.5 py-0.5 rounded-full text-white text-[6px]"
+                    style={{ backgroundColor: preset.theme.accentColor }}
+                  >
+                    View Available Puppies
+                  </div>
+                </div>
+
+                {/* Puppy Cards Section */}
+                <div className="bg-stone-50 px-2 py-1.5">
+                  <div className="text-[6px] font-semibold mb-1" style={{ color: preset.theme.primaryColor }}>Available Puppies</div>
                   <div className="flex gap-1">
-                    <div
-                      className="w-8 h-8 rounded-lg"
-                      style={{ backgroundColor: preset.theme.accentColor + '15' }}
-                    />
-                    <div
-                      className="w-8 h-8 rounded-lg"
-                      style={{ backgroundColor: preset.theme.accentColor + '15' }}
-                    />
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex-1 bg-white rounded overflow-hidden shadow-[0_0_2px_rgba(0,0,0,0.06)]">
+                        <div className="h-7" style={{ backgroundColor: preset.theme.secondaryColor + '18' }} />
+                        <div className="px-1 py-0.5">
+                          <div className="h-[3px] w-3/4 rounded-full mb-0.5" style={{ backgroundColor: preset.theme.primaryColor + '20' }} />
+                          <div className="h-[3px] w-1/2 rounded-full" style={{ backgroundColor: preset.theme.accentColor + '30' }} />
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                </div>
+
+                {/* Footer */}
+                <div
+                  className="h-3.5 flex items-center justify-center"
+                  style={{ backgroundColor: preset.theme.primaryColor }}
+                >
+                  <span className="text-white text-[4px] opacity-40">© 2026 Your Kennel</span>
                 </div>
 
                 {/* Applied badge */}
                 {applied && (
-                  <div className="absolute top-10 left-2">
+                  <div className="absolute top-8 left-2">
                     <Badge className="bg-white text-primary shadow-sm text-xs">
                       <Check className="h-3 w-3 mr-1" />
                       Applied

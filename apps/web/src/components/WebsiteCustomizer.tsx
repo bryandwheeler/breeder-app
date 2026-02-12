@@ -293,28 +293,41 @@ export function WebsiteCustomizer() {
               Live Preview
             </div>
             <div>
-              <div className='h-7 flex items-center px-3 gap-2 text-white' style={{ backgroundColor: theme.primaryColor }}>
-                <span className='text-[9px] font-bold'>{branding.businessName || 'Your Kennel'}</span>
+              {/* Header */}
+              <div className='h-7 flex items-center px-3 text-white' style={{ backgroundColor: theme.primaryColor }}>
+                <div className='w-2.5 h-2.5 rounded-full bg-white/25' />
+                <span className='text-[8px] font-semibold ml-1.5 opacity-90'>{branding.businessName || 'Your Kennel'}</span>
                 <div className='flex-1' />
-                <div className='flex gap-2'>
-                  <span className='text-[8px] opacity-75'>Home</span>
-                  <span className='text-[8px] opacity-75'>About</span>
-                  <span className='text-[8px] opacity-75'>Puppies</span>
+                <div className='flex gap-2.5'>
+                  <span className='text-[7px] opacity-60'>Home</span>
+                  <span className='text-[7px] opacity-60'>Puppies</span>
+                  <span className='text-[7px] opacity-60'>About</span>
+                  <span className='text-[7px] opacity-60'>Contact</span>
                 </div>
               </div>
-              <div className='h-12 flex items-center justify-center gap-3' style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}>
-                <span className='text-white text-xs font-bold'>Welcome to Our Kennel</span>
-                <span className='text-white text-[8px] px-2 py-0.5 rounded-full' style={{ backgroundColor: theme.accentColor }}>View Puppies</span>
+              {/* Hero */}
+              <div className='h-14 flex flex-col items-center justify-center' style={{ backgroundColor: theme.primaryColor }}>
+                <span className='text-white text-[10px] font-bold tracking-wide'>Welcome to Our Kennel</span>
+                <span className='mt-1 text-white text-[7px] px-2.5 py-0.5 rounded-full' style={{ backgroundColor: theme.accentColor }}>View Available Puppies</span>
               </div>
-              <div className='h-8 bg-stone-50 px-3 py-2 flex items-center gap-3'>
-                <div className='space-y-1 flex-1'>
-                  <div className='h-1.5 rounded-full w-2/3' style={{ backgroundColor: theme.primaryColor + '25' }} />
-                  <div className='h-1.5 rounded-full w-1/3' style={{ backgroundColor: theme.secondaryColor + '20' }} />
+              {/* Puppy Cards */}
+              <div className='bg-stone-50 px-2.5 py-2'>
+                <div className='text-[7px] font-semibold mb-1.5' style={{ color: theme.primaryColor }}>Available Puppies</div>
+                <div className='flex gap-1.5'>
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className='flex-1 bg-white rounded-md overflow-hidden shadow-[0_0_2px_rgba(0,0,0,0.08)]'>
+                      <div className='h-8' style={{ backgroundColor: theme.secondaryColor + '18' }} />
+                      <div className='p-1'>
+                        <div className='h-1 w-3/4 rounded-full mb-0.5' style={{ backgroundColor: theme.primaryColor + '20' }} />
+                        <div className='h-1 w-1/2 rounded-full' style={{ backgroundColor: theme.accentColor + '30' }} />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className='w-5 h-5 rounded' style={{ backgroundColor: theme.accentColor + '20' }} />
               </div>
+              {/* Footer */}
               <div className='h-4 flex items-center justify-center' style={{ backgroundColor: theme.primaryColor }}>
-                <span className='text-white text-[6px] opacity-60'>© Your Kennel</span>
+                <span className='text-white text-[5px] opacity-40'>© 2026 {branding.businessName || 'Your Kennel'}</span>
               </div>
             </div>
           </div>
