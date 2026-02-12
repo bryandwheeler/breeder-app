@@ -191,7 +191,7 @@ export function ThemePresetGallery({
                 </div>
                 <div
                   className="h-12 flex items-center justify-center gap-2"
-                  style={{ background: `linear-gradient(135deg, ${customColors.primaryColor}, ${customColors.secondaryColor})` }}
+                  style={{ background: `linear-gradient(160deg, ${customColors.primaryColor} 0%, ${customColors.secondaryColor} 60%, ${customColors.accentColor}44 100%)` }}
                 >
                   <span className="text-white text-[10px] font-bold">Welcome</span>
                   <span
@@ -404,7 +404,7 @@ export function ThemePresetGallery({
                 <div
                   className="h-16 flex flex-col items-center justify-center"
                   style={{
-                    background: `linear-gradient(135deg, ${preset.theme.primaryColor} 0%, ${preset.theme.secondaryColor} 100%)`,
+                    background: `linear-gradient(160deg, ${preset.theme.primaryColor} 0%, ${preset.theme.secondaryColor} 60%, ${preset.theme.accentColor}44 100%)`,
                   }}
                 >
                   <div

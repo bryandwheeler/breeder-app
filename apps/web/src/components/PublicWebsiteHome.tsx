@@ -30,7 +30,7 @@ export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
             backgroundColor: primary,
             backgroundImage: settings.mainImageUrl
               ? `linear-gradient(${primary}${Math.round((settings.heroOverlayOpacity ?? 85) * 2.55).toString(16).padStart(2, '0')}, ${primary}${Math.round((settings.heroOverlayOpacity ?? 85) * 2.55).toString(16).padStart(2, '0')}), url('${settings.mainImageUrl}')`
-              : undefined,
+              : `linear-gradient(160deg, ${primary} 0%, ${secondary} 60%, ${accent}44 100%)`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
@@ -55,7 +55,7 @@ export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
 
         {/* Featured Puppies */}
         {featuredPuppies.length > 0 && (
-          <section className='py-16 px-4' style={{ backgroundColor: '#faf8f5' }}>
+          <section className='py-16 px-4' style={{ backgroundColor: `${primary}08` }}>
             <div className='max-w-6xl mx-auto'>
               <h2
                 className='text-3xl font-bold text-center mb-12'
@@ -73,7 +73,7 @@ export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
                     <div
                       className='h-48 bg-gradient-to-br flex items-center justify-center text-white'
                       style={puppy.photos && puppy.photos.length > 0 ? {} : {
-                        backgroundImage: `linear-gradient(135deg, ${secondary}, ${secondary}88)`,
+                        backgroundImage: `linear-gradient(135deg, ${primary}cc, ${secondary})`,
                       }}
                     >
                       {puppy.photos && puppy.photos.length > 0 ? (
@@ -144,7 +144,7 @@ export function PublicWebsiteHome({ settings }: PublicWebsiteHomeProps) {
         )}
 
         {/* Why Choose Us */}
-        <section className='py-16 px-4' style={{ backgroundColor: '#f5f0eb' }}>
+        <section className='py-16 px-4' style={{ backgroundColor: `${primary}0a` }}>
           <div className='max-w-6xl mx-auto'>
             <h2
               className='text-3xl font-bold text-center mb-12'
