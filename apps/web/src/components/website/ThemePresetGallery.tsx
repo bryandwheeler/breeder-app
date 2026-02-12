@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Check, Palette, Lock, Loader2, Pencil, Plus, Save, X } from 'lucide-react';
+import { Check, Dog, Palette, Lock, Loader2, Pencil, Plus, Save, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getFontFamily } from '@/lib/websiteTheme';
 
@@ -212,7 +212,12 @@ export function ThemePresetGallery({
                 <div className="flex gap-1.5">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="flex-1 bg-white rounded-md overflow-hidden shadow-[0_0_2px_rgba(0,0,0,0.08)]">
-                      <div className="h-8" style={{ backgroundColor: customColors.secondaryColor + '18' }} />
+                      <div
+                        className="h-10 flex items-center justify-center"
+                        style={{ backgroundColor: customColors.secondaryColor + '12' }}
+                      >
+                        <Dog className="h-5 w-5" style={{ color: customColors.secondaryColor + '35' }} />
+                      </div>
                       <div className="p-1">
                         <div className="h-1 w-3/4 rounded-full mb-0.5" style={{ backgroundColor: customColors.primaryColor + '20' }} />
                         <div className="h-1 w-1/2 rounded-full" style={{ backgroundColor: customColors.accentColor + '30' }} />
@@ -447,7 +452,12 @@ export function ThemePresetGallery({
                   <div className="flex gap-1">
                     {[1, 2, 3].map((i) => (
                       <div key={i} className="flex-1 bg-white rounded overflow-hidden shadow-[0_0_2px_rgba(0,0,0,0.06)]">
-                        <div className="h-7" style={{ backgroundColor: preset.theme.secondaryColor + '18' }} />
+                        <div
+                          className="h-9 flex items-center justify-center"
+                          style={{ backgroundColor: preset.theme.secondaryColor + '12' }}
+                        >
+                          <Dog className="h-4 w-4" style={{ color: preset.theme.secondaryColor + '35' }} />
+                        </div>
                         <div className="px-1 py-0.5">
                           <div className="h-[3px] w-3/4 rounded-full mb-0.5" style={{ backgroundColor: preset.theme.primaryColor + '20' }} />
                           <div className="h-[3px] w-1/2 rounded-full" style={{ backgroundColor: preset.theme.accentColor + '30' }} />

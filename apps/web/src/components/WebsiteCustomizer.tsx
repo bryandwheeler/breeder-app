@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Save, Loader2 } from 'lucide-react';
+import { Dog, Save, Loader2 } from 'lucide-react';
 import { useWebsiteStore } from '@breeder/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { WebsiteTheme } from '@breeder/types';
@@ -316,7 +316,9 @@ export function WebsiteCustomizer() {
                 <div className='flex gap-1.5'>
                   {[1, 2, 3].map((i) => (
                     <div key={i} className='flex-1 bg-white rounded-md overflow-hidden shadow-[0_0_2px_rgba(0,0,0,0.08)]'>
-                      <div className='h-8' style={{ backgroundColor: theme.secondaryColor + '18' }} />
+                      <div className='h-10 flex items-center justify-center' style={{ backgroundColor: theme.secondaryColor + '12' }}>
+                        <Dog className='h-5 w-5' style={{ color: theme.secondaryColor + '35' }} />
+                      </div>
                       <div className='p-1'>
                         <div className='h-1 w-3/4 rounded-full mb-0.5' style={{ backgroundColor: theme.primaryColor + '20' }} />
                         <div className='h-1 w-1/2 rounded-full' style={{ backgroundColor: theme.accentColor + '30' }} />
