@@ -71,7 +71,7 @@ export function Header({
           <Link to='/' className='flex items-center gap-3'>
             {/* Expert Breeder Logo */}
             <img
-              src='/expert-breeder-logo.webp'
+              src='/expert-breeder-logo.webp?v=2'
               alt='Expert Breeder Logo'
               className='h-16 w-auto'
             />

@@ -94,7 +94,7 @@ export function LandingPage() {
       <nav className='sticky top-0 z-50 backdrop-blur-md border-b border-stone-200/60' style={{ backgroundColor: 'rgba(245, 240, 234, 0.95)' }}>
         <div className='max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 flex items-center justify-between h-16'>
           <img
-            src='/expert-breeder-logo.webp'
+            src='/expert-breeder-logo.webp?v=2'
             alt='Expert Breeder'
             className='h-9 w-auto'
           />
@@ -281,7 +281,7 @@ export function LandingPage() {
       <footer className='border-t border-stone-200/60 py-10 px-5' style={{ backgroundColor: '#ece6de' }}>
         <div className='max-w-5xl mx-auto text-center'>
           <img
-            src='/expert-breeder-logo.webp'
+            src='/expert-breeder-logo.webp?v=2'
             alt='Expert Breeder'
             className='h-8 w-auto mx-auto mb-4 opacity-60'
           />

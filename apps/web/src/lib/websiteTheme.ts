@@ -85,10 +85,10 @@ export function getFontFamilyClass(fontFamily?: string): string {
 export function getLogoUrl(settings: WebsiteSettings, forDarkBackground = false): string {
   if (forDarkBackground) {
     // For dark backgrounds, prefer dark logo, fall back to regular logo
-    return settings.logoUrlDark || settings.logoUrl || '/expert-breeder-logo.png';
+    return settings.logoUrlDark || settings.logoUrl || '/expert-breeder-logo.png?v=2';
   }
   // For light backgrounds, use regular logo
-  return settings.logoUrl || '/expert-breeder-logo.png';
+  return settings.logoUrl || '/expert-breeder-logo.png?v=2';
 }
 
 /**

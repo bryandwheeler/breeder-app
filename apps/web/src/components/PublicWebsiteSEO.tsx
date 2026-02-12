@@ -23,7 +23,7 @@ export function PublicWebsiteSEO({
   // Generate page-specific titles and descriptions
   const pageTitle = title || getPageTitle(settings, page);
   const pageDescription = description || getPageDescription(settings, page);
-  const pageImage = image || settings.mainImageUrl || '/expert-breeder-logo.png';
+  const pageImage = image || settings.mainImageUrl || '/expert-breeder-logo.png?v=2';
   const siteName = settings.kennelName || 'Expert Breeder';
   const canonicalUrl = typeof window !== 'undefined' ? window.location.href : '';
 
