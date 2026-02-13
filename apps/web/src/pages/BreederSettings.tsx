@@ -30,6 +30,7 @@ import { WaitlistFormBuilder } from '@/components/settings/WaitlistFormBuilder';
 import { NotificationPreferences } from '@/components/NotificationPreferences';
 import { StaffManagement } from '@/pages/StaffManagement';
 import { SchedulingSettingsPanel } from '@/components/scheduling/SchedulingSettingsPanel';
+import { TpwIntegrationSettings } from '@/components/settings/TpwIntegrationSettings';
 import { cn } from '@/lib/utils';
 
 const navGroups = [
@@ -66,6 +67,7 @@ const navGroups = [
       { id: 'notifications', label: 'Notifications' },
       { id: 'scheduling', label: 'Scheduling' },
       { id: 'staff', label: 'Staff' },
+      { id: 'tpwIntegration', label: 'ThePuppyWag Sync' },
       { id: 'settings', label: 'General Settings' },
     ],
   },
@@ -984,6 +986,11 @@ export function BreederSettings() {
           {/* Staff Management */}
           {activeSection === 'staff' && (
             <StaffManagement />
+          )}
+
+          {/* ThePuppyWag Integration */}
+          {activeSection === 'tpwIntegration' && (
+            <TpwIntegrationSettings />
           )}
 
           {/* General Settings */}

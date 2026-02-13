@@ -1,7 +1,8 @@
 // Firebase Cloud Functions for Stripe Billing and Email Automation
-// Last updated: 2026-01-29
+// Last updated: 2026-02-12
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const crypto = require('crypto');
 admin.initializeApp();
 
 const db = admin.firestore();
@@ -4004,5 +4005,436 @@ exports.onCustomerWrite = functions.firestore
       console.log(`Synced customer ${customerId} to Algolia`);
     } catch (err) {
       console.error(`Error syncing customer ${customerId} to Algolia:`, err);
+    }
+  });
+
+// ==========================================================================
+// THEPUPPYWAG.COM INTEGRATION — REST API, Webhooks & Key Management
+// ==========================================================================
+
+function hashApiKey(apiKey) {
+  return crypto.createHash('sha256').update(apiKey).digest('hex');
+}
+
+function signWebhookPayload(payload, secret) {
+  return crypto.createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
+}
+
+async function validateTpwApiKey(req) {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+  const apiKey = authHeader.replace('Bearer ', '');
+  const keyHash = hashApiKey(apiKey);
+  const snapshot = await db.collection('tpwIntegrations')
+    .where('apiKeyHash', '==', keyHash)
+    .where('enabled', '==', true)
+    .limit(1)
+    .get();
+  if (snapshot.empty) return null;
+  const doc = snapshot.docs[0];
+  return { userId: doc.id, settings: doc.data() };
+}
+
+function mapPuppyToTpw(puppy, breederId, settings) {
+  return {
+    id: puppy.id,
+    litterId: puppy.litterId || null,
+    breederId,
+    name: puppy.name || '',
+    breed: puppy.breed || '',
+    sex: puppy.gender || 'male',
+    color: puppy.color || null,
+    dateOfBirth: puppy.dateOfBirth || null,
+    status: puppy.reserved ? 'reserved' : 'available',
+    price: settings.sharePricing ? (puppy.price || 0) : undefined,
+    photos: settings.sharePhotos ? (puppy.photos || []) : [],
+    description: puppy.description || null,
+    updatedAt: puppy.updatedAt || new Date().toISOString(),
+  };
+}
+
+function mapBreederProfileToTpw(profile, settings) {
+  return {
+    id: profile.userId || profile.id || '',
+    breederName: profile.breederName || '',
+    kennelName: profile.kennelName || null,
+    primaryBreed: profile.primaryBreed || '',
+    city: profile.city || null,
+    state: profile.state || null,
+    country: profile.country || null,
+    bio: profile.bio || null,
+    email: profile.email || null,
+    phone: profile.phone || null,
+    website: profile.website || null,
+    profileImage: settings.sharePhotos ? (profile.profileImage || null) : null,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function setCorsHeaders(res) {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+  res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+}
+
+// --- Callable Functions (authenticated breeder management) ---
+
+exports.tpwGenerateApiKey = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be signed in');
+  const userId = context.auth.uid;
+  const rawKey = crypto.randomBytes(32).toString('hex');
+  const apiKey = `eb_live_${rawKey}`;
+  const apiKeyHash = hashApiKey(apiKey);
+  const apiKeyPrefix = apiKey.substring(0, 16) + '...';
+  const webhookSecret = `whsec_${crypto.randomBytes(24).toString('hex')}`;
+  const now = new Date().toISOString();
+
+  await db.collection('tpwIntegrations').doc(userId).set({
+    apiKeyHash,
+    apiKeyPrefix,
+    apiKeyCreatedAt: now,
+    enabled: true,
+    sharePuppies: true,
+    shareBreederProfile: true,
+    sharePhotos: true,
+    sharePricing: true,
+    webhookUrl: '',
+    webhookSecret,
+    webhookEnabled: false,
+    createdAt: now,
+    updatedAt: now,
+  }, { merge: true });
+
+  return { apiKey, apiKeyPrefix, webhookSecret };
+});
+
+exports.tpwUpdateSettings = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be signed in');
+  const userId = context.auth.uid;
+  const allowedFields = [
+    'enabled', 'sharePuppies', 'shareBreederProfile',
+    'sharePhotos', 'sharePricing', 'webhookEnabled', 'webhookUrl',
+  ];
+  const updates = { updatedAt: new Date().toISOString() };
+  for (const field of allowedFields) {
+    if (data[field] !== undefined) {
+      if (field === 'webhookUrl' && data[field] && !data[field].startsWith('https://')) {
+        throw new functions.https.HttpsError('invalid-argument', 'Webhook URL must use HTTPS');
+      }
+      updates[field] = data[field];
+    }
+  }
+  await db.collection('tpwIntegrations').doc(userId).update(updates);
+  return { success: true };
+});
+
+exports.tpwRevokeApiKey = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be signed in');
+  const userId = context.auth.uid;
+  await db.collection('tpwIntegrations').doc(userId).update({
+    enabled: false,
+    apiKeyHash: '',
+    apiKeyPrefix: '',
+    webhookEnabled: false,
+    updatedAt: new Date().toISOString(),
+  });
+  return { success: true };
+});
+
+// --- REST API Endpoints (API key auth) ---
+
+exports.tpwGetBreederPuppies = functions.https.onRequest(async (req, res) => {
+  setCorsHeaders(res);
+  if (req.method === 'OPTIONS') return res.status(204).send('');
+  if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method not allowed' });
+
+  const auth = await validateTpwApiKey(req);
+  if (!auth) return res.status(401).json({ success: false, error: 'Invalid or missing API key' });
+
+  const breederId = req.query.breederId;
+  if (!breederId) return res.status(400).json({ success: false, error: 'breederId is required' });
+
+  try {
+    const integrationDoc = await db.collection('tpwIntegrations').doc(breederId).get();
+    if (!integrationDoc.exists || !integrationDoc.data().enabled || !integrationDoc.data().sharePuppies) {
+      return res.status(404).json({ success: false, error: 'Breeder not found or puppies not shared' });
+    }
+    const settings = integrationDoc.data();
+
+    const wsDoc = await db.collection('websiteSettings').doc(breederId).get();
+    if (!wsDoc.exists) {
+      return res.json({ success: true, data: [], pagination: { page: 1, pageSize: 50, totalItems: 0, totalPages: 0 } });
+    }
+
+    const listings = (wsDoc.data().puppyListings || [])
+      .filter(p => p.available || p.reserved)
+      .map(p => mapPuppyToTpw(p, breederId, settings));
+
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = Math.min(parseInt(req.query.pageSize) || 50, 100);
+    const start = (page - 1) * pageSize;
+
+    return res.json({
+      success: true,
+      data: listings.slice(start, start + pageSize),
+      pagination: { page, pageSize, totalItems: listings.length, totalPages: Math.ceil(listings.length / pageSize) },
+    });
+  } catch (error) {
+    console.error('TPW API error (breeder puppies):', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+exports.tpwGetBreederProfile = functions.https.onRequest(async (req, res) => {
+  setCorsHeaders(res);
+  if (req.method === 'OPTIONS') return res.status(204).send('');
+  if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method not allowed' });
+
+  const auth = await validateTpwApiKey(req);
+  if (!auth) return res.status(401).json({ success: false, error: 'Invalid or missing API key' });
+
+  const breederId = req.query.breederId;
+  if (!breederId) return res.status(400).json({ success: false, error: 'breederId is required' });
+
+  try {
+    const integrationDoc = await db.collection('tpwIntegrations').doc(breederId).get();
+    if (!integrationDoc.exists || !integrationDoc.data().enabled || !integrationDoc.data().shareBreederProfile) {
+      return res.status(404).json({ success: false, error: 'Breeder not found or profile not shared' });
+    }
+    const settings = integrationDoc.data();
+
+    const profilesSnap = await db.collection('breederProfiles')
+      .where('userId', '==', breederId)
+      .limit(1)
+      .get();
+
+    if (profilesSnap.empty) {
+      return res.status(404).json({ success: false, error: 'Breeder profile not found' });
+    }
+
+    const profile = profilesSnap.docs[0].data();
+    return res.json({ success: true, data: mapBreederProfileToTpw(profile, settings) });
+  } catch (error) {
+    console.error('TPW API error (breeder profile):', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+exports.tpwGetAllPuppies = functions.https.onRequest(async (req, res) => {
+  setCorsHeaders(res);
+  if (req.method === 'OPTIONS') return res.status(204).send('');
+  if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method not allowed' });
+
+  const auth = await validateTpwApiKey(req);
+  if (!auth) return res.status(401).json({ success: false, error: 'Invalid or missing API key' });
+
+  try {
+    const integrationsSnap = await db.collection('tpwIntegrations')
+      .where('enabled', '==', true)
+      .where('sharePuppies', '==', true)
+      .get();
+
+    if (integrationsSnap.empty) {
+      return res.json({ success: true, data: [], pagination: { page: 1, pageSize: 50, totalItems: 0, totalPages: 0 } });
+    }
+
+    const breederIds = integrationsSnap.docs.map(d => d.id);
+    const settingsMap = {};
+    integrationsSnap.docs.forEach(d => { settingsMap[d.id] = d.data(); });
+
+    // Read all websiteSettings in parallel
+    const wsRefs = breederIds.map(id => db.collection('websiteSettings').doc(id));
+    const wsDocs = await db.getAll(...wsRefs);
+
+    let allPuppies = [];
+    wsDocs.forEach((wsDoc, i) => {
+      if (!wsDoc.exists) return;
+      const breederId = breederIds[i];
+      const settings = settingsMap[breederId];
+      const listings = (wsDoc.data().puppyListings || [])
+        .filter(p => p.available || p.reserved)
+        .map(p => mapPuppyToTpw(p, breederId, settings));
+      allPuppies = allPuppies.concat(listings);
+    });
+
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = Math.min(parseInt(req.query.pageSize) || 50, 100);
+    const start = (page - 1) * pageSize;
+
+    return res.json({
+      success: true,
+      data: allPuppies.slice(start, start + pageSize),
+      pagination: { page, pageSize, totalItems: allPuppies.length, totalPages: Math.ceil(allPuppies.length / pageSize) },
+    });
+  } catch (error) {
+    console.error('TPW API error (all puppies):', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// --- Outgoing Webhook Triggers ---
+
+function diffPuppyListings(before, after, breederId, settings) {
+  const events = [];
+  const now = new Date().toISOString();
+  const beforeMap = new Map(before.map(p => [p.id, p]));
+  const afterMap = new Map(after.map(p => [p.id, p]));
+
+  for (const [id, puppy] of afterMap) {
+    if (!beforeMap.has(id)) {
+      events.push({ event: 'puppy.created', payload: { event: 'puppy.created', timestamp: now, breederId, data: mapPuppyToTpw(puppy, breederId, settings) } });
+    }
+  }
+
+  for (const [id] of beforeMap) {
+    if (!afterMap.has(id)) {
+      events.push({ event: 'puppy.removed', payload: { event: 'puppy.removed', timestamp: now, breederId, data: { id, breederId } } });
+    }
+  }
+
+  for (const [id, afterPuppy] of afterMap) {
+    const beforePuppy = beforeMap.get(id);
+    if (beforePuppy && JSON.stringify(beforePuppy) !== JSON.stringify(afterPuppy)) {
+      const statusChanged = beforePuppy.available !== afterPuppy.available || beforePuppy.reserved !== afterPuppy.reserved;
+      const eventType = statusChanged ? 'puppy.status_changed' : 'puppy.updated';
+      events.push({ event: eventType, payload: { event: eventType, timestamp: now, breederId, data: mapPuppyToTpw(afterPuppy, breederId, settings) } });
+    }
+  }
+
+  return events;
+}
+
+exports.onWebsiteSettingsWriteForTpw = functions.firestore
+  .document('websiteSettings/{userId}')
+  .onWrite(async (change, context) => {
+    const { userId } = context.params;
+    const integrationDoc = await db.collection('tpwIntegrations').doc(userId).get();
+    if (!integrationDoc.exists) return;
+    const settings = integrationDoc.data();
+    if (!settings.enabled || !settings.webhookEnabled || !settings.webhookUrl || !settings.sharePuppies) return;
+
+    const before = change.before.exists ? change.before.data() : null;
+    const after = change.after.exists ? change.after.data() : null;
+    if (!after) return;
+
+    const beforeListings = before?.puppyListings || [];
+    const afterListings = after.puppyListings || [];
+
+    const events = diffPuppyListings(beforeListings, afterListings, userId, settings);
+    if (events.length === 0) return;
+
+    const batch = db.batch();
+    const now = new Date().toISOString();
+    for (const event of events) {
+      const ref = db.collection('tpwWebhookDeliveries').doc();
+      batch.set(ref, {
+        breederId: userId,
+        event: event.event,
+        webhookUrl: settings.webhookUrl,
+        payload: event.payload,
+        status: 'pending',
+        attempts: 0,
+        maxAttempts: 5,
+        createdAt: now,
+      });
+    }
+    await batch.commit();
+    console.log(`Queued ${events.length} TPW webhook(s) for breeder ${userId}`);
+  });
+
+exports.onBreederProfileWriteForTpw = functions.firestore
+  .document('breederProfiles/{profileId}')
+  .onWrite(async (change, context) => {
+    if (!change.after.exists) return;
+    const data = change.after.data();
+    const userId = data.userId || context.params.profileId;
+
+    const integrationDoc = await db.collection('tpwIntegrations').doc(userId).get();
+    if (!integrationDoc.exists) return;
+    const settings = integrationDoc.data();
+    if (!settings.enabled || !settings.webhookEnabled || !settings.webhookUrl || !settings.shareBreederProfile) return;
+
+    const now = new Date().toISOString();
+    await db.collection('tpwWebhookDeliveries').add({
+      breederId: userId,
+      event: 'breeder.profile_updated',
+      webhookUrl: settings.webhookUrl,
+      payload: { event: 'breeder.profile_updated', timestamp: now, breederId: userId, data: mapBreederProfileToTpw(data, settings) },
+      status: 'pending',
+      attempts: 0,
+      maxAttempts: 5,
+      createdAt: now,
+    });
+    console.log(`Queued TPW breeder.profile_updated webhook for ${userId}`);
+  });
+
+// --- Webhook Delivery Processor (runs every 1 minute) ---
+
+exports.processTpwWebhookDeliveries = functions.pubsub
+  .schedule('every 1 minutes')
+  .onRun(async () => {
+    const now = new Date();
+    const nowISO = now.toISOString();
+
+    const pendingSnap = await db.collection('tpwWebhookDeliveries')
+      .where('status', '==', 'pending')
+      .limit(50)
+      .get();
+
+    const retrySnap = await db.collection('tpwWebhookDeliveries')
+      .where('status', '==', 'failed')
+      .where('nextRetryAt', '<=', nowISO)
+      .limit(25)
+      .get();
+
+    const allDocs = [...pendingSnap.docs, ...retrySnap.docs];
+    if (allDocs.length === 0) return;
+
+    const fetch = (await import('node-fetch')).default;
+
+    for (const doc of allDocs) {
+      const delivery = doc.data();
+      if (delivery.attempts >= delivery.maxAttempts) {
+        await doc.ref.update({ status: 'failed' });
+        continue;
+      }
+
+      const attempt = delivery.attempts + 1;
+      try {
+        const integrationDoc = await db.collection('tpwIntegrations').doc(delivery.breederId).get();
+        const webhookSecret = integrationDoc.exists ? (integrationDoc.data().webhookSecret || '') : '';
+        const payloadStr = JSON.stringify(delivery.payload);
+        const signature = signWebhookPayload(delivery.payload, webhookSecret);
+
+        const response = await fetch(delivery.webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-EB-Signature': signature,
+            'X-EB-Event': delivery.event,
+            'X-EB-Delivery-ID': doc.id,
+          },
+          body: payloadStr,
+          signal: AbortSignal.timeout(10000),
+        });
+
+        if (response.ok) {
+          await doc.ref.update({ status: 'delivered', httpStatus: response.status, attempts: attempt, deliveredAt: nowISO });
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } catch (error) {
+        const backoffMs = Math.pow(2, attempt - 1) * 60 * 1000;
+        const nextRetry = new Date(now.getTime() + backoffMs).toISOString();
+        const updateData = { attempts: attempt, error: error.message };
+        if (attempt >= delivery.maxAttempts) {
+          updateData.status = 'failed';
+        } else {
+          updateData.status = 'failed';
+          updateData.nextRetryAt = nextRetry;
+        }
+        await doc.ref.update(updateData);
+        console.error(`TPW webhook ${doc.id} failed (attempt ${attempt}):`, error.message);
+      }
     }
   });

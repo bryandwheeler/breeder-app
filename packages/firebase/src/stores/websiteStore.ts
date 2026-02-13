@@ -505,6 +505,7 @@ export const useWebsiteStore = create<WebsiteState>((set, get) => ({
         litterId: litter.id,
         name: puppy.name || puppy.tempName || 'Unnamed Puppy',
         breed: breed || '',
+        color: puppy.color || '',
         gender: puppy.sex,
         dateOfBirth: litter.dateOfBirth,
         description: puppy.websiteDescription || '',

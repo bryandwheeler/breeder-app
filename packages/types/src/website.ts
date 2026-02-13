@@ -111,6 +111,7 @@ export interface AvailablePuppyListing {
   dateOfBirth?: string;
   description: string;
   price: number;
+  color?: string;
   photos: string[]; // URLs to photos
   available: boolean;
   reserved: boolean;

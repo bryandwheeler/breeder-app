@@ -20,3 +20,4 @@ export * from './liveChat';
 export * from './signnow';
 export * from './staff';
 export * from './scheduling';
+export * from './integration';

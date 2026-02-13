@@ -34,6 +34,7 @@ export * from './stores/ticketStore';
 export * from './stores/contractStore';
 export * from './stores/staffStore';
 export * from './stores/schedulingStore';
+export * from './stores/tpwIntegrationStore';
 // export * from './stores/workflowStore'; // TODO: Fix complex type errors and missing dependencies
 
 // Re-export subcollection utilities
